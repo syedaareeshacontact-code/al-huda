@@ -103,6 +103,25 @@ export const ISLAMIC_LEARNING_KEYWORDS = [
   'islamic studies',
 ];
 
+export const ISLAMIC_TOOLS_KEYWORDS = [
+  'namaz timing',
+  'prayer times pakistan',
+  'islamic prayer times',
+  'qibla direction',
+  'hijri calendar',
+  'islamic duas',
+  'morning azkar',
+  'evening azkar',
+  '99 names of allah',
+  'asma ul husna',
+  'zakat calculator',
+  'mosque finder',
+  'masjid near me',
+  'namaz ka waqt',
+  'fajr time today',
+  'maghrib time today',
+];
+
 export const ACCESSIBILITY_KEYWORDS = [
   'accessible quran reader',
   'quran for beginners',

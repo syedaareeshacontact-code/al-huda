@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: 'Googlebot',
-        allow: ['/', '/surah', '/surah/', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/voice-search', '/hadith', '/hadith/'],
+        allow: ['/', '/surah', '/surah/', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/voice-search', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
         disallow: [
           '/admin',
           '/admin/',
@@ -27,7 +27,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: 'Bingbot',
-        allow: ['/', '/surah', '/surah/', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/voice-search', '/hadith', '/hadith/'],
+        allow: ['/', '/surah', '/surah/', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/voice-search', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
         disallow: [
           '/admin',
           '/admin/',
@@ -43,7 +43,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: '*',
-        allow: ['/', '/surah', '/surah/', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/voice-search', '/hadith', '/hadith/'],
+        allow: ['/', '/surah', '/surah/', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/voice-search', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
         disallow: [
           '/admin',
           '/admin/',
@@ -68,6 +68,7 @@ export default function robots(): MetadataRoute.Robots {
       `${baseUrl}/sitemaps/surah`,
       `${baseUrl}/local-sitemap.xml`,
       `${baseUrl}/voice-sitemap.xml`,
+      `${baseUrl}/islamic-tools-sitemap.xml`,
     ],
     host: baseUrl,
   };

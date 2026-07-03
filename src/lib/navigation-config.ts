@@ -2,17 +2,22 @@ import {
   BookMarked,
   BookOpenText,
   BrainCircuit,
+  Calculator,
+  Clock,
   Compass,
   Globe2,
+  HandHeart,
   Home,
   Info,
   Library,
   MapPin,
   MessageSquare,
   Mic,
+  Moon,
   ScrollText,
   Search,
   Sparkles,
+  Star,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -223,6 +228,91 @@ export const HADITH_MEGA_NAV: MegaNavGroup = {
   ],
 };
 
+export const ISLAMIC_TOOLS_MEGA_NAV: MegaNavGroup = {
+  id: 'islamic-tools',
+  label: 'Islamic Tools',
+  icon: Moon,
+  tagline: 'Prayer times, duas, zakat & mosque finder',
+  highlight: {
+    label: 'Prayer Times',
+    description: 'Namaz timings for 35+ Pakistani cities',
+    href: '/prayer-times',
+    icon: Clock,
+    badge: 'Live',
+  },
+  columns: [
+    {
+      title: 'Prayer & Calendar',
+      items: [
+        {
+          label: 'Prayer Times',
+          description: 'Fajr, Dhuhr, Asr, Maghrib & Isha for all cities',
+          href: '/prayer-times',
+          icon: Clock,
+        },
+        {
+          label: 'Lahore Timings',
+          description: 'Today\'s namaz timings in Lahore',
+          href: '/prayer-times/lahore',
+          icon: MapPin,
+        },
+        {
+          label: 'Karachi Timings',
+          description: 'Today\'s namaz timings in Karachi',
+          href: '/prayer-times/karachi',
+          icon: MapPin,
+        },
+        {
+          label: 'Islamabad Timings',
+          description: 'Today\'s namaz timings in Islamabad',
+          href: '/prayer-times/islamabad',
+          icon: MapPin,
+        },
+      ],
+    },
+    {
+      title: 'Duas & Remembrance',
+      items: [
+        {
+          label: 'Islamic Duas',
+          description: '126 authentic supplications from Quran & Sunnah',
+          href: '/duas',
+          icon: HandHeart,
+        },
+        {
+          label: 'Morning & Evening Azkar',
+          description: 'Daily adhkar for protection and blessings',
+          href: '/azkar',
+          icon: Moon,
+        },
+        {
+          label: '99 Names of Allah',
+          description: 'Asma ul Husna with meanings',
+          href: '/99-names-of-allah',
+          icon: Star,
+        },
+      ],
+    },
+    {
+      title: 'Tools & Places',
+      items: [
+        {
+          label: 'Zakat Calculator',
+          description: 'Calculate Zakat on gold, cash & assets (PKR)',
+          href: '/zakat-calculator',
+          icon: Calculator,
+        },
+        {
+          label: 'Mosque Finder',
+          description: 'Find nearby masjids and prayer places',
+          href: '/mosque-finder',
+          icon: MapPin,
+        },
+      ],
+    },
+  ],
+};
+
 export const EXPLORE_MEGA_NAV: MegaNavGroup = {
   id: 'explore',
   label: 'Explore',
@@ -292,6 +382,7 @@ export const EXPLORE_MEGA_NAV: MegaNavGroup = {
 export const MEGA_NAV_GROUPS: MegaNavGroup[] = [
   QURAN_MEGA_NAV,
   HADITH_MEGA_NAV,
+  ISLAMIC_TOOLS_MEGA_NAV,
   EXPLORE_MEGA_NAV,
 ];
 

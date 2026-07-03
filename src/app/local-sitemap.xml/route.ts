@@ -53,6 +53,60 @@ function renderLocalSitemapXml() {
       changefreq: 'weekly',
       priority: '0.75',
     },
+    {
+      url: `${baseUrl}/prayer-times`,
+      lastmod: updatedAt,
+      changefreq: 'daily',
+      priority: '0.95',
+    },
+    {
+      url: `${baseUrl}/prayer-times/lahore`,
+      lastmod: updatedAt,
+      changefreq: 'daily',
+      priority: '0.9',
+    },
+    {
+      url: `${baseUrl}/prayer-times/karachi`,
+      lastmod: updatedAt,
+      changefreq: 'daily',
+      priority: '0.9',
+    },
+    {
+      url: `${baseUrl}/prayer-times/islamabad`,
+      lastmod: updatedAt,
+      changefreq: 'daily',
+      priority: '0.9',
+    },
+    {
+      url: `${baseUrl}/duas`,
+      lastmod: updatedAt,
+      changefreq: 'weekly',
+      priority: '0.85',
+    },
+    {
+      url: `${baseUrl}/azkar`,
+      lastmod: updatedAt,
+      changefreq: 'weekly',
+      priority: '0.85',
+    },
+    {
+      url: `${baseUrl}/99-names-of-allah`,
+      lastmod: updatedAt,
+      changefreq: 'monthly',
+      priority: '0.85',
+    },
+    {
+      url: `${baseUrl}/zakat-calculator`,
+      lastmod: updatedAt,
+      changefreq: 'monthly',
+      priority: '0.85',
+    },
+    {
+      url: `${baseUrl}/mosque-finder`,
+      lastmod: updatedAt,
+      changefreq: 'weekly',
+      priority: '0.85',
+    },
   ];
 
   const items = entries

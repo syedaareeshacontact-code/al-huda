@@ -29,6 +29,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/contact',
     '/read-quran-online',
     '/voice-search',
+    '/prayer-times',
+    '/duas',
+    '/azkar',
+    '/99-names-of-allah',
+    '/zakat-calculator',
+    '/mosque-finder',
   ];
 
   const mainSectionEntries: MetadataRoute.Sitemap = mainSections.map((path) => ({
