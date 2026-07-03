@@ -8,6 +8,7 @@ import HadithPagination from '@/components/hadith/HadithPagination';
 import { Badge } from '@/components/ui/badge';
 import { getCollectionBySlug, getChaptersByCollection } from '@/lib/hadith/collections.service';
 import { getHadiths } from '@/lib/hadith/hadith.service';
+import { HadithApiError } from '@/lib/hadith/api-client';
 import {
   buildHadithBookPath,
   buildHadithCollectionPath,
@@ -73,11 +74,19 @@ export default async function BookPage({
 
   const currentPage = Math.max(1, parseInt(page, 10));
 
-  const [bookData, hadithsData, allChapters] = await Promise.all([
-    getCollectionBySlug(collection),
-    getHadiths({ bookSlug: collection, chapterId: chapter, page: currentPage }),
-    getChaptersByCollection(collection),
-  ]);
+  let bookData, hadithsData, allChapters;
+  try {
+    [bookData, hadithsData, allChapters] = await Promise.all([
+      getCollectionBySlug(collection),
+      getHadiths({ bookSlug: collection, chapterId: chapter, page: currentPage }),
+      getChaptersByCollection(collection),
+    ]);
+  } catch (error) {
+    if (error instanceof HadithApiError && error.status === 404) {
+      notFound();
+    }
+    throw error;
+  }
 
   if (!bookData) notFound();
 

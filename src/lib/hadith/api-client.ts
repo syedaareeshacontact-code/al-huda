@@ -42,7 +42,7 @@ export async function hadithFetch<T>(
 
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const response = await fetch(url, nextOptions);
 
@@ -66,11 +66,11 @@ export async function hadithFetch<T>(
       if (error instanceof HadithApiError && error.status !== 429 && error.status < 500) {
         throw error;
       }
-      if (attempt < 2) {
+      if (attempt < 4) {
         const delayMs =
           error instanceof HadithApiError && error.retryAfterMs
             ? error.retryAfterMs
-            : 500 * (attempt + 1);
+            : 1000 * Math.pow(2, attempt);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }

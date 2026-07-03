@@ -29,14 +29,21 @@ export async function getHadithByNumber(
   bookSlug: string,
   hadithNumber: string
 ): Promise<HadithItem | null> {
-  const data = await hadithFetch<HadithApiHadithsResponse>(
-    `/hadiths/?book=${bookSlug}&hadithNumber=${hadithNumber}`,
-    {
-      revalidate: false,
-      tags: [`hadith-${bookSlug}-${hadithNumber}`],
+  try {
+    const data = await hadithFetch<HadithApiHadithsResponse>(
+      `/hadiths/?book=${bookSlug}&hadithNumber=${hadithNumber}`,
+      {
+        revalidate: false,
+        tags: [`hadith-${bookSlug}-${hadithNumber}`],
+      }
+    );
+    return data.hadiths.data[0] ?? null;
+  } catch (error) {
+    if (error instanceof HadithApiError && error.status === 404) {
+      return null;
     }
-  );
-  return data.hadiths.data[0] ?? null;
+    throw error;
+  }
 }
 
 function resolveHadithSearchParams(query: string): URLSearchParams {
