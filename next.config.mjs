@@ -25,6 +25,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  serverExternalPackages: ['pdfkit'],
   async redirects() {
     return [
       {
@@ -154,6 +155,19 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=3600',
+          },
+        ],
+      },
+      {
+        source: '/surah-pdfs/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/pdf',
           },
         ],
       },

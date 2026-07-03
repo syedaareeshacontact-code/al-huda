@@ -1,4 +1,5 @@
 import type { SurahIndexEntry } from '@/lib/quran-index';
+import { buildSurahDownloadPath } from '@/lib/surah-download';
 
 /** Unique SEO intros — avoids thin/duplicate content across 114 surah pages */
 const SURAH_UNIQUE_INTROS: Record<number, string> = {
@@ -45,7 +46,7 @@ export function getSurahMetaTitle(surah: SurahIndexEntry): string {
 
 export function getSurahMetaDescription(surah: SurahIndexEntry): string {
   const intro = getSurahSeoIntro(surah).slice(0, 120);
-  return `${intro}… Read all ${surah.totalAyah} ayahs with Arabic text, Urdu tarjuma, English translation, audio tilawat, and ayah-wise Urdu tafseer.`;
+  return `${intro}… Read all ${surah.totalAyah} ayahs with Arabic text, Urdu tarjuma, English translation, audio tilawat, ayah-wise Urdu tafseer, and free PDF/audio download.`;
 }
 
 export function getTafsirSurahIntro(surah: SurahIndexEntry, tafsirAyahCount: number): string {
@@ -69,9 +70,11 @@ export function getRelatedLinks(surah: SurahIndexEntry): Array<{ label: string; 
   const specific = RELATED_DUA_LINKS[surah.id] ?? [];
   return [
     ...specific,
+    { label: `Download ${surah.surahName} PDF`, href: buildSurahDownloadPath(surah.id, surah.surahName) },
     { label: 'Prayer Times Pakistan', href: '/prayer-times' },
     { label: 'Hadith Collections', href: '/hadith' },
     { label: 'All 114 Surahs', href: '/surah' },
+    { label: 'Quran Downloads', href: '/download' },
   ];
 }
 

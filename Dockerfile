@@ -8,7 +8,7 @@ RUN bun install --frozen-lockfile
 FROM deps AS builder
 WORKDIR /app
 COPY . .
-RUN bun run build
+RUN bun run generate:surah-pdfs && bun run build
 
 # ---- runner ----
 FROM oven/bun:1.1.29 AS runner

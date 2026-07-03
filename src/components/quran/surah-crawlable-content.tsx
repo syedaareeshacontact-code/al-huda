@@ -3,6 +3,7 @@ import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AyahContentEntry } from '@/lib/quran-server';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import { buildSurahDownloadPath, buildSurahPdfPublicPath } from '@/lib/surah-download';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 import {
   getSurahSeoIntro,
@@ -91,6 +92,45 @@ export default function SurahCrawlableContent({ surah, ayahs }: SurahCrawlableCo
             </div>
           </nav>
         )}
+
+        {/* Download links — crawlable for Google */}
+        <nav aria-label="Download PDF and audio" className="mt-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+            Download PDF & Audio
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={buildSurahDownloadPath(surah.id, surah.surahName)}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
+            >
+              All Download Options
+            </Link>
+            <Link
+              href={buildSurahPdfPublicPath(surah.id, 'arabic')}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
+            >
+              Arabic PDF
+            </Link>
+            <Link
+              href={buildSurahPdfPublicPath(surah.id, 'arabic-urdu')}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
+            >
+              Arabic + Urdu PDF
+            </Link>
+            <Link
+              href={`/api/surah/${surah.id}/audio?variant=arabic&reciter=7`}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
+            >
+              Arabic Audio MP3
+            </Link>
+            <Link
+              href={`/api/surah/${surah.id}/audio?variant=urdu`}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
+            >
+              Urdu Audio
+            </Link>
+          </div>
+        </nav>
 
         {/* Full ayah text — server-rendered for crawlers */}
         <article className="mt-8 space-y-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 sm:p-6">

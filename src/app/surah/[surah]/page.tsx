@@ -4,10 +4,12 @@ import { notFound, permanentRedirect } from 'next/navigation';
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import SurahCrawlableContent from '@/components/quran/surah-crawlable-content';
+import SurahDownloadHub from '@/components/quran/surah-download-hub';
 import QuranReaderPage from '@/components/sidebar';
 import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
 import { getAyahRowsForSurah } from '@/lib/quran-server';
 import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
+import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { buildSurahPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildSurahPageSchemas } from '@/lib/seo-schema';
@@ -113,6 +115,18 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
           <p className="mt-2 text-sm text-[var(--color-muted-text)]">
             {surah.surahNameTranslation} · {surah.totalAyah} ayahs · {surah.revelationPlace}
           </p>
+          <Link
+            href={buildSurahDownloadPath(surah.id, surah.surahName)}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
+          >
+            Download PDF & Audio →
+          </Link>
+        </div>
+      </section>
+
+      <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-4xl">
+          <SurahDownloadHub surah={surah} compact />
         </div>
       </section>
 

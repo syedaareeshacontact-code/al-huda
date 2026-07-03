@@ -1,5 +1,6 @@
 import { getAllSurahs } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { getAllCollections, getChaptersByCollection } from '@/lib/hadith/collections.service';
 import {
   getAllHadithRefs,
@@ -156,6 +157,20 @@ export async function GET(
         },
       });
     }
+  }
+
+  if (normalizedName === 'download-surah') {
+    const downloadUrls = [
+      `${origin}/download`,
+      ...surahs.map((surah) => `${origin}${buildSurahDownloadPath(surah.id, surah.surahName)}`),
+    ];
+
+    return new Response(renderUrlSet(downloadUrls, 'weekly', '0.8'), {
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    });
   }
 
   if (normalizedName === 'tafsir-surah') {

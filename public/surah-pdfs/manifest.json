@@ -1,0 +1,1829 @@
+{
+  "generatedAt": "2026-07-03T07:19:47.171Z",
+  "files": [
+    {
+      "surahId": 1,
+      "surahName": "Al-Faatiha",
+      "variant": "arabic",
+      "fileName": "001-arabic.pdf",
+      "sizeBytes": 13748,
+      "path": "/surah-pdfs/001-arabic.pdf"
+    },
+    {
+      "surahId": 1,
+      "surahName": "Al-Faatiha",
+      "variant": "arabic-urdu",
+      "fileName": "001-arabic-urdu.pdf",
+      "sizeBytes": 31556,
+      "path": "/surah-pdfs/001-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 2,
+      "surahName": "Al-Baqara",
+      "variant": "arabic",
+      "fileName": "002-arabic.pdf",
+      "sizeBytes": 391163,
+      "path": "/surah-pdfs/002-arabic.pdf"
+    },
+    {
+      "surahId": 2,
+      "surahName": "Al-Baqara",
+      "variant": "arabic-urdu",
+      "fileName": "002-arabic-urdu.pdf",
+      "sizeBytes": 1188642,
+      "path": "/surah-pdfs/002-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 3,
+      "surahName": "Aal-i-Imraan",
+      "variant": "arabic",
+      "fileName": "003-arabic.pdf",
+      "sizeBytes": 240544,
+      "path": "/surah-pdfs/003-arabic.pdf"
+    },
+    {
+      "surahId": 3,
+      "surahName": "Aal-i-Imraan",
+      "variant": "arabic-urdu",
+      "fileName": "003-arabic-urdu.pdf",
+      "sizeBytes": 707490,
+      "path": "/surah-pdfs/003-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 4,
+      "surahName": "An-Nisaa",
+      "variant": "arabic",
+      "fileName": "004-arabic.pdf",
+      "sizeBytes": 254238,
+      "path": "/surah-pdfs/004-arabic.pdf"
+    },
+    {
+      "surahId": 4,
+      "surahName": "An-Nisaa",
+      "variant": "arabic-urdu",
+      "fileName": "004-arabic-urdu.pdf",
+      "sizeBytes": 732648,
+      "path": "/surah-pdfs/004-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 5,
+      "surahName": "Al-Maaida",
+      "variant": "arabic",
+      "fileName": "005-arabic.pdf",
+      "sizeBytes": 195839,
+      "path": "/surah-pdfs/005-arabic.pdf"
+    },
+    {
+      "surahId": 5,
+      "surahName": "Al-Maaida",
+      "variant": "arabic-urdu",
+      "fileName": "005-arabic-urdu.pdf",
+      "sizeBytes": 565549,
+      "path": "/surah-pdfs/005-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 6,
+      "surahName": "Al-An'aam",
+      "variant": "arabic",
+      "fileName": "006-arabic.pdf",
+      "sizeBytes": 215914,
+      "path": "/surah-pdfs/006-arabic.pdf"
+    },
+    {
+      "surahId": 6,
+      "surahName": "Al-An'aam",
+      "variant": "arabic-urdu",
+      "fileName": "006-arabic-urdu.pdf",
+      "sizeBytes": 651932,
+      "path": "/surah-pdfs/006-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 7,
+      "surahName": "Al-A'raaf",
+      "variant": "arabic",
+      "fileName": "007-arabic.pdf",
+      "sizeBytes": 243520,
+      "path": "/surah-pdfs/007-arabic.pdf"
+    },
+    {
+      "surahId": 7,
+      "surahName": "Al-A'raaf",
+      "variant": "arabic-urdu",
+      "fileName": "007-arabic-urdu.pdf",
+      "sizeBytes": 721997,
+      "path": "/surah-pdfs/007-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 8,
+      "surahName": "Al-Anfaal",
+      "variant": "arabic",
+      "fileName": "008-arabic.pdf",
+      "sizeBytes": 106047,
+      "path": "/surah-pdfs/008-arabic.pdf"
+    },
+    {
+      "surahId": 8,
+      "surahName": "Al-Anfaal",
+      "variant": "arabic-urdu",
+      "fileName": "008-arabic-urdu.pdf",
+      "sizeBytes": 294075,
+      "path": "/surah-pdfs/008-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 9,
+      "surahName": "At-Tawba",
+      "variant": "arabic",
+      "fileName": "009-arabic.pdf",
+      "sizeBytes": 182036,
+      "path": "/surah-pdfs/009-arabic.pdf"
+    },
+    {
+      "surahId": 9,
+      "surahName": "At-Tawba",
+      "variant": "arabic-urdu",
+      "fileName": "009-arabic-urdu.pdf",
+      "sizeBytes": 529046,
+      "path": "/surah-pdfs/009-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 10,
+      "surahName": "Yunus",
+      "variant": "arabic",
+      "fileName": "010-arabic.pdf",
+      "sizeBytes": 140057,
+      "path": "/surah-pdfs/010-arabic.pdf"
+    },
+    {
+      "surahId": 10,
+      "surahName": "Yunus",
+      "variant": "arabic-urdu",
+      "fileName": "010-arabic-urdu.pdf",
+      "sizeBytes": 394783,
+      "path": "/surah-pdfs/010-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 11,
+      "surahName": "Hud",
+      "variant": "arabic",
+      "fileName": "011-arabic.pdf",
+      "sizeBytes": 148476,
+      "path": "/surah-pdfs/011-arabic.pdf"
+    },
+    {
+      "surahId": 11,
+      "surahName": "Hud",
+      "variant": "arabic-urdu",
+      "fileName": "011-arabic-urdu.pdf",
+      "sizeBytes": 429706,
+      "path": "/surah-pdfs/011-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 12,
+      "surahName": "Yusuf",
+      "variant": "arabic",
+      "fileName": "012-arabic.pdf",
+      "sizeBytes": 140230,
+      "path": "/surah-pdfs/012-arabic.pdf"
+    },
+    {
+      "surahId": 12,
+      "surahName": "Yusuf",
+      "variant": "arabic-urdu",
+      "fileName": "012-arabic-urdu.pdf",
+      "sizeBytes": 410277,
+      "path": "/surah-pdfs/012-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 13,
+      "surahName": "Ar-Ra'd",
+      "variant": "arabic",
+      "fileName": "013-arabic.pdf",
+      "sizeBytes": 81315,
+      "path": "/surah-pdfs/013-arabic.pdf"
+    },
+    {
+      "surahId": 13,
+      "surahName": "Ar-Ra'd",
+      "variant": "arabic-urdu",
+      "fileName": "013-arabic-urdu.pdf",
+      "sizeBytes": 221062,
+      "path": "/surah-pdfs/013-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 14,
+      "surahName": "Ibrahim",
+      "variant": "arabic",
+      "fileName": "014-arabic.pdf",
+      "sizeBytes": 80361,
+      "path": "/surah-pdfs/014-arabic.pdf"
+    },
+    {
+      "surahId": 14,
+      "surahName": "Ibrahim",
+      "variant": "arabic-urdu",
+      "fileName": "014-arabic-urdu.pdf",
+      "sizeBytes": 216668,
+      "path": "/surah-pdfs/014-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 15,
+      "surahName": "Al-Hijr",
+      "variant": "arabic",
+      "fileName": "015-arabic.pdf",
+      "sizeBytes": 80134,
+      "path": "/surah-pdfs/015-arabic.pdf"
+    },
+    {
+      "surahId": 15,
+      "surahName": "Al-Hijr",
+      "variant": "arabic-urdu",
+      "fileName": "015-arabic-urdu.pdf",
+      "sizeBytes": 201236,
+      "path": "/surah-pdfs/015-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 16,
+      "surahName": "An-Nahl",
+      "variant": "arabic",
+      "fileName": "016-arabic.pdf",
+      "sizeBytes": 146248,
+      "path": "/surah-pdfs/016-arabic.pdf"
+    },
+    {
+      "surahId": 16,
+      "surahName": "An-Nahl",
+      "variant": "arabic-urdu",
+      "fileName": "016-arabic-urdu.pdf",
+      "sizeBytes": 416755,
+      "path": "/surah-pdfs/016-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 17,
+      "surahName": "Al-Israa",
+      "variant": "arabic",
+      "fileName": "017-arabic.pdf",
+      "sizeBytes": 133107,
+      "path": "/surah-pdfs/017-arabic.pdf"
+    },
+    {
+      "surahId": 17,
+      "surahName": "Al-Israa",
+      "variant": "arabic-urdu",
+      "fileName": "017-arabic-urdu.pdf",
+      "sizeBytes": 365775,
+      "path": "/surah-pdfs/017-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 18,
+      "surahName": "Al-Kahf",
+      "variant": "arabic",
+      "fileName": "018-arabic.pdf",
+      "sizeBytes": 131171,
+      "path": "/surah-pdfs/018-arabic.pdf"
+    },
+    {
+      "surahId": 18,
+      "surahName": "Al-Kahf",
+      "variant": "arabic-urdu",
+      "fileName": "018-arabic-urdu.pdf",
+      "sizeBytes": 368842,
+      "path": "/surah-pdfs/018-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 19,
+      "surahName": "Maryam",
+      "variant": "arabic",
+      "fileName": "019-arabic.pdf",
+      "sizeBytes": 94593,
+      "path": "/surah-pdfs/019-arabic.pdf"
+    },
+    {
+      "surahId": 19,
+      "surahName": "Maryam",
+      "variant": "arabic-urdu",
+      "fileName": "019-arabic-urdu.pdf",
+      "sizeBytes": 248221,
+      "path": "/surah-pdfs/019-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 20,
+      "surahName": "Taa-Haa",
+      "variant": "arabic",
+      "fileName": "020-arabic.pdf",
+      "sizeBytes": 121126,
+      "path": "/surah-pdfs/020-arabic.pdf"
+    },
+    {
+      "surahId": 20,
+      "surahName": "Taa-Haa",
+      "variant": "arabic-urdu",
+      "fileName": "020-arabic-urdu.pdf",
+      "sizeBytes": 334094,
+      "path": "/surah-pdfs/020-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 21,
+      "surahName": "Al-Anbiyaa",
+      "variant": "arabic",
+      "fileName": "021-arabic.pdf",
+      "sizeBytes": 109392,
+      "path": "/surah-pdfs/021-arabic.pdf"
+    },
+    {
+      "surahId": 21,
+      "surahName": "Al-Anbiyaa",
+      "variant": "arabic-urdu",
+      "fileName": "021-arabic-urdu.pdf",
+      "sizeBytes": 307758,
+      "path": "/surah-pdfs/021-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 22,
+      "surahName": "Al-Hajj",
+      "variant": "arabic",
+      "fileName": "022-arabic.pdf",
+      "sizeBytes": 108011,
+      "path": "/surah-pdfs/022-arabic.pdf"
+    },
+    {
+      "surahId": 22,
+      "surahName": "Al-Hajj",
+      "variant": "arabic-urdu",
+      "fileName": "022-arabic-urdu.pdf",
+      "sizeBytes": 295972,
+      "path": "/surah-pdfs/022-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 23,
+      "surahName": "Al-Muminoon",
+      "variant": "arabic",
+      "fileName": "023-arabic.pdf",
+      "sizeBytes": 102838,
+      "path": "/surah-pdfs/023-arabic.pdf"
+    },
+    {
+      "surahId": 23,
+      "surahName": "Al-Muminoon",
+      "variant": "arabic-urdu",
+      "fileName": "023-arabic-urdu.pdf",
+      "sizeBytes": 274285,
+      "path": "/surah-pdfs/023-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 24,
+      "surahName": "An-Noor",
+      "variant": "arabic",
+      "fileName": "024-arabic.pdf",
+      "sizeBytes": 109691,
+      "path": "/surah-pdfs/024-arabic.pdf"
+    },
+    {
+      "surahId": 24,
+      "surahName": "An-Noor",
+      "variant": "arabic-urdu",
+      "fileName": "024-arabic-urdu.pdf",
+      "sizeBytes": 293313,
+      "path": "/surah-pdfs/024-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 25,
+      "surahName": "Al-Furqaan",
+      "variant": "arabic",
+      "fileName": "025-arabic.pdf",
+      "sizeBytes": 89988,
+      "path": "/surah-pdfs/025-arabic.pdf"
+    },
+    {
+      "surahId": 25,
+      "surahName": "Al-Furqaan",
+      "variant": "arabic-urdu",
+      "fileName": "025-arabic-urdu.pdf",
+      "sizeBytes": 238471,
+      "path": "/surah-pdfs/025-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 26,
+      "surahName": "Ash-Shu'araa",
+      "variant": "arabic",
+      "fileName": "026-arabic.pdf",
+      "sizeBytes": 134421,
+      "path": "/surah-pdfs/026-arabic.pdf"
+    },
+    {
+      "surahId": 26,
+      "surahName": "Ash-Shu'araa",
+      "variant": "arabic-urdu",
+      "fileName": "026-arabic-urdu.pdf",
+      "sizeBytes": 335909,
+      "path": "/surah-pdfs/026-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 27,
+      "surahName": "An-Naml",
+      "variant": "arabic",
+      "fileName": "027-arabic.pdf",
+      "sizeBytes": 104216,
+      "path": "/surah-pdfs/027-arabic.pdf"
+    },
+    {
+      "surahId": 27,
+      "surahName": "An-Naml",
+      "variant": "arabic-urdu",
+      "fileName": "027-arabic-urdu.pdf",
+      "sizeBytes": 283723,
+      "path": "/surah-pdfs/027-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 28,
+      "surahName": "Al-Qasas",
+      "variant": "arabic",
+      "fileName": "028-arabic.pdf",
+      "sizeBytes": 119301,
+      "path": "/surah-pdfs/028-arabic.pdf"
+    },
+    {
+      "surahId": 28,
+      "surahName": "Al-Qasas",
+      "variant": "arabic-urdu",
+      "fileName": "028-arabic-urdu.pdf",
+      "sizeBytes": 328997,
+      "path": "/surah-pdfs/028-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 29,
+      "surahName": "Al-Ankaboot",
+      "variant": "arabic",
+      "fileName": "029-arabic.pdf",
+      "sizeBytes": 92078,
+      "path": "/surah-pdfs/029-arabic.pdf"
+    },
+    {
+      "surahId": 29,
+      "surahName": "Al-Ankaboot",
+      "variant": "arabic-urdu",
+      "fileName": "029-arabic-urdu.pdf",
+      "sizeBytes": 245864,
+      "path": "/surah-pdfs/029-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 30,
+      "surahName": "Ar-Room",
+      "variant": "arabic",
+      "fileName": "030-arabic.pdf",
+      "sizeBytes": 79556,
+      "path": "/surah-pdfs/030-arabic.pdf"
+    },
+    {
+      "surahId": 30,
+      "surahName": "Ar-Room",
+      "variant": "arabic-urdu",
+      "fileName": "030-arabic-urdu.pdf",
+      "sizeBytes": 208589,
+      "path": "/surah-pdfs/030-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 31,
+      "surahName": "Luqman",
+      "variant": "arabic",
+      "fileName": "031-arabic.pdf",
+      "sizeBytes": 59715,
+      "path": "/surah-pdfs/031-arabic.pdf"
+    },
+    {
+      "surahId": 31,
+      "surahName": "Luqman",
+      "variant": "arabic-urdu",
+      "fileName": "031-arabic-urdu.pdf",
+      "sizeBytes": 151913,
+      "path": "/surah-pdfs/031-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 32,
+      "surahName": "As-Sajda",
+      "variant": "arabic",
+      "fileName": "032-arabic.pdf",
+      "sizeBytes": 51382,
+      "path": "/surah-pdfs/032-arabic.pdf"
+    },
+    {
+      "surahId": 32,
+      "surahName": "As-Sajda",
+      "variant": "arabic-urdu",
+      "fileName": "032-arabic-urdu.pdf",
+      "sizeBytes": 125578,
+      "path": "/surah-pdfs/032-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 33,
+      "surahName": "Al-Ahzaab",
+      "variant": "arabic",
+      "fileName": "033-arabic.pdf",
+      "sizeBytes": 107607,
+      "path": "/surah-pdfs/033-arabic.pdf"
+    },
+    {
+      "surahId": 33,
+      "surahName": "Al-Ahzaab",
+      "variant": "arabic-urdu",
+      "fileName": "033-arabic-urdu.pdf",
+      "sizeBytes": 295388,
+      "path": "/surah-pdfs/033-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 34,
+      "surahName": "Saba",
+      "variant": "arabic",
+      "fileName": "034-arabic.pdf",
+      "sizeBytes": 82123,
+      "path": "/surah-pdfs/034-arabic.pdf"
+    },
+    {
+      "surahId": 34,
+      "surahName": "Saba",
+      "variant": "arabic-urdu",
+      "fileName": "034-arabic-urdu.pdf",
+      "sizeBytes": 219783,
+      "path": "/surah-pdfs/034-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 35,
+      "surahName": "Faatir",
+      "variant": "arabic",
+      "fileName": "035-arabic.pdf",
+      "sizeBytes": 75311,
+      "path": "/surah-pdfs/035-arabic.pdf"
+    },
+    {
+      "surahId": 35,
+      "surahName": "Faatir",
+      "variant": "arabic-urdu",
+      "fileName": "035-arabic-urdu.pdf",
+      "sizeBytes": 191549,
+      "path": "/surah-pdfs/035-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 36,
+      "surahName": "Yaseen",
+      "variant": "arabic",
+      "fileName": "036-arabic.pdf",
+      "sizeBytes": 79502,
+      "path": "/surah-pdfs/036-arabic.pdf"
+    },
+    {
+      "surahId": 36,
+      "surahName": "Yaseen",
+      "variant": "arabic-urdu",
+      "fileName": "036-arabic-urdu.pdf",
+      "sizeBytes": 201919,
+      "path": "/surah-pdfs/036-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 37,
+      "surahName": "As-Saaffaat",
+      "variant": "arabic",
+      "fileName": "037-arabic.pdf",
+      "sizeBytes": 105202,
+      "path": "/surah-pdfs/037-arabic.pdf"
+    },
+    {
+      "surahId": 37,
+      "surahName": "As-Saaffaat",
+      "variant": "arabic-urdu",
+      "fileName": "037-arabic-urdu.pdf",
+      "sizeBytes": 259684,
+      "path": "/surah-pdfs/037-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 38,
+      "surahName": "Saad",
+      "variant": "arabic",
+      "fileName": "038-arabic.pdf",
+      "sizeBytes": 83410,
+      "path": "/surah-pdfs/038-arabic.pdf"
+    },
+    {
+      "surahId": 38,
+      "surahName": "Saad",
+      "variant": "arabic-urdu",
+      "fileName": "038-arabic-urdu.pdf",
+      "sizeBytes": 209394,
+      "path": "/surah-pdfs/038-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 39,
+      "surahName": "Az-Zumar",
+      "variant": "arabic",
+      "fileName": "039-arabic.pdf",
+      "sizeBytes": 101340,
+      "path": "/surah-pdfs/039-arabic.pdf"
+    },
+    {
+      "surahId": 39,
+      "surahName": "Az-Zumar",
+      "variant": "arabic-urdu",
+      "fileName": "039-arabic-urdu.pdf",
+      "sizeBytes": 276079,
+      "path": "/surah-pdfs/039-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 40,
+      "surahName": "Ghafir",
+      "variant": "arabic",
+      "fileName": "040-arabic.pdf",
+      "sizeBytes": 103090,
+      "path": "/surah-pdfs/040-arabic.pdf"
+    },
+    {
+      "surahId": 40,
+      "surahName": "Ghafir",
+      "variant": "arabic-urdu",
+      "fileName": "040-arabic-urdu.pdf",
+      "sizeBytes": 285438,
+      "path": "/surah-pdfs/040-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 41,
+      "surahName": "Fussilat",
+      "variant": "arabic",
+      "fileName": "041-arabic.pdf",
+      "sizeBytes": 81345,
+      "path": "/surah-pdfs/041-arabic.pdf"
+    },
+    {
+      "surahId": 41,
+      "surahName": "Fussilat",
+      "variant": "arabic-urdu",
+      "fileName": "041-arabic-urdu.pdf",
+      "sizeBytes": 210393,
+      "path": "/surah-pdfs/041-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 42,
+      "surahName": "Ash-Shura",
+      "variant": "arabic",
+      "fileName": "042-arabic.pdf",
+      "sizeBytes": 81229,
+      "path": "/surah-pdfs/042-arabic.pdf"
+    },
+    {
+      "surahId": 42,
+      "surahName": "Ash-Shura",
+      "variant": "arabic-urdu",
+      "fileName": "042-arabic-urdu.pdf",
+      "sizeBytes": 212755,
+      "path": "/surah-pdfs/042-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 43,
+      "surahName": "Az-Zukhruf",
+      "variant": "arabic",
+      "fileName": "043-arabic.pdf",
+      "sizeBytes": 89355,
+      "path": "/surah-pdfs/043-arabic.pdf"
+    },
+    {
+      "surahId": 43,
+      "surahName": "Az-Zukhruf",
+      "variant": "arabic-urdu",
+      "fileName": "043-arabic-urdu.pdf",
+      "sizeBytes": 231882,
+      "path": "/surah-pdfs/043-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 44,
+      "surahName": "Ad-Dukhaan",
+      "variant": "arabic",
+      "fileName": "044-arabic.pdf",
+      "sizeBytes": 53162,
+      "path": "/surah-pdfs/044-arabic.pdf"
+    },
+    {
+      "surahId": 44,
+      "surahName": "Ad-Dukhaan",
+      "variant": "arabic-urdu",
+      "fileName": "044-arabic-urdu.pdf",
+      "sizeBytes": 123328,
+      "path": "/surah-pdfs/044-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 45,
+      "surahName": "Al-Jaathiya",
+      "variant": "arabic",
+      "fileName": "045-arabic.pdf",
+      "sizeBytes": 58641,
+      "path": "/surah-pdfs/045-arabic.pdf"
+    },
+    {
+      "surahId": 45,
+      "surahName": "Al-Jaathiya",
+      "variant": "arabic-urdu",
+      "fileName": "045-arabic-urdu.pdf",
+      "sizeBytes": 142702,
+      "path": "/surah-pdfs/045-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 46,
+      "surahName": "Al-Ahqaf",
+      "variant": "arabic",
+      "fileName": "046-arabic.pdf",
+      "sizeBytes": 69073,
+      "path": "/surah-pdfs/046-arabic.pdf"
+    },
+    {
+      "surahId": 46,
+      "surahName": "Al-Ahqaf",
+      "variant": "arabic-urdu",
+      "fileName": "046-arabic-urdu.pdf",
+      "sizeBytes": 176937,
+      "path": "/surah-pdfs/046-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 47,
+      "surahName": "Muhammad",
+      "variant": "arabic",
+      "fileName": "047-arabic.pdf",
+      "sizeBytes": 62749,
+      "path": "/surah-pdfs/047-arabic.pdf"
+    },
+    {
+      "surahId": 47,
+      "surahName": "Muhammad",
+      "variant": "arabic-urdu",
+      "fileName": "047-arabic-urdu.pdf",
+      "sizeBytes": 163428,
+      "path": "/surah-pdfs/047-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 48,
+      "surahName": "Al-Fath",
+      "variant": "arabic",
+      "fileName": "048-arabic.pdf",
+      "sizeBytes": 62712,
+      "path": "/surah-pdfs/048-arabic.pdf"
+    },
+    {
+      "surahId": 48,
+      "surahName": "Al-Fath",
+      "variant": "arabic-urdu",
+      "fileName": "048-arabic-urdu.pdf",
+      "sizeBytes": 160698,
+      "path": "/surah-pdfs/048-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 49,
+      "surahName": "Al-Hujuraat",
+      "variant": "arabic",
+      "fileName": "049-arabic.pdf",
+      "sizeBytes": 46778,
+      "path": "/surah-pdfs/049-arabic.pdf"
+    },
+    {
+      "surahId": 49,
+      "surahName": "Al-Hujuraat",
+      "variant": "arabic-urdu",
+      "fileName": "049-arabic-urdu.pdf",
+      "sizeBytes": 110928,
+      "path": "/surah-pdfs/049-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 50,
+      "surahName": "Qaaf",
+      "variant": "arabic",
+      "fileName": "050-arabic.pdf",
+      "sizeBytes": 52859,
+      "path": "/surah-pdfs/050-arabic.pdf"
+    },
+    {
+      "surahId": 50,
+      "surahName": "Qaaf",
+      "variant": "arabic-urdu",
+      "fileName": "050-arabic-urdu.pdf",
+      "sizeBytes": 130492,
+      "path": "/surah-pdfs/050-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 51,
+      "surahName": "Adh-Dhaariyat",
+      "variant": "arabic",
+      "fileName": "051-arabic.pdf",
+      "sizeBytes": 54575,
+      "path": "/surah-pdfs/051-arabic.pdf"
+    },
+    {
+      "surahId": 51,
+      "surahName": "Adh-Dhaariyat",
+      "variant": "arabic-urdu",
+      "fileName": "051-arabic-urdu.pdf",
+      "sizeBytes": 130923,
+      "path": "/surah-pdfs/051-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 52,
+      "surahName": "At-Tur",
+      "variant": "arabic",
+      "fileName": "052-arabic.pdf",
+      "sizeBytes": 49456,
+      "path": "/surah-pdfs/052-arabic.pdf"
+    },
+    {
+      "surahId": 52,
+      "surahName": "At-Tur",
+      "variant": "arabic-urdu",
+      "fileName": "052-arabic-urdu.pdf",
+      "sizeBytes": 117023,
+      "path": "/surah-pdfs/052-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 53,
+      "surahName": "An-Najm",
+      "variant": "arabic",
+      "fileName": "053-arabic.pdf",
+      "sizeBytes": 56054,
+      "path": "/surah-pdfs/053-arabic.pdf"
+    },
+    {
+      "surahId": 53,
+      "surahName": "An-Najm",
+      "variant": "arabic-urdu",
+      "fileName": "053-arabic-urdu.pdf",
+      "sizeBytes": 130951,
+      "path": "/surah-pdfs/053-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 54,
+      "surahName": "Al-Qamar",
+      "variant": "arabic",
+      "fileName": "054-arabic.pdf",
+      "sizeBytes": 53583,
+      "path": "/surah-pdfs/054-arabic.pdf"
+    },
+    {
+      "surahId": 54,
+      "surahName": "Al-Qamar",
+      "variant": "arabic-urdu",
+      "fileName": "054-arabic-urdu.pdf",
+      "sizeBytes": 130068,
+      "path": "/surah-pdfs/054-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 55,
+      "surahName": "Ar-Rahmaan",
+      "variant": "arabic",
+      "fileName": "055-arabic.pdf",
+      "sizeBytes": 54438,
+      "path": "/surah-pdfs/055-arabic.pdf"
+    },
+    {
+      "surahId": 55,
+      "surahName": "Ar-Rahmaan",
+      "variant": "arabic-urdu",
+      "fileName": "055-arabic-urdu.pdf",
+      "sizeBytes": 133690,
+      "path": "/surah-pdfs/055-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 56,
+      "surahName": "Al-Waaqia",
+      "variant": "arabic",
+      "fileName": "056-arabic.pdf",
+      "sizeBytes": 61988,
+      "path": "/surah-pdfs/056-arabic.pdf"
+    },
+    {
+      "surahId": 56,
+      "surahName": "Al-Waaqia",
+      "variant": "arabic-urdu",
+      "fileName": "056-arabic-urdu.pdf",
+      "sizeBytes": 142699,
+      "path": "/surah-pdfs/056-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 57,
+      "surahName": "Al-Hadid",
+      "variant": "arabic",
+      "fileName": "057-arabic.pdf",
+      "sizeBytes": 63294,
+      "path": "/surah-pdfs/057-arabic.pdf"
+    },
+    {
+      "surahId": 57,
+      "surahName": "Al-Hadid",
+      "variant": "arabic-urdu",
+      "fileName": "057-arabic-urdu.pdf",
+      "sizeBytes": 163856,
+      "path": "/surah-pdfs/057-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 58,
+      "surahName": "Al-Mujaadila",
+      "variant": "arabic",
+      "fileName": "058-arabic.pdf",
+      "sizeBytes": 54835,
+      "path": "/surah-pdfs/058-arabic.pdf"
+    },
+    {
+      "surahId": 58,
+      "surahName": "Al-Mujaadila",
+      "variant": "arabic-urdu",
+      "fileName": "058-arabic-urdu.pdf",
+      "sizeBytes": 138485,
+      "path": "/surah-pdfs/058-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 59,
+      "surahName": "Al-Hashr",
+      "variant": "arabic",
+      "fileName": "059-arabic.pdf",
+      "sizeBytes": 54305,
+      "path": "/surah-pdfs/059-arabic.pdf"
+    },
+    {
+      "surahId": 59,
+      "surahName": "Al-Hashr",
+      "variant": "arabic-urdu",
+      "fileName": "059-arabic-urdu.pdf",
+      "sizeBytes": 137208,
+      "path": "/surah-pdfs/059-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 60,
+      "surahName": "Al-Mumtahana",
+      "variant": "arabic",
+      "fileName": "060-arabic.pdf",
+      "sizeBytes": 45013,
+      "path": "/surah-pdfs/060-arabic.pdf"
+    },
+    {
+      "surahId": 60,
+      "surahName": "Al-Mumtahana",
+      "variant": "arabic-urdu",
+      "fileName": "060-arabic-urdu.pdf",
+      "sizeBytes": 112257,
+      "path": "/surah-pdfs/060-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 61,
+      "surahName": "As-Saff",
+      "variant": "arabic",
+      "fileName": "061-arabic.pdf",
+      "sizeBytes": 36495,
+      "path": "/surah-pdfs/061-arabic.pdf"
+    },
+    {
+      "surahId": 61,
+      "surahName": "As-Saff",
+      "variant": "arabic-urdu",
+      "fileName": "061-arabic-urdu.pdf",
+      "sizeBytes": 86648,
+      "path": "/surah-pdfs/061-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 62,
+      "surahName": "Al-Jumu'a",
+      "variant": "arabic",
+      "fileName": "062-arabic.pdf",
+      "sizeBytes": 32244,
+      "path": "/surah-pdfs/062-arabic.pdf"
+    },
+    {
+      "surahId": 62,
+      "surahName": "Al-Jumu'a",
+      "variant": "arabic-urdu",
+      "fileName": "062-arabic-urdu.pdf",
+      "sizeBytes": 75153,
+      "path": "/surah-pdfs/062-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 63,
+      "surahName": "Al-Munaafiqoon",
+      "variant": "arabic",
+      "fileName": "063-arabic.pdf",
+      "sizeBytes": 33258,
+      "path": "/surah-pdfs/063-arabic.pdf"
+    },
+    {
+      "surahId": 63,
+      "surahName": "Al-Munaafiqoon",
+      "variant": "arabic-urdu",
+      "fileName": "063-arabic-urdu.pdf",
+      "sizeBytes": 81862,
+      "path": "/surah-pdfs/063-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 64,
+      "surahName": "At-Taghaabun",
+      "variant": "arabic",
+      "fileName": "064-arabic.pdf",
+      "sizeBytes": 39715,
+      "path": "/surah-pdfs/064-arabic.pdf"
+    },
+    {
+      "surahId": 64,
+      "surahName": "At-Taghaabun",
+      "variant": "arabic-urdu",
+      "fileName": "064-arabic-urdu.pdf",
+      "sizeBytes": 93551,
+      "path": "/surah-pdfs/064-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 65,
+      "surahName": "At-Talaaq",
+      "variant": "arabic",
+      "fileName": "065-arabic.pdf",
+      "sizeBytes": 41574,
+      "path": "/surah-pdfs/065-arabic.pdf"
+    },
+    {
+      "surahId": 65,
+      "surahName": "At-Talaaq",
+      "variant": "arabic-urdu",
+      "fileName": "065-arabic-urdu.pdf",
+      "sizeBytes": 103344,
+      "path": "/surah-pdfs/065-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 66,
+      "surahName": "At-Tahrim",
+      "variant": "arabic",
+      "fileName": "066-arabic.pdf",
+      "sizeBytes": 40228,
+      "path": "/surah-pdfs/066-arabic.pdf"
+    },
+    {
+      "surahId": 66,
+      "surahName": "At-Tahrim",
+      "variant": "arabic-urdu",
+      "fileName": "066-arabic-urdu.pdf",
+      "sizeBytes": 93991,
+      "path": "/surah-pdfs/066-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 67,
+      "surahName": "Al-Mulk",
+      "variant": "arabic",
+      "fileName": "067-arabic.pdf",
+      "sizeBytes": 47239,
+      "path": "/surah-pdfs/067-arabic.pdf"
+    },
+    {
+      "surahId": 67,
+      "surahName": "Al-Mulk",
+      "variant": "arabic-urdu",
+      "fileName": "067-arabic-urdu.pdf",
+      "sizeBytes": 112336,
+      "path": "/surah-pdfs/067-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 68,
+      "surahName": "Al-Qalam",
+      "variant": "arabic",
+      "fileName": "068-arabic.pdf",
+      "sizeBytes": 49840,
+      "path": "/surah-pdfs/068-arabic.pdf"
+    },
+    {
+      "surahId": 68,
+      "surahName": "Al-Qalam",
+      "variant": "arabic-urdu",
+      "fileName": "068-arabic-urdu.pdf",
+      "sizeBytes": 124740,
+      "path": "/surah-pdfs/068-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 69,
+      "surahName": "Al-Haaqqa",
+      "variant": "arabic",
+      "fileName": "069-arabic.pdf",
+      "sizeBytes": 47288,
+      "path": "/surah-pdfs/069-arabic.pdf"
+    },
+    {
+      "surahId": 69,
+      "surahName": "Al-Haaqqa",
+      "variant": "arabic-urdu",
+      "fileName": "069-arabic-urdu.pdf",
+      "sizeBytes": 108514,
+      "path": "/surah-pdfs/069-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 70,
+      "surahName": "Al-Ma'aarij",
+      "variant": "arabic",
+      "fileName": "070-arabic.pdf",
+      "sizeBytes": 43212,
+      "path": "/surah-pdfs/070-arabic.pdf"
+    },
+    {
+      "surahId": 70,
+      "surahName": "Al-Ma'aarij",
+      "variant": "arabic-urdu",
+      "fileName": "070-arabic-urdu.pdf",
+      "sizeBytes": 97336,
+      "path": "/surah-pdfs/070-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 71,
+      "surahName": "Nooh",
+      "variant": "arabic",
+      "fileName": "071-arabic.pdf",
+      "sizeBytes": 38373,
+      "path": "/surah-pdfs/071-arabic.pdf"
+    },
+    {
+      "surahId": 71,
+      "surahName": "Nooh",
+      "variant": "arabic-urdu",
+      "fileName": "071-arabic-urdu.pdf",
+      "sizeBytes": 88877,
+      "path": "/surah-pdfs/071-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 72,
+      "surahName": "Al-Jinn",
+      "variant": "arabic",
+      "fileName": "072-arabic.pdf",
+      "sizeBytes": 41538,
+      "path": "/surah-pdfs/072-arabic.pdf"
+    },
+    {
+      "surahId": 72,
+      "surahName": "Al-Jinn",
+      "variant": "arabic-urdu",
+      "fileName": "072-arabic-urdu.pdf",
+      "sizeBytes": 104037,
+      "path": "/surah-pdfs/072-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 73,
+      "surahName": "Al-Muzzammil",
+      "variant": "arabic",
+      "fileName": "073-arabic.pdf",
+      "sizeBytes": 35316,
+      "path": "/surah-pdfs/073-arabic.pdf"
+    },
+    {
+      "surahId": 73,
+      "surahName": "Al-Muzzammil",
+      "variant": "arabic-urdu",
+      "fileName": "073-arabic-urdu.pdf",
+      "sizeBytes": 85466,
+      "path": "/surah-pdfs/073-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 74,
+      "surahName": "Al-Muddaththir",
+      "variant": "arabic",
+      "fileName": "074-arabic.pdf",
+      "sizeBytes": 45594,
+      "path": "/surah-pdfs/074-arabic.pdf"
+    },
+    {
+      "surahId": 74,
+      "surahName": "Al-Muddaththir",
+      "variant": "arabic-urdu",
+      "fileName": "074-arabic-urdu.pdf",
+      "sizeBytes": 104732,
+      "path": "/surah-pdfs/074-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 75,
+      "surahName": "Al-Qiyaama",
+      "variant": "arabic",
+      "fileName": "075-arabic.pdf",
+      "sizeBytes": 36957,
+      "path": "/surah-pdfs/075-arabic.pdf"
+    },
+    {
+      "surahId": 75,
+      "surahName": "Al-Qiyaama",
+      "variant": "arabic-urdu",
+      "fileName": "075-arabic-urdu.pdf",
+      "sizeBytes": 82552,
+      "path": "/surah-pdfs/075-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 76,
+      "surahName": "Al-Insaan",
+      "variant": "arabic",
+      "fileName": "076-arabic.pdf",
+      "sizeBytes": 41351,
+      "path": "/surah-pdfs/076-arabic.pdf"
+    },
+    {
+      "surahId": 76,
+      "surahName": "Al-Insaan",
+      "variant": "arabic-urdu",
+      "fileName": "076-arabic-urdu.pdf",
+      "sizeBytes": 101183,
+      "path": "/surah-pdfs/076-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 77,
+      "surahName": "Al-Mursalaat",
+      "variant": "arabic",
+      "fileName": "077-arabic.pdf",
+      "sizeBytes": 39900,
+      "path": "/surah-pdfs/077-arabic.pdf"
+    },
+    {
+      "surahId": 77,
+      "surahName": "Al-Mursalaat",
+      "variant": "arabic-urdu",
+      "fileName": "077-arabic-urdu.pdf",
+      "sizeBytes": 88031,
+      "path": "/surah-pdfs/077-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 78,
+      "surahName": "An-Naba",
+      "variant": "arabic",
+      "fileName": "078-arabic.pdf",
+      "sizeBytes": 36546,
+      "path": "/surah-pdfs/078-arabic.pdf"
+    },
+    {
+      "surahId": 78,
+      "surahName": "An-Naba",
+      "variant": "arabic-urdu",
+      "fileName": "078-arabic-urdu.pdf",
+      "sizeBytes": 83662,
+      "path": "/surah-pdfs/078-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 79,
+      "surahName": "An-Naazi'aat",
+      "variant": "arabic",
+      "fileName": "079-arabic.pdf",
+      "sizeBytes": 39953,
+      "path": "/surah-pdfs/079-arabic.pdf"
+    },
+    {
+      "surahId": 79,
+      "surahName": "An-Naazi'aat",
+      "variant": "arabic-urdu",
+      "fileName": "079-arabic-urdu.pdf",
+      "sizeBytes": 88999,
+      "path": "/surah-pdfs/079-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 80,
+      "surahName": "Abasa",
+      "variant": "arabic",
+      "fileName": "080-arabic.pdf",
+      "sizeBytes": 34741,
+      "path": "/surah-pdfs/080-arabic.pdf"
+    },
+    {
+      "surahId": 80,
+      "surahName": "Abasa",
+      "variant": "arabic-urdu",
+      "fileName": "080-arabic-urdu.pdf",
+      "sizeBytes": 76606,
+      "path": "/surah-pdfs/080-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 81,
+      "surahName": "At-Takwir",
+      "variant": "arabic",
+      "fileName": "081-arabic.pdf",
+      "sizeBytes": 27975,
+      "path": "/surah-pdfs/081-arabic.pdf"
+    },
+    {
+      "surahId": 81,
+      "surahName": "At-Takwir",
+      "variant": "arabic-urdu",
+      "fileName": "081-arabic-urdu.pdf",
+      "sizeBytes": 66332,
+      "path": "/surah-pdfs/081-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 82,
+      "surahName": "Al-Infitaar",
+      "variant": "arabic",
+      "fileName": "082-arabic.pdf",
+      "sizeBytes": 24947,
+      "path": "/surah-pdfs/082-arabic.pdf"
+    },
+    {
+      "surahId": 82,
+      "surahName": "Al-Infitaar",
+      "variant": "arabic-urdu",
+      "fileName": "082-arabic-urdu.pdf",
+      "sizeBytes": 54384,
+      "path": "/surah-pdfs/082-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 83,
+      "surahName": "Al-Mutaffifin",
+      "variant": "arabic",
+      "fileName": "083-arabic.pdf",
+      "sizeBytes": 34835,
+      "path": "/surah-pdfs/083-arabic.pdf"
+    },
+    {
+      "surahId": 83,
+      "surahName": "Al-Mutaffifin",
+      "variant": "arabic-urdu",
+      "fileName": "083-arabic-urdu.pdf",
+      "sizeBytes": 78704,
+      "path": "/surah-pdfs/083-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 84,
+      "surahName": "Al-Inshiqaaq",
+      "variant": "arabic",
+      "fileName": "084-arabic.pdf",
+      "sizeBytes": 29724,
+      "path": "/surah-pdfs/084-arabic.pdf"
+    },
+    {
+      "surahId": 84,
+      "surahName": "Al-Inshiqaaq",
+      "variant": "arabic-urdu",
+      "fileName": "084-arabic-urdu.pdf",
+      "sizeBytes": 62209,
+      "path": "/surah-pdfs/084-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 85,
+      "surahName": "Al-Burooj",
+      "variant": "arabic",
+      "fileName": "085-arabic.pdf",
+      "sizeBytes": 28466,
+      "path": "/surah-pdfs/085-arabic.pdf"
+    },
+    {
+      "surahId": 85,
+      "surahName": "Al-Burooj",
+      "variant": "arabic-urdu",
+      "fileName": "085-arabic-urdu.pdf",
+      "sizeBytes": 64001,
+      "path": "/surah-pdfs/085-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 86,
+      "surahName": "At-Taariq",
+      "variant": "arabic",
+      "fileName": "086-arabic.pdf",
+      "sizeBytes": 22262,
+      "path": "/surah-pdfs/086-arabic.pdf"
+    },
+    {
+      "surahId": 86,
+      "surahName": "At-Taariq",
+      "variant": "arabic-urdu",
+      "fileName": "086-arabic-urdu.pdf",
+      "sizeBytes": 47794,
+      "path": "/surah-pdfs/086-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 87,
+      "surahName": "Al-A'laa",
+      "variant": "arabic",
+      "fileName": "087-arabic.pdf",
+      "sizeBytes": 24612,
+      "path": "/surah-pdfs/087-arabic.pdf"
+    },
+    {
+      "surahId": 87,
+      "surahName": "Al-A'laa",
+      "variant": "arabic-urdu",
+      "fileName": "087-arabic-urdu.pdf",
+      "sizeBytes": 53766,
+      "path": "/surah-pdfs/087-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 88,
+      "surahName": "Al-Ghaashiya",
+      "variant": "arabic",
+      "fileName": "088-arabic.pdf",
+      "sizeBytes": 26634,
+      "path": "/surah-pdfs/088-arabic.pdf"
+    },
+    {
+      "surahId": 88,
+      "surahName": "Al-Ghaashiya",
+      "variant": "arabic-urdu",
+      "fileName": "088-arabic-urdu.pdf",
+      "sizeBytes": 59823,
+      "path": "/surah-pdfs/088-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 89,
+      "surahName": "Al-Fajr",
+      "variant": "arabic",
+      "fileName": "089-arabic.pdf",
+      "sizeBytes": 32714,
+      "path": "/surah-pdfs/089-arabic.pdf"
+    },
+    {
+      "surahId": 89,
+      "surahName": "Al-Fajr",
+      "variant": "arabic-urdu",
+      "fileName": "089-arabic-urdu.pdf",
+      "sizeBytes": 73855,
+      "path": "/surah-pdfs/089-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 90,
+      "surahName": "Al-Balad",
+      "variant": "arabic",
+      "fileName": "090-arabic.pdf",
+      "sizeBytes": 24013,
+      "path": "/surah-pdfs/090-arabic.pdf"
+    },
+    {
+      "surahId": 90,
+      "surahName": "Al-Balad",
+      "variant": "arabic-urdu",
+      "fileName": "090-arabic-urdu.pdf",
+      "sizeBytes": 52179,
+      "path": "/surah-pdfs/090-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 91,
+      "surahName": "Ash-Shams",
+      "variant": "arabic",
+      "fileName": "091-arabic.pdf",
+      "sizeBytes": 19583,
+      "path": "/surah-pdfs/091-arabic.pdf"
+    },
+    {
+      "surahId": 91,
+      "surahName": "Ash-Shams",
+      "variant": "arabic-urdu",
+      "fileName": "091-arabic-urdu.pdf",
+      "sizeBytes": 45603,
+      "path": "/surah-pdfs/091-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 92,
+      "surahName": "Al-Lail",
+      "variant": "arabic",
+      "fileName": "092-arabic.pdf",
+      "sizeBytes": 23990,
+      "path": "/surah-pdfs/092-arabic.pdf"
+    },
+    {
+      "surahId": 92,
+      "surahName": "Al-Lail",
+      "variant": "arabic-urdu",
+      "fileName": "092-arabic-urdu.pdf",
+      "sizeBytes": 51882,
+      "path": "/surah-pdfs/092-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 93,
+      "surahName": "Ad-Dhuhaa",
+      "variant": "arabic",
+      "fileName": "093-arabic.pdf",
+      "sizeBytes": 18073,
+      "path": "/surah-pdfs/093-arabic.pdf"
+    },
+    {
+      "surahId": 93,
+      "surahName": "Ad-Dhuhaa",
+      "variant": "arabic-urdu",
+      "fileName": "093-arabic-urdu.pdf",
+      "sizeBytes": 41593,
+      "path": "/surah-pdfs/093-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 94,
+      "surahName": "Ash-Sharh",
+      "variant": "arabic",
+      "fileName": "094-arabic.pdf",
+      "sizeBytes": 13435,
+      "path": "/surah-pdfs/094-arabic.pdf"
+    },
+    {
+      "surahId": 94,
+      "surahName": "Ash-Sharh",
+      "variant": "arabic-urdu",
+      "fileName": "094-arabic-urdu.pdf",
+      "sizeBytes": 31471,
+      "path": "/surah-pdfs/094-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 95,
+      "surahName": "At-Tin",
+      "variant": "arabic",
+      "fileName": "095-arabic.pdf",
+      "sizeBytes": 16985,
+      "path": "/surah-pdfs/095-arabic.pdf"
+    },
+    {
+      "surahId": 95,
+      "surahName": "At-Tin",
+      "variant": "arabic-urdu",
+      "fileName": "095-arabic-urdu.pdf",
+      "sizeBytes": 34455,
+      "path": "/surah-pdfs/095-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 96,
+      "surahName": "Al-Alaq",
+      "variant": "arabic",
+      "fileName": "096-arabic.pdf",
+      "sizeBytes": 23529,
+      "path": "/surah-pdfs/096-arabic.pdf"
+    },
+    {
+      "surahId": 96,
+      "surahName": "Al-Alaq",
+      "variant": "arabic-urdu",
+      "fileName": "096-arabic-urdu.pdf",
+      "sizeBytes": 54166,
+      "path": "/surah-pdfs/096-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 97,
+      "surahName": "Al-Qadr",
+      "variant": "arabic",
+      "fileName": "097-arabic.pdf",
+      "sizeBytes": 14661,
+      "path": "/surah-pdfs/097-arabic.pdf"
+    },
+    {
+      "surahId": 97,
+      "surahName": "Al-Qadr",
+      "variant": "arabic-urdu",
+      "fileName": "097-arabic-urdu.pdf",
+      "sizeBytes": 28748,
+      "path": "/surah-pdfs/097-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 98,
+      "surahName": "Al-Bayyina",
+      "variant": "arabic",
+      "fileName": "098-arabic.pdf",
+      "sizeBytes": 23675,
+      "path": "/surah-pdfs/098-arabic.pdf"
+    },
+    {
+      "surahId": 98,
+      "surahName": "Al-Bayyina",
+      "variant": "arabic-urdu",
+      "fileName": "098-arabic-urdu.pdf",
+      "sizeBytes": 50533,
+      "path": "/surah-pdfs/098-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 99,
+      "surahName": "Az-Zalzala",
+      "variant": "arabic",
+      "fileName": "099-arabic.pdf",
+      "sizeBytes": 15964,
+      "path": "/surah-pdfs/099-arabic.pdf"
+    },
+    {
+      "surahId": 99,
+      "surahName": "Az-Zalzala",
+      "variant": "arabic-urdu",
+      "fileName": "099-arabic-urdu.pdf",
+      "sizeBytes": 32832,
+      "path": "/surah-pdfs/099-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 100,
+      "surahName": "Al-Aadiyaat",
+      "variant": "arabic",
+      "fileName": "100-arabic.pdf",
+      "sizeBytes": 17637,
+      "path": "/surah-pdfs/100-arabic.pdf"
+    },
+    {
+      "surahId": 100,
+      "surahName": "Al-Aadiyaat",
+      "variant": "arabic-urdu",
+      "fileName": "100-arabic-urdu.pdf",
+      "sizeBytes": 38066,
+      "path": "/surah-pdfs/100-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 101,
+      "surahName": "Al-Qaari'a",
+      "variant": "arabic",
+      "fileName": "101-arabic.pdf",
+      "sizeBytes": 15120,
+      "path": "/surah-pdfs/101-arabic.pdf"
+    },
+    {
+      "surahId": 101,
+      "surahName": "Al-Qaari'a",
+      "variant": "arabic-urdu",
+      "fileName": "101-arabic-urdu.pdf",
+      "sizeBytes": 33831,
+      "path": "/surah-pdfs/101-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 102,
+      "surahName": "At-Takaathur",
+      "variant": "arabic",
+      "fileName": "102-arabic.pdf",
+      "sizeBytes": 13459,
+      "path": "/surah-pdfs/102-arabic.pdf"
+    },
+    {
+      "surahId": 102,
+      "surahName": "At-Takaathur",
+      "variant": "arabic-urdu",
+      "fileName": "102-arabic-urdu.pdf",
+      "sizeBytes": 31724,
+      "path": "/surah-pdfs/102-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 103,
+      "surahName": "Al-Asr",
+      "variant": "arabic",
+      "fileName": "103-arabic.pdf",
+      "sizeBytes": 11453,
+      "path": "/surah-pdfs/103-arabic.pdf"
+    },
+    {
+      "surahId": 103,
+      "surahName": "Al-Asr",
+      "variant": "arabic-urdu",
+      "fileName": "103-arabic-urdu.pdf",
+      "sizeBytes": 22357,
+      "path": "/surah-pdfs/103-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 104,
+      "surahName": "Al-Humaza",
+      "variant": "arabic",
+      "fileName": "104-arabic.pdf",
+      "sizeBytes": 16927,
+      "path": "/surah-pdfs/104-arabic.pdf"
+    },
+    {
+      "surahId": 104,
+      "surahName": "Al-Humaza",
+      "variant": "arabic-urdu",
+      "fileName": "104-arabic-urdu.pdf",
+      "sizeBytes": 34895,
+      "path": "/surah-pdfs/104-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 105,
+      "surahName": "Al-Fil",
+      "variant": "arabic",
+      "fileName": "105-arabic.pdf",
+      "sizeBytes": 13524,
+      "path": "/surah-pdfs/105-arabic.pdf"
+    },
+    {
+      "surahId": 105,
+      "surahName": "Al-Fil",
+      "variant": "arabic-urdu",
+      "fileName": "105-arabic-urdu.pdf",
+      "sizeBytes": 27565,
+      "path": "/surah-pdfs/105-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 106,
+      "surahName": "Quraish",
+      "variant": "arabic",
+      "fileName": "106-arabic.pdf",
+      "sizeBytes": 12934,
+      "path": "/surah-pdfs/106-arabic.pdf"
+    },
+    {
+      "surahId": 106,
+      "surahName": "Quraish",
+      "variant": "arabic-urdu",
+      "fileName": "106-arabic-urdu.pdf",
+      "sizeBytes": 25928,
+      "path": "/surah-pdfs/106-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 107,
+      "surahName": "Al-Maa'un",
+      "variant": "arabic",
+      "fileName": "107-arabic.pdf",
+      "sizeBytes": 15033,
+      "path": "/surah-pdfs/107-arabic.pdf"
+    },
+    {
+      "surahId": 107,
+      "surahName": "Al-Maa'un",
+      "variant": "arabic-urdu",
+      "fileName": "107-arabic-urdu.pdf",
+      "sizeBytes": 31889,
+      "path": "/surah-pdfs/107-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 108,
+      "surahName": "Al-Kawthar",
+      "variant": "arabic",
+      "fileName": "108-arabic.pdf",
+      "sizeBytes": 10476,
+      "path": "/surah-pdfs/108-arabic.pdf"
+    },
+    {
+      "surahId": 108,
+      "surahName": "Al-Kawthar",
+      "variant": "arabic-urdu",
+      "fileName": "108-arabic-urdu.pdf",
+      "sizeBytes": 22985,
+      "path": "/surah-pdfs/108-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 109,
+      "surahName": "Al-Kaafiroon",
+      "variant": "arabic",
+      "fileName": "109-arabic.pdf",
+      "sizeBytes": 12069,
+      "path": "/surah-pdfs/109-arabic.pdf"
+    },
+    {
+      "surahId": 109,
+      "surahName": "Al-Kaafiroon",
+      "variant": "arabic-urdu",
+      "fileName": "109-arabic-urdu.pdf",
+      "sizeBytes": 26904,
+      "path": "/surah-pdfs/109-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 110,
+      "surahName": "An-Nasr",
+      "variant": "arabic",
+      "fileName": "110-arabic.pdf",
+      "sizeBytes": 12664,
+      "path": "/surah-pdfs/110-arabic.pdf"
+    },
+    {
+      "surahId": 110,
+      "surahName": "An-Nasr",
+      "variant": "arabic-urdu",
+      "fileName": "110-arabic-urdu.pdf",
+      "sizeBytes": 26726,
+      "path": "/surah-pdfs/110-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 111,
+      "surahName": "Al-Masad",
+      "variant": "arabic",
+      "fileName": "111-arabic.pdf",
+      "sizeBytes": 13098,
+      "path": "/surah-pdfs/111-arabic.pdf"
+    },
+    {
+      "surahId": 111,
+      "surahName": "Al-Masad",
+      "variant": "arabic-urdu",
+      "fileName": "111-arabic-urdu.pdf",
+      "sizeBytes": 26235,
+      "path": "/surah-pdfs/111-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 112,
+      "surahName": "Al-Ikhlaas",
+      "variant": "arabic",
+      "fileName": "112-arabic.pdf",
+      "sizeBytes": 10364,
+      "path": "/surah-pdfs/112-arabic.pdf"
+    },
+    {
+      "surahId": 112,
+      "surahName": "Al-Ikhlaas",
+      "variant": "arabic-urdu",
+      "fileName": "112-arabic-urdu.pdf",
+      "sizeBytes": 20143,
+      "path": "/surah-pdfs/112-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 113,
+      "surahName": "Al-Falaq",
+      "variant": "arabic",
+      "fileName": "113-arabic.pdf",
+      "sizeBytes": 10918,
+      "path": "/surah-pdfs/113-arabic.pdf"
+    },
+    {
+      "surahId": 113,
+      "surahName": "Al-Falaq",
+      "variant": "arabic-urdu",
+      "fileName": "113-arabic-urdu.pdf",
+      "sizeBytes": 24146,
+      "path": "/surah-pdfs/113-arabic-urdu.pdf"
+    },
+    {
+      "surahId": 114,
+      "surahName": "An-Naas",
+      "variant": "arabic",
+      "fileName": "114-arabic.pdf",
+      "sizeBytes": 11124,
+      "path": "/surah-pdfs/114-arabic.pdf"
+    },
+    {
+      "surahId": 114,
+      "surahName": "An-Naas",
+      "variant": "arabic-urdu",
+      "fileName": "114-arabic-urdu.pdf",
+      "sizeBytes": 25213,
+      "path": "/surah-pdfs/114-arabic-urdu.pdf"
+    }
+  ]
+}

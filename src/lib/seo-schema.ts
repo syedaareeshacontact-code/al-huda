@@ -7,6 +7,7 @@ import {
 } from '@/lib/seo';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import type { SurahDownloadOption } from '@/lib/surah-download';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 
 export function buildSurahPageSchemas(
@@ -201,3 +202,83 @@ export function buildTafsirPageSchemas(options: {
 }
 
 export { buildFaqJsonLd };
+
+export function buildSurahDownloadSchemas(
+  surah: SurahIndexEntry,
+  options: SurahDownloadOption[],
+  downloadPath: string
+) {
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Home', item: '/' },
+    { name: 'Downloads', item: '/download' },
+    { name: `Surah ${surah.surahName}`, item: buildSurahPath(surah.id, surah.surahName) },
+    { name: 'Download PDF & Audio', item: downloadPath },
+  ]);
+
+  const webPage = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `Download Surah ${surah.surahName} PDF & Audio`,
+    description: `Free PDF and audio download for Surah ${surah.surahName} in Arabic and Urdu.`,
+    url: toAbsoluteUrl(downloadPath),
+    inLanguage: ['ar', 'ur', 'en'],
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'Read al Quran',
+      url: toAbsoluteUrl('/'),
+    },
+  };
+
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Surah ${surah.surahName} Download Options`,
+    numberOfItems: options.length,
+    itemListElement: options.map((option, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: option.label,
+      url: toAbsoluteUrl(option.href),
+      item: {
+        '@type': option.type === 'pdf' ? 'DigitalDocument' : 'AudioObject',
+        name: option.label,
+        encodingFormat: option.type === 'pdf' ? 'application/pdf' : 'audio/mpeg',
+        url: toAbsoluteUrl(option.href),
+      },
+    })),
+  };
+
+  return { breadcrumb, webPage, itemList };
+}
+
+export function buildDownloadIndexSchemas(totalSurahs: number) {
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Home', item: '/' },
+    { name: 'Quran Downloads', item: '/download' },
+  ]);
+
+  const webPage = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Download Quran PDF & Audio — All 114 Surahs',
+    description: 'Free PDF and audio downloads for all 114 Quran surahs in Arabic and Urdu.',
+    url: toAbsoluteUrl('/download'),
+    inLanguage: ['ar', 'ur', 'en'],
+    numberOfItems: totalSurahs,
+  };
+
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Quran Surah Downloads',
+    numberOfItems: totalSurahs,
+    itemListElement: {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'All 114 Surah PDF & Audio Downloads',
+      url: toAbsoluteUrl('/download'),
+    },
+  };
+
+  return { breadcrumb, webPage, itemList };
+}
