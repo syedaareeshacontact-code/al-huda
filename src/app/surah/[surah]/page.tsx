@@ -3,13 +3,19 @@ import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
-
+import SurahCrawlableContent from '@/components/quran/surah-crawlable-content';
 import QuranReaderPage from '@/components/sidebar';
 import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
 import { getAyahRowsForSurah } from '@/lib/quran-server';
-import { buildAyahPath, buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
+import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
 import { buildSurahPageKeywords } from '@/lib/seo-keywords';
-import { buildBreadcrumbJsonLd, buildPageMetadata, toAbsoluteUrl } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
+import { buildSurahPageSchemas } from '@/lib/seo-schema';
+import {
+  getSurahMetaTitle,
+  getSurahMetaDescription,
+  getSurahUrduTitle,
+} from '@/lib/surah-seo-content';
 
 interface SurahPageProps {
   params: Promise<{
@@ -18,8 +24,6 @@ interface SurahPageProps {
 }
 
 export const revalidate = 86400;
-
-const SEO_AYAH_PREVIEW_COUNT = 5;
 
 export function generateStaticParams() {
   return getAllSurahs().map((surah) => ({
@@ -41,13 +45,11 @@ export async function generateMetadata({ params }: SurahPageProps): Promise<Meta
   }
 
   const surah = resolved.surah;
-  const title = `Surah ${surah.surahName} (${surah.surahNameArabic}) – Urdu & English Translation, Tilawat Audio`;
-  const description = `Read Surah ${surah.surahName} (${surah.surahNameTranslation}) with Arabic text, Urdu/English translation tabs, tafseer panel, bookmarks, likes, and audio playback/download options.`;
   const canonicalPath = buildSurahPath(surah.id, surah.surahName);
 
   return buildPageMetadata({
-    title,
-    description,
+    title: getSurahMetaTitle(surah),
+    description: getSurahMetaDescription(surah),
     path: canonicalPath,
     ogType: 'article',
     imageUrl: `/og?kind=surah&surah=${surah.id}`,
@@ -73,99 +75,52 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
     permanentRedirect(buildSurahPath(surah.id, surah.surahName));
   }
 
-  let previewAyahs: Awaited<ReturnType<typeof getAyahRowsForSurah>> = [];
+  let ayahRows: Awaited<ReturnType<typeof getAyahRowsForSurah>> = [];
   try {
-    const ayahRows = await getAyahRowsForSurah(surah.id);
-    previewAyahs = ayahRows.slice(0, SEO_AYAH_PREVIEW_COUNT);
+    ayahRows = await getAyahRowsForSurah(surah.id);
   } catch {
-    previewAyahs = [];
+    ayahRows = [];
   }
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
-
-  const breadcrumbs = buildBreadcrumbJsonLd([
-    { name: 'Home', item: '/' },
-    { name: surahBreadcrumbLabel, item: surahPath },
-  ]);
-  const canonicalPath = surahPath;
-  const surahJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CreativeWork',
-    name: `Surah ${surah.surahName}`,
-    alternateName: [surah.surahNameArabic, surah.surahNameTranslation],
-    inLanguage: ['ar', 'ur', 'en'],
-    url: toAbsoluteUrl(canonicalPath),
-    about: `Quran Surah ${surah.id}`,
-    numberOfPages: surah.totalAyah,
-  };
+  const urduTitle = getSurahUrduTitle(surah);
+  const schemas = buildSurahPageSchemas(surah, getSurahMetaDescription(surah), ayahRows.length);
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(surahJsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.webPage) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.book) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
 
       <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 px-4 py-6 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <BreadcrumbNav
             items={[
               { label: 'Home', href: '/' },
+              { label: 'Surah Index', href: '/surah' },
               { label: surahBreadcrumbLabel, href: surahPath },
             ]}
             includeSchema={false}
           />
           <h1 className="font-display text-3xl text-[var(--color-heading)] sm:text-4xl">
-            {`Surah ${surah.surahName} (${surah.surahNameArabic})`}
+            Surah {surah.surahName} ({surah.surahNameArabic})
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--color-muted-text)] sm:text-base">
-            {`Surah ${surah.surahNameTranslation} — ${surah.totalAyah} ayahs with Arabic text, Urdu and English translation, audio recitation, bookmarks, and Urdu tafseer.`}
+          <p className="urdu-font mt-2 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
+            {urduTitle}
           </p>
-
-          {previewAyahs.length > 0 ? (
-            <article className="mt-6 space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 sm:p-5">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                Surah Text Preview
-              </h2>
-              {previewAyahs.map((ayah) => {
-                const ayahPath = buildAyahPath(surah.id, surah.surahName, ayah.ayahNumber);
-
-                return (
-                  <div key={ayah.ayahNumber} className="space-y-2 border-b border-[var(--color-border)] pb-4 last:border-b-0 last:pb-0">
-                    <p className="text-xs font-semibold text-[var(--color-muted-text)]">
-                      <Link href={ayahPath} className="hover:text-[var(--color-accent)]">
-                        Ayah {surah.id}:{ayah.ayahNumber}
-                      </Link>
-                    </p>
-                    {ayah.arabicText ? (
-                      <p className="arabic-font text-right text-xl leading-relaxed text-[var(--color-heading)]">
-                        {ayah.arabicText}
-                      </p>
-                    ) : null}
-                    {ayah.urduTranslation ? (
-                      <p className="text-sm leading-relaxed text-[var(--color-text)]">{ayah.urduTranslation}</p>
-                    ) : null}
-                    {ayah.englishTranslation ? (
-                      <p className="text-sm leading-relaxed text-[var(--color-muted-text)]">{ayah.englishTranslation}</p>
-                    ) : null}
-                  </div>
-                );
-              })}
-              <p className="text-xs text-[var(--color-muted-text)]">
-                <Link href={buildAyahPath(surah.id, surah.surahName, 1)} className="font-semibold text-[var(--color-accent)] hover:underline">
-                  Read all {surah.totalAyah} ayahs of Surah {surah.surahName}
-                </Link>
-              </p>
-            </article>
-          ) : null}
+          <p className="mt-2 text-sm text-[var(--color-muted-text)]">
+            {surah.surahNameTranslation} · {surah.totalAyah} ayahs · {surah.revelationPlace}
+          </p>
         </div>
       </section>
 
+      {ayahRows.length > 0 && (
+        <SurahCrawlableContent surah={surah} ayahs={ayahRows} />
+      )}
+
+      {/* Interactive reader — hydrates on top of crawlable SSR content */}
       <QuranReaderPage />
     </>
   );

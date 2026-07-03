@@ -7,6 +7,7 @@ import {
   buildDuasMetadata,
   buildIslamicToolsBreadcrumb,
 } from '@/lib/islamic-tools-seo';
+import { buildFaqJsonLd } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -45,6 +46,17 @@ export default async function DuaCategoryPage({ params }: PageProps) {
     { name: category.name, path: `/duas/${id}` },
   ]);
 
+  const duaFaq = buildFaqJsonLd([
+    {
+      question: `How many duas are in ${category.name}?`,
+      answer: `This category contains ${duas.length} authentic supplications sourced from the Quran and Sunnah with Arabic text, transliteration, and English translation.`,
+    },
+    {
+      question: 'Can I copy and share these duas?',
+      answer: 'Yes, each dua includes a copy button. Share the Arabic text and translation with family and friends.',
+    },
+  ]);
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12">
       <IslamicPageHeader
@@ -66,6 +78,7 @@ export default async function DuaCategoryPage({ params }: PageProps) {
       </div>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(duaFaq) }} />
     </div>
   );
 }

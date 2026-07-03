@@ -16,7 +16,9 @@ import {
 import { resolveSurahParam } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
 import { buildAyahPageKeywords } from '@/lib/seo-keywords';
-import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
+import { buildAyahPageSchemas } from '@/lib/seo-schema';
+import { getSurahUrduTitle } from '@/lib/surah-seo-content';
 
 interface AyahPageProps {
   params: Promise<{
@@ -26,9 +28,25 @@ interface AyahPageProps {
 }
 
 export const revalidate = 86400;
-
-// Pages are generated on first request (ISR) to keep production builds fast.
 export const dynamicParams = true;
+
+/** Pre-render popular surahs + Al-Fatiha for Google indexing */
+export async function generateStaticParams() {
+  const popularIds = [1, 2, 18, 36, 55, 67, 112, 113, 114];
+  const { getAllSurahs } = await import('@/lib/quran-index');
+  const { buildSurahSlug } = await import('@/lib/quran-routing');
+
+  const params: Array<{ surah: string; ayah: string }> = [];
+  for (const id of popularIds) {
+    const surah = getAllSurahs().find((s) => s.id === id);
+    if (!surah) continue;
+    const slug = buildSurahSlug(surah.id, surah.surahName);
+    for (let a = 1; a <= surah.totalAyah; a++) {
+      params.push({ surah: slug, ayah: String(a) });
+    }
+  }
+  return params;
+}
 
 function parseAyahNumber(value: string) {
   const parsed = Number(value);
@@ -62,8 +80,8 @@ export async function generateMetadata({
   const canonicalPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
 
   const title = canOpenTafsir
-    ? `Ayah ${surah.id}:${ayahNumber} (${surah.surahName}) – Arabic, Urdu & English Translation, Audio, Tafseer`
-    : `Ayah ${surah.id}:${ayahNumber} (${surah.surahName}) – Arabic, Urdu & English Translation, Audio`;
+    ? `Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو ترجمہ، English Translation & Tafseer`
+    : `Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو ترجمہ & English Translation`;
   const fallbackDescription = canOpenTafsir
     ? `Ayah ${surah.id}:${ayahNumber} Arabic text, Urdu and English translation, Arabic + Urdu audio, and tafseer link.`
     : `Ayah ${surah.id}:${ayahNumber} Arabic text, Urdu and English translation, and Arabic + Urdu audio.`;
@@ -136,11 +154,18 @@ export default async function AyahDetailPage({
       ? buildAyahPath(surah.id, surah.surahName, ayahNumber + 1)
       : null;
 
-  const breadcrumbs = buildBreadcrumbJsonLd([
-    { name: 'Home', item: '/' },
-    { name: surahBreadcrumbLabel, item: surahPath },
-    { name: `Ayah ${ayahNumber}`, item: canonicalPath },
-  ]);
+  const breadcrumbs = buildAyahPageSchemas({
+    surah,
+    ayahNumber,
+    arabicText: ayah.arabicText || '',
+    urduTranslation: ayah.urduTranslation || '',
+    englishTranslation: ayah.englishTranslation || '',
+    hasTafsir: canOpenTafsir,
+  });
+
+  const ayahIntro = `Ayah ${surah.id}:${ayahNumber} of ${getSurahUrduTitle(surah)} (Surah ${surah.surahName}) — read the Arabic text with Urdu tarjuma and English translation. ${
+    canOpenTafsir ? 'Full Urdu tafseer commentary is available for this ayah.' : ''
+  }`;
 
   const audioJsonLd = [
     audioUrls.arabic
@@ -181,7 +206,15 @@ export default async function AyahDetailPage({
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs.breadcrumb) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs.article) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs.webPage) }}
       />
       {audioJsonLd.length > 0 ? (
         <script
@@ -204,9 +237,11 @@ export default async function AyahDetailPage({
         <h1 className="font-display text-4xl text-[var(--color-heading)] sm:text-5xl">
           Ayah {surah.id}:{ayahNumber} • Surah {surah.surahName}
         </h1>
+        <p className="urdu-font mt-2 text-xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
+          {getSurahUrduTitle(surah)} — آیت {ayahNumber}
+        </p>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
-          Arabic text, Urdu and English translation, downloadable audio, and tafseer links
-          are available on this page.
+          {ayahIntro}
         </p>
       </section>
 

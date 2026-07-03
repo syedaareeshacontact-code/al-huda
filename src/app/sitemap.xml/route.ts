@@ -50,14 +50,24 @@ async function renderSitemapIndexXml() {
   const updatedAt = new Date().toISOString();
   const names = [...(await buildHadithSitemapNames()), ...buildQuranSitemapNames()];
 
-  const items = names
+  const extraSitemaps = [
+    `${origin}/local-sitemap.xml`,
+    `${origin}/islamic-tools-sitemap.xml`,
+    `${origin}/voice-sitemap.xml`,
+  ];
+
+  const chunkItems = names
     .map((name) => {
       return `<sitemap><loc>${origin}/sitemaps/${name}</loc><lastmod>${updatedAt}</lastmod></sitemap>`;
     })
     .join('');
 
+  const extraItems = extraSitemaps
+    .map((url) => `<sitemap><loc>${url}</loc><lastmod>${updatedAt}</lastmod></sitemap>`)
+    .join('');
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${items}</sitemapindex>`;
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${chunkItems}${extraItems}</sitemapindex>`;
 }
 
 export async function GET() {

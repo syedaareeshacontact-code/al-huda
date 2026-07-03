@@ -16,7 +16,9 @@ import {
 import { resolveSurahParam } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
 import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
-import { buildBreadcrumbJsonLd, buildPageMetadata, getSiteOrigin } from '@/lib/seo';
+import { buildPageMetadata } from '@/lib/seo';
+import { buildTafsirPageSchemas } from '@/lib/seo-schema';
+import { getSurahUrduTitle } from '@/lib/surah-seo-content';
 
 interface TafsirPageProps {
   params: Promise<{
@@ -26,9 +28,27 @@ interface TafsirPageProps {
 }
 
 export const revalidate = 86400;
-
-// Pages are generated on first request (ISR) to keep production builds fast.
 export const dynamicParams = true;
+
+/** Pre-render tafsir for popular surahs + Al-Fatiha */
+export async function generateStaticParams() {
+  const popularIds = [1, 2, 18, 36, 55, 67, 112];
+  const { getAllSurahs } = await import('@/lib/quran-index');
+  const { buildSurahSlug } = await import('@/lib/quran-routing');
+  const { getTafsirAyahNumbersBySurah } = await import('@/lib/tafsir-index');
+
+  const params: Array<{ surah: string; ayah: string }> = [];
+  for (const id of popularIds) {
+    const surah = getAllSurahs().find((s) => s.id === id);
+    if (!surah) continue;
+    const slug = buildSurahSlug(surah.id, surah.surahName);
+    const ayahs = getTafsirAyahNumbersBySurah(id);
+    for (const a of ayahs) {
+      params.push({ surah: slug, ayah: String(a) });
+    }
+  }
+  return params;
+}
 
 function parseAyahNumber(value: string) {
   const parsed = Number(value);
@@ -67,7 +87,7 @@ export async function generateMetadata({
   }
 
   const canonicalPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
-  const title = `Tafseer of Ayah ${surah.id}:${ayahNumber} (${surah.surahName}) – Urdu Tafseer, Arabic, Urdu & English Translation, Audio`;
+  const title = `Tafseer Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو تفسیر، Arabic & English`;
   const description = stripHtml(tafsir.textHtml).slice(0, 155);
 
   return buildPageMetadata({
@@ -126,26 +146,14 @@ export default async function TafsirDetailPage({
     ? buildTafsirPath(surah.id, surah.surahName, ayahNumber + 1)
     : null;
 
-  const breadcrumbs = buildBreadcrumbJsonLd([
-    { name: 'Home', item: '/' },
-    { name: surahBreadcrumbLabel, item: surahPath },
-    { name: `Ayah ${ayahNumber}`, item: ayahPath },
-    { name: 'Tafseer', item: canonicalPath },
-  ]);
+  const tafsirPlainText = stripHtml(tafsir.textHtml);
+  const schemas = buildTafsirPageSchemas({
+    surah,
+    ayahNumber,
+    tafsirText: tafsirPlainText,
+  });
 
-  const creativeWorkJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CreativeWork',
-    name: `Urdu Tafseer - Surah ${surah.id} Ayah ${ayahNumber}`,
-    inLanguage: ['ur', 'en', 'ar'],
-    isPartOf: {
-      '@type': 'CreativeWork',
-      name: `Surah ${surah.surahName}`,
-    },
-    url: `${getSiteOrigin()}${canonicalPath}`,
-    about: `Quran ayah ${surah.id}:${ayahNumber}`,
-    text: stripHtml(tafsir.textHtml).slice(0, 300),
-  };
+  const tafsirIntro = `Urdu tafseer of Ayah ${surah.id}:${ayahNumber} from ${getSurahUrduTitle(surah)} (Surah ${surah.surahName}). Read the complete commentary with Arabic ayah text, Urdu tarjuma, and English translation reference.`;
 
   const audioJsonLd = [
     audioUrls.arabic
@@ -172,11 +180,11 @@ export default async function TafsirDetailPage({
     <div className="pb-16 pt-10" data-slot="page-shell">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.article) }}
       />
       {audioJsonLd.length > 0 ? (
         <script
@@ -200,6 +208,12 @@ export default async function TafsirDetailPage({
         <h1 className="font-display text-4xl text-[var(--color-heading)] sm:text-5xl">
           Tafseer of Ayah {surah.id}:{ayahNumber} • Surah {surah.surahName}
         </h1>
+        <p className="urdu-font mt-2 text-xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
+          {getSurahUrduTitle(surah)} — تفسیر آیت {ayahNumber}
+        </p>
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[var(--color-muted-text)]">
+          {tafsirIntro}
+        </p>
       </section>
 
       <Card className="mb-6">

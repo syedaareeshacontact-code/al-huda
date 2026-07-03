@@ -106,6 +106,12 @@ export default async function CollectionPage({
 
         <CollectionHero book={book} chapterCount={chapters.length} />
 
+        <p className="max-w-3xl text-sm leading-relaxed text-[var(--color-muted-text)]">
+          {book.bookName} by {book.writerName} contains {book.hadiths_count.toLocaleString()} authenticated narrations
+          organised into {chapters.length} chapters. Read each hadith in Arabic with English and Urdu translations —
+          sourced from HadithAPI.com and cross-referenced with standard Islamic scholarship.
+        </p>
+
         <ChapterList collectionSlug={collection} chapters={chapters} />
       </div>
     </>
