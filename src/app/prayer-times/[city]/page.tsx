@@ -26,7 +26,7 @@ interface PageProps {
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  const topCities = ['lahore', 'karachi', 'islamabad'];
+  const topCities = ['lahore', 'karachi', 'islamabad', 'rawalpindi', 'multan', 'peshawar', 'faisalabad'];
   return topCities.map((city) => ({ city }));
 }
 

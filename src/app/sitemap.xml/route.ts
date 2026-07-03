@@ -17,7 +17,7 @@ function buildQuranSitemapNames() {
     Math.ceil(tafsirRefs.length / TAFSIR_SITEMAP_CHUNK_SIZE)
   );
 
-  const names: string[] = ['surah'];
+  const names: string[] = ['surah', 'tafsir-surah'];
 
   for (let index = 1; index <= ayahChunkCount; index += 1) {
     names.push(`ayah-${index}`);

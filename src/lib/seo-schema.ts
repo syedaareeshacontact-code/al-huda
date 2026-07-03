@@ -6,7 +6,7 @@ import {
   toAbsoluteUrl,
 } from '@/lib/seo';
 import type { SurahIndexEntry } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 
 export function buildSurahPageSchemas(
@@ -115,6 +115,60 @@ export function buildAyahPageSchemas(options: {
   };
 
   return { breadcrumb, article, webPage };
+}
+
+export function buildTafsirSurahPageSchemas(options: {
+  surah: SurahIndexEntry;
+  intro: string;
+  ayahNumbers: number[];
+}) {
+  const { surah, intro, ayahNumbers } = options;
+  const surahPath = buildSurahPath(surah.id, surah.surahName);
+  const tafsirSurahPath = buildTafsirSurahPath(surah.id, surah.surahName);
+
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Home', item: '/' },
+    { name: 'Tafseer Index', item: '/tafsir' },
+    { name: `Surah ${surah.surahName} Tafseer`, item: tafsirSurahPath },
+  ]);
+
+  const article = buildArticleJsonLd({
+    title: `Surah ${surah.surahName} — Complete Urdu Tafseer`,
+    description: intro,
+    url: tafsirSurahPath,
+    inLanguage: ['ur', 'ar', 'en'],
+    author: 'Read al Quran',
+  });
+
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Urdu Tafseer — Surah ${surah.surahName}`,
+    numberOfItems: ayahNumbers.length,
+    itemListElement: ayahNumbers.map((ayahNumber, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: `Tafseer Ayah ${surah.id}:${ayahNumber}`,
+      url: toAbsoluteUrl(buildTafsirPath(surah.id, surah.surahName, ayahNumber)),
+    })),
+  };
+
+  const webPage = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `Surah ${surah.surahName} Tafseer — Urdu Commentary`,
+    description: intro,
+    url: toAbsoluteUrl(tafsirSurahPath),
+    inLanguage: ['ur', 'ar', 'en'],
+    relatedLink: toAbsoluteUrl(surahPath),
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'Read al Quran',
+      url: toAbsoluteUrl('/'),
+    },
+  };
+
+  return { breadcrumb, article, itemList, webPage };
 }
 
 export function buildTafsirPageSchemas(options: {

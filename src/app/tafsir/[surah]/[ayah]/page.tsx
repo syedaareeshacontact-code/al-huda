@@ -14,7 +14,7 @@ import {
   stripHtml,
 } from '@/lib/quran-server';
 import { resolveSurahParam } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
@@ -30,24 +30,15 @@ interface TafsirPageProps {
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-/** Pre-render tafsir for popular surahs + Al-Fatiha */
+/** Pre-render all tafsir pages for Google indexing */
 export async function generateStaticParams() {
-  const popularIds = [1, 2, 18, 36, 55, 67, 112];
-  const { getAllSurahs } = await import('@/lib/quran-index');
+  const { getAllTafsirRefs } = await import('@/lib/tafsir-index');
   const { buildSurahSlug } = await import('@/lib/quran-routing');
-  const { getTafsirAyahNumbersBySurah } = await import('@/lib/tafsir-index');
 
-  const params: Array<{ surah: string; ayah: string }> = [];
-  for (const id of popularIds) {
-    const surah = getAllSurahs().find((s) => s.id === id);
-    if (!surah) continue;
-    const slug = buildSurahSlug(surah.id, surah.surahName);
-    const ayahs = getTafsirAyahNumbersBySurah(id);
-    for (const a of ayahs) {
-      params.push({ surah: slug, ayah: String(a) });
-    }
-  }
-  return params;
+  return getAllTafsirRefs().map((ref) => ({
+    surah: buildSurahSlug(ref.surahId, ref.surahName),
+    ayah: String(ref.ayahNumber),
+  }));
 }
 
 function parseAyahNumber(value: string) {
@@ -136,6 +127,7 @@ export default async function TafsirDetailPage({
 
   const safeTafsirHtml = sanitizeTafsirHtml(tafsir.textHtml);
   const surahPath = buildSurahPath(surah.id, surah.surahName);
+  const tafsirSurahPath = buildTafsirSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
   const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
   const canonicalPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
@@ -196,9 +188,10 @@ export default async function TafsirDetailPage({
       <BreadcrumbNav
         items={[
           { label: 'Home', href: '/' },
+          { label: 'Tafseer Index', href: '/tafsir' },
           { label: surahBreadcrumbLabel, href: surahPath },
+          { label: 'Urdu Tafseer', href: tafsirSurahPath },
           { label: `Ayah ${ayahNumber}`, href: ayahPath },
-          { label: 'Tafseer', href: canonicalPath },
         ]}
         includeSchema={false}
       />
@@ -314,6 +307,12 @@ export default async function TafsirDetailPage({
         >
           <ChevronLeft className="size-4" />
           Back to Ayah Page
+        </Link>
+        <Link
+          href={tafsirSurahPath}
+          className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
+        >
+          All {surah.surahName} Tafseer
         </Link>
         <Link
           href={surahPath}

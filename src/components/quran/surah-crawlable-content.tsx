@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AyahContentEntry } from '@/lib/quran-server';
 import type { SurahIndexEntry } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 import {
   getSurahSeoIntro,
@@ -62,12 +62,19 @@ export default function SurahCrawlableContent({ surah, ayahs }: SurahCrawlableCo
           </div>
         </nav>
 
-        {/* Tafsir links index */}
+        {/* Tafsir hub + ayah links */}
         {ayahs.some((a) => hasTafsirForAyah(surah.id, a.ayahNumber)) && (
           <nav aria-label="Tafseer links" className="mt-5">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-              Urdu Tafseer — Ayah by Ayah
+              Urdu Tafseer — Surah {surah.surahName}
             </h2>
+            <Link
+              href={buildTafsirSurahPath(surah.id, surah.surahName)}
+              className="mb-3 inline-flex items-center gap-2 rounded-lg border border-[var(--color-accent-soft)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)] transition hover:brightness-105"
+            >
+              <FileText className="h-4 w-4" />
+              Complete Surah {surah.surahName} Tafseer (Urdu)
+            </Link>
             <div className="flex flex-wrap gap-2">
               {ayahs
                 .filter((a) => hasTafsirForAyah(surah.id, a.ayahNumber))

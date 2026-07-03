@@ -40,12 +40,29 @@ export function getSurahUrduTitle(surah: SurahIndexEntry): string {
 }
 
 export function getSurahMetaTitle(surah: SurahIndexEntry): string {
-  return `Surah ${surah.surahName} (${surah.surahNameArabic}) — Urdu Tarjuma, English Translation & Tafseer`;
+  return `سورۃ ${surah.surahNameArabic} — Surah ${surah.surahName} Urdu Tarjuma, Tafseer & English Translation`;
 }
 
 export function getSurahMetaDescription(surah: SurahIndexEntry): string {
   const intro = getSurahSeoIntro(surah).slice(0, 120);
   return `${intro}… Read all ${surah.totalAyah} ayahs with Arabic text, Urdu tarjuma, English translation, audio tilawat, and ayah-wise Urdu tafseer.`;
+}
+
+export function getTafsirSurahIntro(surah: SurahIndexEntry, tafsirAyahCount: number): string {
+  if (SURAH_UNIQUE_INTROS[surah.id]) {
+    return `${SURAH_UNIQUE_INTROS[surah.id]} Explore ayah-by-ayah Urdu tafseer commentary for all ${tafsirAyahCount} ayahs of Surah ${surah.surahName}.`;
+  }
+
+  const place = surah.revelationPlace === 'Mecca' ? 'Meccan' : 'Medinan';
+  return `Complete Urdu tafseer of Surah ${surah.surahName} (${surah.surahNameTranslation}) — a ${place} chapter with ${surah.totalAyah} ayahs. Read detailed Islamic commentary for ${tafsirAyahCount} ayahs with Arabic text, Urdu tarjuma, and English translation reference on Read al Quran.`;
+}
+
+export function getTafsirSurahMetaTitle(surah: SurahIndexEntry): string {
+  return `Surah ${surah.surahName} Tafseer — ${getSurahUrduTitle(surah)} اردو تفسیر | Ayah-by-Ayah Commentary`;
+}
+
+export function getTafsirSurahMetaDescription(surah: SurahIndexEntry, tafsirAyahCount: number): string {
+  return getTafsirSurahIntro(surah, tafsirAyahCount).slice(0, 155);
 }
 
 export function getRelatedLinks(surah: SurahIndexEntry): Array<{ label: string; href: string }> {

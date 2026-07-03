@@ -1,5 +1,5 @@
 import { getAllSurahs } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { getAllCollections, getChaptersByCollection } from '@/lib/hadith/collections.service';
 import {
   getAllHadithRefs,
@@ -156,6 +156,24 @@ export async function GET(
         },
       });
     }
+  }
+
+  if (normalizedName === 'tafsir-surah') {
+    const refs = getAllTafsirRefs();
+    const surahIds = [...new Set(refs.map((r) => r.surahId))];
+    const tafsirSurahUrls = [
+      `${origin}/tafsir`,
+      ...surahs
+        .filter((s) => surahIds.includes(s.id))
+        .map((surah) => `${origin}${buildTafsirSurahPath(surah.id, surah.surahName)}`),
+    ];
+
+    return new Response(renderUrlSet(tafsirSurahUrls, 'weekly', '0.75'), {
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    });
   }
 
   const hadithChunk = getHadithChunkNumber(normalizedName);

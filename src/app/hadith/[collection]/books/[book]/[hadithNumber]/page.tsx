@@ -6,11 +6,17 @@ import BreadcrumbNav from '@/components/hadith/BreadcrumbNav';
 import HadithActions from '@/components/hadith/HadithActions';
 import HadithGrade from '@/components/hadith/HadithGrade';
 import HadithNavigation from '@/components/hadith/HadithNavigation';
+import SuggestedHadiths from '@/components/hadith/SuggestedHadiths';
 import { HadithDetailSchema, HadithBreadcrumbsSchema } from '@/components/hadith/HadithSchema';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getCollectionBySlug } from '@/lib/hadith/collections.service';
-import { getHadithByNumber } from '@/lib/hadith/hadith.service';
+import { getHadithByNumber, getSuggestedHadiths } from '@/lib/hadith/hadith.service';
+import {
+  getHadithMetaDescription,
+  getHadithMetaTitle,
+  getHadithSeoIntro,
+} from '@/lib/hadith-seo-content';
 import {
   buildHadithCollectionPath,
   buildHadithDetailPath,
@@ -30,9 +36,9 @@ export async function generateMetadata({
   const hadith = await getHadithByNumber(collection, hadithNumber);
   if (!hadith) return {};
 
-  const description = hadith.hadithEnglish.slice(0, 155).trim();
+  const description = getHadithMetaDescription(hadith);
   const path = buildHadithDetailPath(collection, hadithNumber);
-  const title = `Hadith ${hadithNumber} – ${hadith.book.bookName}`;
+  const title = getHadithMetaTitle(hadith);
 
   return buildPageMetadata({
     title,
@@ -69,9 +75,17 @@ export default async function HadithDetailPage({
 
   if (!hadith || !bookData) notFound();
 
+  const suggestedHadiths = await getSuggestedHadiths(
+    collection,
+    hadithNumber,
+    hadith.chapter.chapterNumber,
+    4
+  );
+
   const detailPath = buildHadithDetailPath(collection, hadithNumber);
   const collectionPath = buildHadithCollectionPath(collection);
-  const description = hadith.hadithEnglish.slice(0, 155).trim();
+  const description = getHadithMetaDescription(hadith);
+  const intro = getHadithSeoIntro(hadith);
 
   const navBreadcrumbs = [
     { label: 'Home', href: '/' },
@@ -120,8 +134,16 @@ export default async function HadithDetailPage({
               <h1 className="font-display text-3xl font-bold text-[var(--color-heading)]">
                 Hadith {hadithNumber}
               </h1>
+              {hadith.chapter.chapterUrdu ? (
+                <p dir="rtl" lang="ur" className="font-urdu-nastaliq text-lg text-[var(--color-accent-soft)]">
+                  {hadith.chapter.chapterUrdu}
+                </p>
+              ) : null}
               <p className="text-sm text-[var(--color-muted-text)]">
                 {hadith.chapter.chapterEnglish}
+              </p>
+              <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-muted-text)]">
+                {intro}
               </p>
             </div>
             <HadithGrade grade={hadith.status} />
@@ -188,6 +210,8 @@ export default async function HadithDetailPage({
           currentNumber={parseInt(hadithNumber, 10)}
           totalHadiths={bookData.hadiths_count}
         />
+
+        <SuggestedHadiths hadiths={suggestedHadiths} bookSlug={collection} />
       </article>
     </>
   );

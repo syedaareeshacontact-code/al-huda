@@ -66,6 +66,7 @@ export default function robots(): MetadataRoute.Robots {
       `${baseUrl}/hadith/sitemap.xml`,
       `${baseUrl}/sitemaps/hadith-collections`,
       `${baseUrl}/sitemaps/surah`,
+      `${baseUrl}/sitemaps/tafsir-surah`,
       `${baseUrl}/local-sitemap.xml`,
       `${baseUrl}/voice-sitemap.xml`,
       `${baseUrl}/islamic-tools-sitemap.xml`,

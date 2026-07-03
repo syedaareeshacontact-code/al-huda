@@ -1,47 +1,45 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+
 import { buildCityPageSchema, buildPageMetadata } from '@/lib/seo';
+import { getCityBySlug, getAllCitySlugs } from '@/lib/islamic-cities';
 import { CITY_KEYWORDS, GENERATED_CITY_KEYWORDS } from '@/lib/seo-keywords';
 
-type CityType = 'karachi' | 'islamabad' | 'lahore' | 'rawalpindi' | 'multan';
-
 interface CityPageProps {
-  params: Promise<{
-    city: CityType;
-  }>;
+  params: Promise<{ city: string }>;
 }
 
-const cityInfo: Record<CityType, { name: string; fullName: string; population: string }> = {
-  karachi: { name: 'Karachi', fullName: 'Karachi, Sindh', population: '16+ million' },
-  islamabad: { name: 'Islamabad', fullName: 'Islamabad, Federal Territory', population: '2+ million' },
-  lahore: { name: 'Lahore', fullName: 'Lahore, Punjab', population: '12+ million' },
-  rawalpindi: { name: 'Rawalpindi', fullName: 'Rawalpindi, Punjab', population: '2+ million' },
-  multan: { name: 'Multan', fullName: 'Multan, Punjab', population: '1.8+ million' },
-};
-
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
-  const { city } = await params;
-  const cityData = cityInfo[city];
+  const { city: slug } = await params;
+  const city = getCityBySlug(slug);
+  if (!city) return {};
+
   const keywords = Array.from(
     new Set([
-      ...(CITY_KEYWORDS[city as CityType] || []),
-      ...GENERATED_CITY_KEYWORDS.filter((keyword) => keyword.includes(city)),
+      ...(CITY_KEYWORDS[slug as keyof typeof CITY_KEYWORDS] || []),
+      ...GENERATED_CITY_KEYWORDS.filter((keyword) => keyword.includes(slug)),
+      `read quran ${city.name.toLowerCase()}`,
+      `quran online ${city.nameUrdu}`,
+      `نماز کے اوقات ${city.nameUrdu}`,
     ])
   );
 
   return buildPageMetadata({
-    title: `Read Quran Online in ${cityData.name}, Pakistan | Read al Quran`,
-    description: `Read al Quran app available in ${cityData.name}. Free Quran reader with Urdu translation, tafseer, audio, and offline access for ${cityData.fullName}.`,
-    path: `/cities/${city}`,
+    title: `Read Quran Online in ${city.name} — ${city.nameUrdu} | Read al Quran Pakistan`,
+    description: `Read al Quran available in ${city.name} (${city.nameUrdu}). Free Quran with Urdu tarjuma, ayah-wise tafseer, audio tilawat, and prayer times for ${city.province}, Pakistan. ${city.localContext.slice(0, 80)}…`,
+    path: `/cities/${slug}`,
     keywords,
     imageUrl: '/og?kind=surah-index',
   });
 }
 
 export default async function CityPage({ params }: CityPageProps) {
-  const { city } = await params;
-  const cityData = cityInfo[city];
-  const citySchema = buildCityPageSchema(cityData.name, 'Pakistan', city);
+  const { city: slug } = await params;
+  const city = getCityBySlug(slug);
+  if (!city) notFound();
+
+  const citySchema = buildCityPageSchema(city.name, city.country, slug);
 
   const features = [
     { icon: '📖', title: 'Free', description: 'Completely free Quran app' },
@@ -56,11 +54,17 @@ export default async function CityPage({ params }: CityPageProps) {
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-accent-soft)]">
             Local Reading · Pakistan
           </p>
-          <h1 className="mb-4 font-display text-4xl font-bold text-[var(--color-heading)] sm:text-5xl">
-            Read al Quran in {cityData.name}
+          <h1 className="mb-2 font-display text-4xl font-bold text-[var(--color-heading)] sm:text-5xl">
+            Read al Quran in {city.name}
           </h1>
-          <p className="mb-10 text-lg text-[var(--color-muted-text)] sm:text-xl">
-            Free Quran reader for {cityData.population} in {cityData.fullName}
+          <p className="urdu-font mb-4 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
+            {city.nameUrdu} میں قرآن آن لائن پڑھیں
+          </p>
+          <p className="mb-4 text-lg text-[var(--color-muted-text)] sm:text-xl">
+            Free Quran reader for {city.population} in {city.name}, {city.province}
+          </p>
+          <p className="mb-10 max-w-2xl text-sm leading-relaxed text-[var(--color-muted-text)]">
+            {city.localContext}
           </p>
 
           <div className="mb-10 grid gap-4 md:grid-cols-3">
@@ -90,6 +94,12 @@ export default async function CityPage({ params }: CityPageProps) {
             >
               Browse Surahs
             </Link>
+            <Link
+              href={`/prayer-times/${city.slug}`}
+              className="inline-flex items-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-3 font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
+            >
+              {city.name} Prayer Times
+            </Link>
           </div>
         </div>
       </div>
@@ -98,6 +108,6 @@ export default async function CityPage({ params }: CityPageProps) {
   );
 }
 
-export function generateStaticParams(): Array<{ city: CityType }> {
-  return [{ city: 'karachi' }, { city: 'islamabad' }, { city: 'lahore' }, { city: 'rawalpindi' }, { city: 'multan' }];
+export function generateStaticParams() {
+  return getAllCitySlugs().map((city) => ({ city }));
 }

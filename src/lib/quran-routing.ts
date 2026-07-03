@@ -39,8 +39,12 @@ export function buildAyahPath(surahId: number, surahName: string, ayahNumber: nu
   return `${buildSurahPath(surahId, surahName)}/ayah/${ayahNumber}`;
 }
 
+export function buildTafsirSurahPath(surahId: number, surahName: string): string {
+  return `/tafsir/${buildSurahSlug(surahId, surahName)}`;
+}
+
 export function buildTafsirPath(surahId: number, surahName: string, ayahNumber: number): string {
-  return `/tafsir/${buildSurahSlug(surahId, surahName)}/${ayahNumber}`;
+  return `${buildTafsirSurahPath(surahId, surahName)}/${ayahNumber}`;
 }
 
 export function buildUrduTranslationAudioUrl(surahId: number): string {

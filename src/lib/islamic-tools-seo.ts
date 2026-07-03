@@ -77,10 +77,14 @@ export const MOSQUE_KEYWORDS = [
 
 export function buildPrayerTimesMetadata(city?: string, cityUrdu?: string): Metadata {
   if (city) {
+    const slug = city.toLowerCase().replace(/\s+/g, '-');
+    const urduTitle = cityUrdu ? `نماز کے اوقات ${cityUrdu}` : undefined;
     return buildPageMetadata({
-      title: `${city} Namaz Timings Today — Prayer Times, Qibla & Hijri Date`,
-      description: `Accurate ${city} namaz timings for Fajr, Dhuhr, Asr, Maghrib & Isha. Qibla direction, Hijri calendar, and monthly prayer timetable for ${city}, Pakistan.`,
-      path: `/prayer-times/${city.toLowerCase().replace(/\s+/g, '-')}`,
+      title: urduTitle
+        ? `${urduTitle} — ${city} Namaz Timings Today | Prayer Times Pakistan`
+        : `${city} Namaz Timings Today — Prayer Times, Qibla & Hijri Date`,
+      description: `Accurate ${city} namaz timings for Fajr, Dhuhr, Asr, Maghrib & Isha. Qibla direction, Hijri calendar, and monthly prayer timetable for ${city}, Pakistan.${cityUrdu ? ` ${urduTitle} آج کے لیے.` : ''}`,
+      path: `/prayer-times/${slug}`,
       keywords: [
         `namaz timing ${city.toLowerCase()}`,
         `${city.toLowerCase()} prayer times`,
