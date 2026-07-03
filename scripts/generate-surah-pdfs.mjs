@@ -7,7 +7,7 @@
  *        node scripts/generate-surah-pdfs.mjs --surah=1   (single surah)
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import PDFDocument from 'pdfkit';
 import { prepareRtlTextForPdf } from './rtl-text.mjs';
@@ -236,14 +236,6 @@ async function main() {
         process.stdout.write(`Generating ${fileName} (${surah.surahName})...\n`);
         const buffer = await generatePdf({ surah, ayahs, variant, fonts });
         await writeFile(outPath, buffer);
-        manifest.push({
-          surahId: surah.id,
-          surahName: surah.surahName,
-          variant,
-          fileName,
-          sizeBytes: buffer.length,
-          path: `/surah-pdfs/${fileName}`,
-        });
         process.stdout.write(`  ✓ ${fileName} (${(buffer.length / 1024).toFixed(1)} KB)\n`);
       } catch (error) {
         process.stderr.write(
@@ -253,12 +245,34 @@ async function main() {
     }
   }
 
+  // Scan all existing PDF files to build a complete manifest.json
+  const finalManifest = [];
+  for (const surah of surahIndex) {
+    for (const variant of ['arabic', 'arabic-urdu']) {
+      const fileName = buildFileName(surah.id, variant);
+      const filePath = join(OUTPUT_DIR, fileName);
+      try {
+        const stats = await stat(filePath);
+        finalManifest.push({
+          surahId: surah.id,
+          surahName: surah.surahName,
+          variant,
+          fileName,
+          sizeBytes: stats.size,
+          path: `/surah-pdfs/${fileName}`,
+        });
+      } catch {
+        // File doesn't exist, skip
+      }
+    }
+  }
+
   await writeFile(
     join(OUTPUT_DIR, 'manifest.json'),
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), files: manifest }, null, 2)}\n`
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), files: finalManifest }, null, 2)}\n`
   );
 
-  process.stdout.write(`\nDone! ${manifest.length} PDFs in ${OUTPUT_DIR}\n`);
+  process.stdout.write(`\nDone! ${finalManifest.length} PDFs in ${OUTPUT_DIR}\n`);
 }
 
 main().catch((error) => {
