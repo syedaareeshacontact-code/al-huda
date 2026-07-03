@@ -58,7 +58,7 @@ async function renderSitemapIndexXml() {
 
   const chunkItems = names
     .map((name) => {
-      return `<sitemap><loc>${origin}/sitemaps/${name}</loc><lastmod>${updatedAt}</lastmod></sitemap>`;
+      return `<sitemap><loc>${origin}/sitemaps/${name}.xml</loc><lastmod>${updatedAt}</lastmod></sitemap>`;
     })
     .join('');
 

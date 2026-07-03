@@ -15,9 +15,9 @@ export async function GET() {
     }
 
     const items = [
-      `<sitemap><loc>${origin}/sitemaps/hadith-collections</loc><lastmod>${updatedAt}</lastmod></sitemap>`,
+      `<sitemap><loc>${origin}/sitemaps/hadith-collections.xml</loc><lastmod>${updatedAt}</lastmod></sitemap>`,
       ...Array.from({ length: chunkCount }, (_, index) => {
-        return `<sitemap><loc>${origin}/sitemaps/hadith-${index + 1}</loc><lastmod>${updatedAt}</lastmod></sitemap>`;
+        return `<sitemap><loc>${origin}/sitemaps/hadith-${index + 1}.xml</loc><lastmod>${updatedAt}</lastmod></sitemap>`;
       }),
     ].join('');
 
@@ -37,7 +37,7 @@ export async function GET() {
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<sitemap><loc>${origin}/sitemaps/hadith-collections</loc><lastmod>${updatedAt}</lastmod></sitemap>
+<sitemap><loc>${origin}/sitemaps/hadith-collections.xml</loc><lastmod>${updatedAt}</lastmod></sitemap>
 </sitemapindex>`,
       {
         headers: {

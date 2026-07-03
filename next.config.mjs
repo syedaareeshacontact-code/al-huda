@@ -44,11 +44,6 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/sitemaps/:name.xml',
-        destination: '/sitemaps/:name',
-        permanent: true,
-      },
-      {
         source: '/hadith/tirmidhi',
         destination: '/hadith/al-tirmidhi',
         permanent: true,

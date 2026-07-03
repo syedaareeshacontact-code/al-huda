@@ -112,9 +112,10 @@ export async function generateSurahPdfBuffer(options: {
   });
   doc.moveDown(0.5);
 
-  doc.font('Arabic').fontSize(28).fillColor('#1a1a1a').text(prepareRtlTextForPdf(surah.surahNameArabic), {
+  doc.font('Arabic').fontSize(28).fillColor('#1a1a1a').text(surah.surahNameArabic, {
     align: 'center',
     width: pageWidth,
+    features: ['rtla', 'rlig', 'calt', 'liga'],
   });
   doc.moveDown(0.3);
 
@@ -137,9 +138,10 @@ export async function generateSurahPdfBuffer(options: {
   doc.moveDown(1);
 
   if (shouldShowBismillah(surah.id)) {
-    doc.font('Arabic').fontSize(18).fillColor('#1a1a1a').text(prepareRtlTextForPdf(getBismillahText()), {
+    doc.font('Arabic').fontSize(18).fillColor('#1a1a1a').text(getBismillahText(), {
       align: 'center',
       width: pageWidth,
+      features: ['rtla', 'rlig', 'calt', 'liga'],
     });
     doc.moveDown(1.2);
   }
@@ -162,19 +164,21 @@ export async function generateSurahPdfBuffer(options: {
     doc.moveDown(0.3);
 
     if (arabicText) {
-      doc.font('Arabic').fontSize(16).fillColor('#1a1a1a').text(prepareRtlTextForPdf(arabicText), {
-        align: 'left',
+      doc.font('Arabic').fontSize(16).fillColor('#1a1a1a').text(arabicText, {
+        align: 'right',
         width: pageWidth,
         lineGap: 6,
+        features: ['rtla', 'rlig', 'calt', 'liga'],
       });
       doc.moveDown(0.5);
     }
 
     if (includeUrdu && urduText) {
-      doc.font('Urdu').fontSize(13).fillColor('#333333').text(prepareRtlTextForPdf(urduText), {
-        align: 'left',
+      doc.font('Urdu').fontSize(13).fillColor('#333333').text(urduText, {
+        align: 'right',
         width: pageWidth,
         lineGap: 4,
+        features: ['rtla', 'rlig', 'calt', 'liga'],
       });
       doc.moveDown(0.8);
     } else {
