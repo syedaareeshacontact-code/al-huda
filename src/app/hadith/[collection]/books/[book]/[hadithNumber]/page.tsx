@@ -66,7 +66,9 @@ export default async function HadithDetailPage({
 }: {
   params: Promise<{ collection: string; book: string; hadithNumber: string }>;
 }) {
-  const { collection, hadithNumber } = await params;
+  const { collection, book, hadithNumber } = await params;
+
+  if (book !== collection) notFound();
 
   const [hadith, bookData] = await Promise.all([
     getHadithByNumber(collection, hadithNumber),

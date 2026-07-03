@@ -100,6 +100,10 @@ export async function GET(request: Request) {
     {
       width: 1200,
       height: 630,
+      headers: {
+        'x-robots-tag': 'noindex',
+        'cache-control': 'public, max-age=31536000, immutable',
+      },
     }
   );
 }

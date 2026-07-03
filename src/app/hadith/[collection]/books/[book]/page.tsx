@@ -52,6 +52,8 @@ export async function generateMetadata({
     title,
     description,
     path,
+    index: currentPage === 1,
+    follow: true,
     ogType: 'article',
     keywords: buildHadithCollectionKeywords(bookData.bookName, bookData.writerName),
     imageUrl: buildHadithOgImagePath({ variant: 'collection', bookName: bookData.bookName }),
@@ -65,7 +67,8 @@ export default async function BookPage({
   params: Promise<{ collection: string; book: string }>;
   searchParams: Promise<{ page?: string; chapter?: string }>;
 }) {
-  const { collection } = await params;
+  const { collection, book } = await params;
+  if (book !== collection) notFound();
   const { page = '1', chapter } = await searchParams;
 
   const currentPage = Math.max(1, parseInt(page, 10));

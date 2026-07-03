@@ -39,6 +39,7 @@ interface BuildMetadataOptions {
   description: string;
   path: string;
   index?: boolean;
+  follow?: boolean;
   ogType?: 'website' | 'article';
   imageUrl?: string;
   keywords?: string[];
@@ -53,6 +54,7 @@ export function buildPageMetadata(options: BuildMetadataOptions): Metadata {
     description,
     path,
     index = true,
+    follow = true,
     ogType = 'website',
     imageUrl = DEFAULT_OG_IMAGE,
     keywords,
@@ -73,11 +75,11 @@ export function buildPageMetadata(options: BuildMetadataOptions): Metadata {
     },
     robots: {
       index,
-      follow: index,
+      follow,
       nocache: !index,
       googleBot: {
         index,
-        follow: index,
+        follow,
         'max-image-preview': 'large',
         'max-snippet': -1,
         'max-video-preview': -1,

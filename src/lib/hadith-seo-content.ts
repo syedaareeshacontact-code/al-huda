@@ -6,13 +6,13 @@ const BOOK_INTROS: Record<string, string> = {
     'Sahih al-Bukhari, compiled by Imam Muhammad al-Bukhari (d. 870 CE), is regarded as the most authentic hadith collection in Islam with over 7,000 narrations rigorously verified.',
   'sahih-muslim':
     'Sahih Muslim by Imam Muslim ibn al-Hajjaj is the second most authentic hadith book, known for its precise categorisation and scholarly methodology alongside Sahih Bukhari.',
-  'tirmidhi':
+  'al-tirmidhi':
     'Sunan al-Tirmidhi by Imam al-Tirmidhi includes hadith grading (Sahih, Hasan, Daif) for each narration, making it invaluable for understanding hadith authenticity.',
-  'abudawud':
+  'abu-dawood':
     'Sunan Abu Dawud by Imam Abu Dawud focuses on legal (fiqh) hadiths and is one of the six canonical hadith collections (Kutub al-Sittah).',
-  'ibn-majah':
+  'ibn-e-majah':
     'Sunan Ibn Majah by Imam Ibn Majah completes the six canonical collections, with a significant portion dedicated to legal and devotional narrations.',
-  'nasai':
+  'sunan-nasai':
     'Sunan an-Nasa\'i by Imam an-Nasa\'i is distinguished for its strict criteria in evaluating narrator reliability among the Kutub al-Sittah.',
   mishkat:
     'Mishkat al-Masabih is a comprehensive hadith collection that gathers authentic narrations from the six canonical books and other sources for easy reference.',
