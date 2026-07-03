@@ -30,22 +30,19 @@ interface AyahPageProps {
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-/** Pre-render popular surahs + Al-Fatiha for Google indexing */
+/** Pre-render Al-Fatiha ayahs at build; popular surahs via ISR */
 export async function generateStaticParams() {
-  const popularIds = [1, 2, 18, 36, 55, 67, 112, 113, 114];
   const { getAllSurahs } = await import('@/lib/quran-index');
   const { buildSurahSlug } = await import('@/lib/quran-routing');
 
-  const params: Array<{ surah: string; ayah: string }> = [];
-  for (const id of popularIds) {
-    const surah = getAllSurahs().find((s) => s.id === id);
-    if (!surah) continue;
-    const slug = buildSurahSlug(surah.id, surah.surahName);
-    for (let a = 1; a <= surah.totalAyah; a++) {
-      params.push({ surah: slug, ayah: String(a) });
-    }
-  }
-  return params;
+  const surah = getAllSurahs().find((s) => s.id === 1);
+  if (!surah) return [];
+
+  const slug = buildSurahSlug(surah.id, surah.surahName);
+  return Array.from({ length: surah.totalAyah }, (_, i) => ({
+    surah: slug,
+    ayah: String(i + 1),
+  }));
 }
 
 function parseAyahNumber(value: string) {

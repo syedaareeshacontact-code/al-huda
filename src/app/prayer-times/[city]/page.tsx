@@ -25,9 +25,10 @@ interface PageProps {
 
 export const dynamicParams = true;
 
+import { POPULAR_CITY_SLUGS } from '@/lib/ssg-config';
+
 export async function generateStaticParams() {
-  const topCities = ['lahore', 'karachi', 'islamabad', 'rawalpindi', 'multan', 'peshawar', 'faisalabad'];
-  return topCities.map((city) => ({ city }));
+  return POPULAR_CITY_SLUGS.map((city) => ({ city }));
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -43,10 +44,18 @@ export default async function CityPrayerTimesPage({ params }: PageProps) {
   if (!city) notFound();
 
   const now = new Date();
-  const [prayerData, qiblaData] = await Promise.all([
-    getPrayerTimesByCity(city.name, city.country),
-    getQiblaDirection(city.latitude, city.longitude),
-  ]);
+
+  let prayerData: Awaited<ReturnType<typeof getPrayerTimesByCity>>;
+  let qiblaData: Awaited<ReturnType<typeof getQiblaDirection>>;
+
+  try {
+    [prayerData, qiblaData] = await Promise.all([
+      getPrayerTimesByCity(city.name, city.country),
+      getQiblaDirection(city.latitude, city.longitude),
+    ]);
+  } catch {
+    notFound();
+  }
 
   let monthlyData: Awaited<ReturnType<typeof getMonthlyPrayerCalendar>> = [];
   try {

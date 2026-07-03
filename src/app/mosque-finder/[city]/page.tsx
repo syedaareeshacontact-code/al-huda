@@ -16,9 +16,10 @@ interface PageProps {
 
 export const dynamicParams = true;
 
+import { POPULAR_CITY_SLUGS } from '@/lib/ssg-config';
+
 export async function generateStaticParams() {
-  const topCities = ['lahore', 'karachi', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'peshawar'];
-  return topCities.map((city) => ({ city }));
+  return POPULAR_CITY_SLUGS.map((city) => ({ city }));
 }
 
 export async function generateMetadata({ params }: PageProps) {

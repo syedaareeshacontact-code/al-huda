@@ -8,9 +8,9 @@
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import PDFDocument from 'pdfkit';
+import { prepareRtlTextForPdf } from './rtl-text.mjs';
 
 const ROOT = process.cwd();
 const OUTPUT_DIR = resolve(ROOT, 'public/surah-pdfs');
@@ -114,7 +114,7 @@ async function generatePdf({ surah, ayahs, variant, fonts }) {
   });
   doc.moveDown(0.5);
 
-  doc.font('Arabic').fontSize(28).fillColor('#1a1a1a').text(surah.surahNameArabic, {
+  doc.font('Arabic').fontSize(28).fillColor('#1a1a1a').text(prepareRtlTextForPdf(surah.surahNameArabic), {
     align: 'center',
     width: pageWidth,
   });
@@ -135,7 +135,7 @@ async function generatePdf({ surah, ayahs, variant, fonts }) {
   doc.moveDown(1);
 
   if (shouldShowBismillah(surah.id)) {
-    doc.font('Arabic').fontSize(18).fillColor('#1a1a1a').text(getBismillah(), {
+    doc.font('Arabic').fontSize(18).fillColor('#1a1a1a').text(prepareRtlTextForPdf(getBismillah()), {
       align: 'center',
       width: pageWidth,
     });
@@ -153,8 +153,8 @@ async function generatePdf({ surah, ayahs, variant, fonts }) {
     doc.moveDown(0.3);
 
     if (ayah.arabicText) {
-      doc.font('Arabic').fontSize(16).fillColor('#1a1a1a').text(ayah.arabicText, {
-        align: 'right',
+      doc.font('Arabic').fontSize(16).fillColor('#1a1a1a').text(prepareRtlTextForPdf(ayah.arabicText), {
+        align: 'left',
         width: pageWidth,
         lineGap: 6,
       });
@@ -162,8 +162,8 @@ async function generatePdf({ surah, ayahs, variant, fonts }) {
     }
 
     if (includeUrdu && ayah.urduTranslation) {
-      doc.font('Urdu').fontSize(13).fillColor('#333333').text(ayah.urduTranslation, {
-        align: 'right',
+      doc.font('Urdu').fontSize(13).fillColor('#333333').text(prepareRtlTextForPdf(ayah.urduTranslation), {
+        align: 'left',
         width: pageWidth,
         lineGap: 4,
       });

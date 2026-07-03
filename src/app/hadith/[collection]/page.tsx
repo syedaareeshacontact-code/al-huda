@@ -23,12 +23,16 @@ import {
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const collections = await getAllCollections();
-  if (collections.length === 0) {
+  try {
+    const collections = await getAllCollections();
+    if (collections.length === 0) {
+      return [];
+    }
+    return collections.map((c) => ({ collection: c.bookSlug }));
+  } catch (error) {
+    console.warn('[hadith] generateStaticParams skipped — API unavailable:', error);
     return [];
   }
-
-  return collections.map((c) => ({ collection: c.bookSlug }));
 }
 
 export const dynamicParams = true;

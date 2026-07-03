@@ -16,8 +16,13 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  const categories = await getDuaCategories();
-  return categories.map((c) => ({ category: c.id }));
+  try {
+    const categories = await getDuaCategories();
+    return categories.map((c) => ({ category: c.id }));
+  } catch (error) {
+    console.warn('[duas] generateStaticParams skipped — API unavailable:', error);
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: PageProps) {

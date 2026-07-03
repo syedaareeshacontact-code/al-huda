@@ -14,6 +14,7 @@ import {
   shouldShowBismillah,
   type SurahPdfVariant,
 } from '@/lib/surah-download';
+import { prepareRtlTextForPdf } from '@/lib/rtl-text';
 
 const API_BASE = 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1';
 
@@ -111,7 +112,7 @@ export async function generateSurahPdfBuffer(options: {
   });
   doc.moveDown(0.5);
 
-  doc.font('Arabic').fontSize(28).fillColor('#1a1a1a').text(surah.surahNameArabic, {
+  doc.font('Arabic').fontSize(28).fillColor('#1a1a1a').text(prepareRtlTextForPdf(surah.surahNameArabic), {
     align: 'center',
     width: pageWidth,
   });
@@ -136,7 +137,7 @@ export async function generateSurahPdfBuffer(options: {
   doc.moveDown(1);
 
   if (shouldShowBismillah(surah.id)) {
-    doc.font('Arabic').fontSize(18).fillColor('#1a1a1a').text(getBismillahText(), {
+    doc.font('Arabic').fontSize(18).fillColor('#1a1a1a').text(prepareRtlTextForPdf(getBismillahText()), {
       align: 'center',
       width: pageWidth,
     });
@@ -161,8 +162,8 @@ export async function generateSurahPdfBuffer(options: {
     doc.moveDown(0.3);
 
     if (arabicText) {
-      doc.font('Arabic').fontSize(16).fillColor('#1a1a1a').text(arabicText, {
-        align: 'right',
+      doc.font('Arabic').fontSize(16).fillColor('#1a1a1a').text(prepareRtlTextForPdf(arabicText), {
+        align: 'left',
         width: pageWidth,
         lineGap: 6,
       });
@@ -170,8 +171,8 @@ export async function generateSurahPdfBuffer(options: {
     }
 
     if (includeUrdu && urduText) {
-      doc.font('Urdu').fontSize(13).fillColor('#333333').text(urduText, {
-        align: 'right',
+      doc.font('Urdu').fontSize(13).fillColor('#333333').text(prepareRtlTextForPdf(urduText), {
+        align: 'left',
         width: pageWidth,
         lineGap: 4,
       });
