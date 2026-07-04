@@ -38,6 +38,7 @@ export default function QuranAudioBottomBar({
 }: QuranAudioBottomBarProps) {
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastCommittedTimeRef = useRef(0);
 
   const {
     pageNo,
@@ -118,6 +119,7 @@ export default function QuranAudioBottomBar({
 
     audio.src = audioSrc;
     audio.load();
+    lastCommittedTimeRef.current = 0;
     setCurrentTime(0);
     setDuration(0);
 
@@ -145,7 +147,15 @@ export default function QuranAudioBottomBar({
       setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
     };
     const onTime = () => {
-      setCurrentTime(audio.currentTime || 0);
+      const nextTime = audio.currentTime || 0;
+      if (
+        Math.abs(nextTime - lastCommittedTimeRef.current) >= 0.45 ||
+        audio.paused ||
+        audio.ended
+      ) {
+        lastCommittedTimeRef.current = nextTime;
+        setCurrentTime(nextTime);
+      }
     };
     const onEnd = () => {
       handleSetPlaying(false);
@@ -295,6 +305,7 @@ export default function QuranAudioBottomBar({
                   return;
                 }
                 audio.currentTime = nextValue;
+                lastCommittedTimeRef.current = nextValue;
                 setCurrentTime(nextValue);
               }}
               className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[var(--color-surface-3)] accent-[var(--color-accent)]"

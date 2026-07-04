@@ -40,6 +40,7 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
   const pendingAutoplayRef = useRef(false);
   const pendingStartAyahRef = useRef<number | null>(null);
   const ayahCountRef = useRef<number>(0);
+  const lastCommittedTimeRef = useRef(0);
 
   const [prefs, setPrefs] = useState<QuranPlayerPrefs>(DEFAULT_PREFS);
 
@@ -148,6 +149,7 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
 
     const target = clampRange(seconds, 0, duration || 0);
     audio.currentTime = target;
+    lastCommittedTimeRef.current = target;
     setCurrentTime(target);
   }, [duration]);
 
@@ -310,6 +312,7 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
       audio.load();
       setIsPlaying(false);
       setIsBuffering(false);
+      lastCommittedTimeRef.current = 0;
       setCurrentTime(0);
       setDuration(0);
       return;
@@ -317,6 +320,7 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
 
     audio.src = sourceUrl;
     audio.load();
+    lastCommittedTimeRef.current = 0;
     setCurrentTime(0);
     setDuration(0);
     setIsBuffering(false);
@@ -337,7 +341,15 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
     }
 
     const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime || 0);
+      const nextTime = audio.currentTime || 0;
+      if (
+        Math.abs(nextTime - lastCommittedTimeRef.current) >= 0.45 ||
+        audio.paused ||
+        audio.ended
+      ) {
+        lastCommittedTimeRef.current = nextTime;
+        setCurrentTime(nextTime);
+      }
     };
 
     const onLoadedMetadata = () => {
@@ -348,6 +360,7 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
       if (pendingAyah && loadedDuration > 0 && ayahCountRef.current > 0) {
         const targetTime = ((pendingAyah - 1) / ayahCountRef.current) * loadedDuration;
         audio.currentTime = clampRange(targetTime, 0, loadedDuration);
+        lastCommittedTimeRef.current = audio.currentTime;
         setCurrentTime(audio.currentTime);
         pendingStartAyahRef.current = null;
       }

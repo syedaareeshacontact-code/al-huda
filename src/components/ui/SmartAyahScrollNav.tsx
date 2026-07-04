@@ -59,6 +59,9 @@ export default function SmartAyahScrollNav({
   const audioAnchorRef = useRef<number | null>(null);
   const programmaticScrollRef = useRef(false);
   const scrollResetTimerRef = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const isVisibleRef = useRef(false);
+  const userScrolledAwayRef = useRef(false);
 
   const sortedAyahNumbers = useMemo(
     () => [...ayahNumbers].sort((left, right) => left - right),
@@ -91,12 +94,20 @@ export default function SmartAyahScrollNav({
     }
 
     audioAnchorRef.current = activeAudioAyahNumber;
-    setUserScrolledAway(false);
+    if (userScrolledAwayRef.current) {
+      userScrolledAwayRef.current = false;
+      setUserScrolledAway(false);
+    }
   }, [activeAudioAyahNumber, isPlaying]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsVisible(window.scrollY > 200);
+    const updateFromScroll = () => {
+      frameRef.current = null;
+      const nextVisible = window.scrollY > 200;
+      if (nextVisible !== isVisibleRef.current) {
+        isVisibleRef.current = nextVisible;
+        setIsVisible(nextVisible);
+      }
 
       if (
         !isPlaying ||
@@ -107,18 +118,36 @@ export default function SmartAyahScrollNav({
       }
 
       const anchorAyah = audioAnchorRef.current;
-      if (!isAyahInViewport(anchorAyah)) {
+      if (!isAyahInViewport(anchorAyah) && !userScrolledAwayRef.current) {
+        userScrolledAwayRef.current = true;
         setUserScrolledAway(true);
       }
     };
 
-    handleScroll();
+    const handleScroll = () => {
+      if (frameRef.current !== null) {
+        return;
+      }
+
+      frameRef.current = window.requestAnimationFrame(updateFromScroll);
+    };
+
+    updateFromScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [isPlaying]);
 
   useEffect(() => {
     return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
       if (scrollResetTimerRef.current) {
         window.clearTimeout(scrollResetTimerRef.current);
       }
@@ -166,6 +195,7 @@ export default function SmartAyahScrollNav({
     }
 
     scrollToAyah(audioAnchorRef.current);
+    userScrolledAwayRef.current = false;
     setUserScrolledAway(false);
   };
 

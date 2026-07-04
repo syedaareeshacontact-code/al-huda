@@ -1,20 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 /**
  * Performance monitoring component
  * Tracks Core Web Vitals and logs them for monitoring
  */
 export function PerformanceMonitor() {
-  const [metrics, setMetrics] = useState<{
-    lcp?: number;
-    fid?: number;
-    cls?: number;
-    fcp?: number;
-    ttfb?: number;
-  }>({});
-
   useEffect(() => {
     // Track Web Vitals
     if ('PerformanceObserver' in window) {
@@ -24,7 +16,6 @@ export function PerformanceMonitor() {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1] as any;
           const lcp = lastEntry.renderTime || lastEntry.loadTime;
-          setMetrics(prev => ({ ...prev, lcp }));
           console.debug(`LCP: ${lcp}ms`);
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
@@ -33,7 +24,6 @@ export function PerformanceMonitor() {
         const fidObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           const fid = (entries[0] as any).processingDuration;
-          setMetrics(prev => ({ ...prev, fid }));
           console.debug(`FID/INP: ${fid}ms`);
         });
         fidObserver.observe({ entryTypes: ['first-input', 'event'] });
@@ -45,7 +35,6 @@ export function PerformanceMonitor() {
             const e = entry as any;
             if (!e.hadRecentInput) {
               clsValue += e.value;
-              setMetrics(prev => ({ ...prev, cls: clsValue }));
               console.debug(`CLS: ${clsValue}`);
             }
           }

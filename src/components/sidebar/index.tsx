@@ -430,6 +430,7 @@ export default function QuranReaderPage() {
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [ayahTimings, setAyahTimings] = useState<AyahTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
+  const lastCommittedAudioTimeRef = useRef(0);
   const [abStartAyah, setAbStartAyah] = useState(1);
   const [abEndAyah, setAbEndAyah] = useState(3);
   const [abRepeatCount, setAbRepeatCount] = useState(3);
@@ -796,6 +797,7 @@ export default function QuranReaderPage() {
       audio.load();
       setIsPlaying(false);
       setIsPlayPending(false);
+      lastCommittedAudioTimeRef.current = 0;
       setAudioCurrentTime(0);
       setAudioDuration(0);
       return;
@@ -803,6 +805,7 @@ export default function QuranReaderPage() {
 
     audio.src = audioSrc;
     audio.load();
+    lastCommittedAudioTimeRef.current = 0;
     setAudioCurrentTime(0);
     setAudioDuration(0);
 
@@ -819,7 +822,7 @@ export default function QuranReaderPage() {
 
     setIsPlaying(false);
     setIsPlayPending(false);
-  }, [audioSrc, settings.autoPlayAudio]);
+  }, [audioRef, audioSrc, settings.autoPlayAudio]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -828,7 +831,10 @@ export default function QuranReaderPage() {
     }
 
     const refreshDuration = () => {
-      setAudioDuration(getAudioDuration(audio));
+      const nextDuration = getAudioDuration(audio);
+      setAudioDuration((previousDuration) =>
+        Math.abs(previousDuration - nextDuration) > 0.25 ? nextDuration : previousDuration
+      );
     };
 
     const onLoaded = () => {
@@ -844,7 +850,15 @@ export default function QuranReaderPage() {
       refreshDuration();
     };
     const onTime = () => {
-      setAudioCurrentTime(audio.currentTime || 0);
+      const nextTime = audio.currentTime || 0;
+      if (
+        Math.abs(nextTime - lastCommittedAudioTimeRef.current) >= 0.45 ||
+        audio.paused ||
+        audio.ended
+      ) {
+        lastCommittedAudioTimeRef.current = nextTime;
+        setAudioCurrentTime(nextTime);
+      }
       refreshDuration();
     };
 
@@ -895,12 +909,12 @@ export default function QuranReaderPage() {
       audio.removeEventListener('ended', onEnd);
       audio.removeEventListener('error', onEnd);
     };
-  }, [loading]);
+  }, [audioRef, loading]);
 
   useEffect(() => {
     const audio = audioRef.current;
     audioUsageLastTimeRef.current = audio?.currentTime ?? 0;
-  }, [audioSrc]);
+  }, [audioRef, audioSrc]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -958,11 +972,11 @@ export default function QuranReaderPage() {
         });
       }
     };
-  }, [isPlaying]);
+  }, [audioRef, isPlaying]);
 
   useEffect(() => {
     if (!isPlaying || ayahs.length === 0) {
-      setActiveAudioAyahNumber(null);
+      setActiveAudioAyahNumber((previousAyah) => (previousAyah === null ? previousAyah : null));
       return;
     }
 
@@ -976,7 +990,10 @@ export default function QuranReaderPage() {
         ayahTimings.find((timing) => currentMs < timing.toMs) ??
         ayahTimings[ayahTimings.length - 1];
 
-      setActiveAudioAyahNumber(matchedTiming?.ayahNumber ?? null);
+      const nextAyahNumber = matchedTiming?.ayahNumber ?? null;
+      setActiveAudioAyahNumber((previousAyah) =>
+        previousAyah === nextAyahNumber ? previousAyah : nextAyahNumber
+      );
       return;
     }
 
@@ -984,11 +1001,14 @@ export default function QuranReaderPage() {
       const progress = clampRange(audioCurrentTime / audioDuration, 0, 0.999999);
       const index = getWeightedAyahIndex(progress, ayahs);
 
-      setActiveAudioAyahNumber(ayahs[index]?.ayah.numberInSurah ?? null);
+      const nextAyahNumber = ayahs[index]?.ayah.numberInSurah ?? null;
+      setActiveAudioAyahNumber((previousAyah) =>
+        previousAyah === nextAyahNumber ? previousAyah : nextAyahNumber
+      );
       return;
     }
 
-    setActiveAudioAyahNumber(null);
+    setActiveAudioAyahNumber((previousAyah) => (previousAyah === null ? previousAyah : null));
   }, [audioCurrentTime, audioDuration, ayahTimings, ayahs, isPlaying]);
 
   useEffect(() => {
@@ -1068,6 +1088,10 @@ export default function QuranReaderPage() {
   const ayahOptionValues = useMemo(
     () => Array.from({ length: totalAyahCount }, (_, index) => index + 1),
     [totalAyahCount]
+  );
+  const filteredAyahNumbers = useMemo(
+    () => filteredAyahs.map(({ ayah }) => ayah.numberInSurah),
+    [filteredAyahs]
   );
   const repeatCountOptions = useMemo(() => Array.from({ length: 10 }, (_, index) => index + 1), []);
   const abRepeatRange = useMemo<AbRepeatRange | null>(() => {
@@ -1154,12 +1178,13 @@ export default function QuranReaderPage() {
 
     try {
       audio.currentTime = abRepeatStartSeconds;
+      lastCommittedAudioTimeRef.current = abRepeatStartSeconds;
       setAudioCurrentTime(abRepeatStartSeconds);
     } catch {
       setAbRepeatError('Could not apply A-B repeat start point.');
       setAbRepeatEnabled(false);
     }
-  }, [abRepeatCount, abRepeatEnabled, abRepeatStartSeconds, audioSrc]);
+  }, [abRepeatCount, abRepeatEnabled, abRepeatStartSeconds, audioRef, audioSrc]);
 
   useEffect(() => {
     if (
@@ -1195,6 +1220,7 @@ export default function QuranReaderPage() {
 
       try {
         audio.currentTime = stopAt;
+        lastCommittedAudioTimeRef.current = stopAt;
       } catch {
         // ignore seek bounds edge cases
       }
@@ -1211,6 +1237,7 @@ export default function QuranReaderPage() {
 
     try {
       audio.currentTime = abRepeatStartSeconds;
+      lastCommittedAudioTimeRef.current = abRepeatStartSeconds;
       setAudioCurrentTime(abRepeatStartSeconds);
       setAbRepeatCycle((currentCycle) => currentCycle + 1);
       setAbRepeatError(null);
@@ -1228,6 +1255,7 @@ export default function QuranReaderPage() {
     abRepeatEnabled,
     abRepeatEndSeconds,
     abRepeatStartSeconds,
+    audioRef,
     audioCurrentTime,
     isPlaying,
   ]);
@@ -2361,7 +2389,7 @@ export default function QuranReaderPage() {
         </div>
       </div>
       <SmartAyahScrollNav
-        ayahNumbers={filteredAyahs.map(({ ayah }) => ayah.numberInSurah)}
+        ayahNumbers={filteredAyahNumbers}
         activeAudioAyahNumber={activeAudioAyahNumber}
         isPlaying={isPlaying}
         hasAudioPlayer

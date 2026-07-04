@@ -1,24 +1,43 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function ScrollProgress() {
-  const [progress, setProgress] = useState(0);
+  const barRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    let frameId: number | null = null;
+
     const update = () => {
       const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
       const total = Math.max(1, scrollHeight - clientHeight);
-      setProgress((scrollTop / total) * 100);
+      const progress = Math.min(100, Math.max(0, (scrollTop / total) * 100));
+      if (barRef.current) {
+        barRef.current.style.transform = `scaleX(${progress / 100})`;
+      }
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId !== null) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        update();
+      });
     };
 
     update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
 
     return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
     };
   }, []);
 
@@ -28,8 +47,8 @@ export default function ScrollProgress() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-[linear-gradient(90deg,var(--color-accent-soft),var(--color-accent))] transition-[width] duration-200"
-        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+        ref={barRef}
+        className="h-full origin-left scale-x-0 bg-[linear-gradient(90deg,var(--color-accent-soft),var(--color-accent))] transition-transform duration-100"
       />
     </div>
   );
