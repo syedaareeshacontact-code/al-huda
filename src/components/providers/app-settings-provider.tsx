@@ -191,58 +191,50 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
   }, [isAuthenticated, isLoaded, userSettings]);
 
   const updateSettings = useCallback(
-    (updater: (prev: UserSettings) => UserSettings, reason: string) => {
-      if (!isAuthenticated) {
-        requestSignin(reason);
-        return;
-      }
-
+    (updater: (prev: UserSettings) => UserSettings) => {
       setUserSettings((prev) => normalizeUserSettings(updater(normalizeUserSettings(prev))));
     },
-    [isAuthenticated]
+    []
   );
 
   const setReadingMode = useCallback(
     (mode: ReadingMode) => {
-      updateSettings((prev) => ({ ...prev, readingMode: mode }), 'save reading settings');
+      updateSettings((prev) => ({ ...prev, readingMode: mode }));
     },
     [updateSettings]
   );
 
   const setArabicFont = useCallback(
     (font: ArabicFont) => {
-      updateSettings((prev) => ({ ...prev, arabicFont: font }), 'save font settings');
+      updateSettings((prev) => ({ ...prev, arabicFont: font }));
     },
     [updateSettings]
   );
 
   const setArabicFontScale = useCallback(
     (value: number) => {
-      updateSettings(
-        (prev) => ({ ...prev, arabicFontScale: clampScale(value) }),
-        'save font settings'
-      );
+      updateSettings((prev) => ({ ...prev, arabicFontScale: clampScale(value) }));
     },
     [updateSettings]
   );
 
   const setAudioPreference = useCallback(
     (value: AudioPreference) => {
-      updateSettings((prev) => ({ ...prev, audioPreference: value }), 'save audio settings');
+      updateSettings((prev) => ({ ...prev, audioPreference: value }));
     },
     [updateSettings]
   );
 
   const setAutoPlayAudio = useCallback(
     (value: boolean) => {
-      updateSettings((prev) => ({ ...prev, autoPlayAudio: value }), 'save audio settings');
+      updateSettings((prev) => ({ ...prev, autoPlayAudio: value }));
     },
     [updateSettings]
   );
 
   const setThemeMode = useCallback(
     (value: ThemeMode) => {
-      updateSettings((prev) => ({ ...prev, themeMode: value }), 'save dark mode');
+      updateSettings((prev) => ({ ...prev, themeMode: value }));
     },
     [updateSettings]
   );
