@@ -240,7 +240,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
   );
 
   const resetSettings = useCallback(() => {
-    updateSettings(() => DEFAULT_USER_SETTINGS, 'reset settings');
+    updateSettings(() => DEFAULT_USER_SETTINGS);
   }, [updateSettings]);
 
   const normalizedSettings = useMemo(() => normalizeUserSettings(userSettings), [userSettings]);
