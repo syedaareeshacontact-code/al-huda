@@ -75,7 +75,7 @@ export default function ChapterList({ collectionSlug, chapters }: ChapterListPro
                 chapter: chapter.chapterNumber,
                 page: 1,
               })}
-              className="group flex min-w-0 items-start gap-3 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 transition-all hover:border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_50%)] hover:bg-[var(--color-surface-elevated)] hover:shadow-[var(--shadow-soft)] sm:items-center sm:gap-4 sm:px-4 sm:py-4"
+              className="  group flex  min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 transition-all hover:border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_50%)] hover:bg-[var(--color-surface-elevated)] hover:shadow-[var(--shadow-soft)] sm:items-center sm:gap-4  sm:px-4 sm:py-4"
             >
               <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%)] font-mono text-sm font-semibold text-[var(--color-accent-soft)] sm:mt-0">
                 {chapter.chapterNumber}
@@ -88,7 +88,7 @@ export default function ChapterList({ collectionSlug, chapters }: ChapterListPro
                   <p
                     dir="rtl"
                     lang="ur"
-                    className="mt-0.5 truncate font-urdu-nastaliq text-sm text-[var(--color-muted-text)]"
+                    className="mt-0.5 truncate font-urdu-nastaliq p-[5px] text-sm text-[var(--color-muted-text)]"
                   >
                     {chapter.chapterUrdu}
                   </p>
@@ -97,7 +97,7 @@ export default function ChapterList({ collectionSlug, chapters }: ChapterListPro
                   <p
                     dir="rtl"
                     lang="ar"
-                    className="mt-0.5 truncate font-arabic-amiri text-sm text-[var(--color-muted-text)]"
+                    className="mt-0.5 truncate font-arabic-amiri text-sm p-[5px] text-[var(--color-muted-text)]"
                   >
                     {chapter.chapterArabic}
                   </p>
