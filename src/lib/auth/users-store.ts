@@ -5,6 +5,7 @@ import mongoose, { Schema, type Model } from 'mongoose';
 import { hashPassword } from '@/lib/auth/password';
 import { connectToMongoDatabase } from '@/lib/db/mongodb';
 import { buildBookmarkId } from '@/lib/quran-utils';
+import type { NotificationPriority, NotificationType, UserNotification } from '@/types/notifications';
 import type { AppSettings, ThemeMode, UserSettings } from '@/types/settings';
 
 export interface StoredAyahBookmark {
@@ -38,6 +39,7 @@ export interface StoredUser {
   bookmarkedAyahs: StoredAyahBookmark[];
   lastRead: StoredLastReadEntry | null;
   settings: UserSettings;
+  notifications: UserNotification[];
 }
 
 export interface AdminUserSummary {
@@ -55,11 +57,13 @@ export interface AdminUserSummary {
   bookmarkedAyahs: StoredAyahBookmark[];
   lastRead: StoredLastReadEntry | null;
   settings: UserSettings;
+  unreadNotifications: number;
 }
 
 const MIN_SURAH_ID = 1;
 const MAX_SURAH_ID = 114;
 const MAX_AYAH_NUMBER = 286;
+const MAX_NOTIFICATIONS_PER_USER = 80;
 const USERS_COLLECTION = 'users';
 const USER_MODEL_NAME = 'AuthUser';
 export const ADMIN_EMAIL = 'zainqlandar@gmail.com';
@@ -238,6 +242,136 @@ function normalizeLastRead(value: unknown): StoredLastReadEntry | null {
   };
 }
 
+function normalizeNotificationType(value: unknown): NotificationType {
+  return value === 'prayer' ||
+    value === 'quran' ||
+    value === 'bookmark' ||
+    value === 'audio' ||
+    value === 'islamic'
+    ? value
+    : 'system';
+}
+
+function normalizeNotificationPriority(value: unknown): NotificationPriority {
+  return value === 'low' || value === 'high' ? value : 'normal';
+}
+
+function normalizeNotificationMetadata(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  const metadata: Record<string, string | number | boolean | null> = {};
+  Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+    if (typeof entry === 'string' || typeof entry === 'number' || typeof entry === 'boolean') {
+      metadata[key] = entry;
+    }
+
+    if (entry === null) {
+      metadata[key] = null;
+    }
+  });
+  return metadata;
+}
+
+function normalizeIsoDate(value: unknown, fallback = new Date().toISOString()) {
+  const raw = String(value ?? fallback);
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? fallback : date.toISOString();
+}
+
+function normalizeUserNotification(raw: unknown): UserNotification | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  const candidate = raw as Record<string, unknown>;
+  const id = String(candidate.id ?? '').trim();
+  const title = String(candidate.title ?? '').trim().slice(0, 120);
+  const message = String(candidate.message ?? '').trim().slice(0, 420);
+
+  if (!id || !title || !message) {
+    return null;
+  }
+
+  const href = String(candidate.href ?? '').trim();
+  const readAt =
+    candidate.readAt === null || candidate.readAt === undefined || candidate.readAt === ''
+      ? null
+      : normalizeIsoDate(candidate.readAt);
+
+  return {
+    id,
+    type: normalizeNotificationType(candidate.type),
+    priority: normalizeNotificationPriority(candidate.priority),
+    title,
+    message,
+    href: href || null,
+    createdAt: normalizeIsoDate(candidate.createdAt),
+    readAt,
+    metadata: normalizeNotificationMetadata(candidate.metadata),
+  };
+}
+
+function normalizeUserNotifications(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const byId = new Map<string, UserNotification>();
+  value.forEach((entry) => {
+    const notification = normalizeUserNotification(entry);
+    if (notification) {
+      byId.set(notification.id, notification);
+    }
+  });
+
+  return Array.from(byId.values())
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, MAX_NOTIFICATIONS_PER_USER);
+}
+
+function createSystemNotification(input: {
+  type?: NotificationType;
+  priority?: NotificationPriority;
+  title: string;
+  message: string;
+  href?: string | null;
+  metadata?: UserNotification['metadata'];
+}): UserNotification {
+  return {
+    id: randomUUID(),
+    type: input.type ?? 'system',
+    priority: input.priority ?? 'normal',
+    title: input.title,
+    message: input.message,
+    href: input.href ?? null,
+    createdAt: new Date().toISOString(),
+    readAt: null,
+    metadata: input.metadata ?? {},
+  };
+}
+
+function buildInitialNotifications(name: string): UserNotification[] {
+  return [
+    createSystemNotification({
+      type: 'system',
+      priority: 'normal',
+      title: `Welcome, ${name}`,
+      message: 'Your Quran progress, bookmarks, reminders, and reading preferences are now saved with your account.',
+      href: '/surah',
+    }),
+    createSystemNotification({
+      type: 'prayer',
+      priority: 'high',
+      title: 'Prayer reminders are ready',
+      message: 'Open the notification bell to enable sound and configure daily Salah reminders.',
+      href: '/prayer-times',
+      metadata: { setup: true },
+    }),
+  ];
+}
+
 function normalizeStoredUser(raw: unknown): StoredUser | null {
   if (!raw || typeof raw !== 'object') {
     return null;
@@ -277,6 +411,7 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
     ),
     lastRead: normalizeLastRead(candidate.lastRead),
     settings: normalizeUserSettings(candidate.settings),
+    notifications: normalizeUserNotifications(candidate.notifications),
   };
 }
 
@@ -296,6 +431,7 @@ function toAdminSummary(user: StoredUser): AdminUserSummary {
     bookmarkedAyahs: user.bookmarkedAyahs,
     lastRead: user.lastRead,
     settings: user.settings,
+    unreadNotifications: user.notifications.filter((notification) => !notification.readAt).length,
   };
 }
 
@@ -345,6 +481,27 @@ const settingsSchema = new Schema<UserSettings>(
   }
 );
 
+const notificationSchema = new Schema<UserNotification>(
+  {
+    id: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ['prayer', 'quran', 'bookmark', 'audio', 'system', 'islamic'],
+      default: 'system',
+    },
+    priority: { type: String, enum: ['low', 'normal', 'high'], default: 'normal' },
+    title: { type: String, required: true, trim: true, maxlength: 120 },
+    message: { type: String, required: true, trim: true, maxlength: 420 },
+    href: { type: String, default: null },
+    createdAt: { type: String, required: true },
+    readAt: { type: String, default: null },
+    metadata: { type: Schema.Types.Mixed, default: {} },
+  },
+  {
+    _id: false,
+  }
+);
+
 const userSchema = new Schema<StoredUser>(
   {
     id: { type: String, required: true, unique: true, index: true },
@@ -363,6 +520,7 @@ const userSchema = new Schema<StoredUser>(
     bookmarkedAyahs: { type: [bookmarkedAyahSchema], default: [] },
     lastRead: { type: lastReadSchema, default: null },
     settings: { type: settingsSchema, default: () => DEFAULT_USER_SETTINGS },
+    notifications: { type: [notificationSchema], default: [] },
   },
   {
     collection: USERS_COLLECTION,
@@ -446,6 +604,7 @@ export async function createUser(input: {
     bookmarkedAyahs: [],
     lastRead: null,
     settings: DEFAULT_USER_SETTINGS,
+    notifications: buildInitialNotifications(input.name.trim()),
   };
 
   try {
@@ -619,6 +778,115 @@ export async function replaceUserQuranState(
     .exec();
 
   return normalizeStoredUser(raw);
+}
+
+export async function listUserNotifications(userId: string): Promise<UserNotification[]> {
+  const User = await ensureUsersModel();
+  const raw = await User.findOne({ id: userId }, { _id: 0, notifications: 1, name: 1 })
+    .lean()
+    .exec();
+
+  const notifications = normalizeUserNotifications(
+    (raw as { notifications?: unknown } | null)?.notifications
+  );
+
+  if (notifications.length > 0) {
+    return notifications;
+  }
+
+  const name = String((raw as { name?: unknown } | null)?.name ?? 'Reader').trim() || 'Reader';
+  const seededNotifications = buildInitialNotifications(name);
+  await User.findOneAndUpdate(
+    { id: userId, $or: [{ notifications: { $exists: false } }, { notifications: { $size: 0 } }] },
+    {
+      $set: {
+        notifications: seededNotifications,
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  )
+    .lean()
+    .exec();
+
+  return seededNotifications;
+}
+
+export async function createUserNotification(
+  userId: string,
+  input: Omit<UserNotification, 'id' | 'createdAt' | 'readAt'>
+): Promise<UserNotification | null> {
+  const User = await ensureUsersModel();
+  const notification = normalizeUserNotification({
+    ...input,
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+    readAt: null,
+  });
+
+  if (!notification) {
+    return null;
+  }
+
+  await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $push: {
+        notifications: {
+          $each: [notification],
+          $position: 0,
+          $slice: MAX_NOTIFICATIONS_PER_USER,
+        },
+      },
+      $set: {
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  )
+    .lean()
+    .exec();
+
+  return notification;
+}
+
+export async function markUserNotificationRead(
+  userId: string,
+  notificationId: string
+): Promise<UserNotification[]> {
+  const User = await ensureUsersModel();
+  const nowIso = new Date().toISOString();
+  const raw = await User.findOneAndUpdate(
+    { id: userId, 'notifications.id': notificationId },
+    {
+      $set: {
+        'notifications.$.readAt': nowIso,
+        updatedAt: nowIso,
+      },
+    },
+    { new: true }
+  )
+    .lean()
+    .exec();
+
+  return normalizeStoredUser(raw)?.notifications ?? [];
+}
+
+export async function markAllUserNotificationsRead(userId: string): Promise<UserNotification[]> {
+  const User = await ensureUsersModel();
+  const nowIso = new Date().toISOString();
+  const raw = await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $set: {
+        'notifications.$[].readAt': nowIso,
+        updatedAt: nowIso,
+      },
+    },
+    { new: true }
+  )
+    .lean()
+    .exec();
+
+  return normalizeStoredUser(raw)?.notifications ?? [];
 }
 
 export async function listSurahLikeCounts(): Promise<Record<number, number>> {

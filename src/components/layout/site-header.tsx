@@ -24,6 +24,7 @@ import AuthModal, {
   type SessionUser,
 } from '@/components/layout/auth-modal';
 import IslamicTopBanner from '@/components/layout/islamic-top-banner';
+import NotificationCenter from '@/components/notifications/notification-center';
 import {
   flattenMegaNavLinks,
   HOME_NAV,
@@ -463,6 +464,7 @@ export default function SiteHeader() {
                 )}
               </div>
 
+              <NotificationCenter isAuthenticated={Boolean(sessionUser)} />
               <ThemeBtn />
 
               <button
