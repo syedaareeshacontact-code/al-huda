@@ -11,6 +11,7 @@ import {
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { cn } from '@/lib/utils';
 
 interface SessionUser {
@@ -111,6 +112,7 @@ export default function AuthModal({
         if (data.user) {
           onAuthenticated(data.user);
           onClose();
+          window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
           window.location.reload();
         }
       } catch {
@@ -176,6 +178,7 @@ export default function AuthModal({
       if (data.user) {
         onAuthenticated(data.user);
         onClose();
+        window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
         window.location.reload();
       }
     } catch {
@@ -203,6 +206,7 @@ export default function AuthModal({
       if (data.user) {
         onAuthenticated(data.user);
         onClose();
+        window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
         window.location.reload();
       }
     } catch {

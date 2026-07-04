@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  ShieldCheck,
   Star,
   Sun,
   UserPlus,
@@ -406,6 +407,15 @@ export default function SiteHeader() {
                       <UserAvatar user={sessionUser} />
                       <span className="truncate text-sm text-[var(--color-muted-text)]">{sessionUser.name}</span>
                     </div>
+                    {sessionUser.isAdmin ? (
+                      <Link
+                        href="/admin"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] hover:bg-[var(--color-surface-2)]"
+                      >
+                        <ShieldCheck className="h-4 w-4" />
+                        Admin
+                      </Link>
+                    ) : null}
                     <button
                       type="button"
                       onClick={handleSignOut}
@@ -524,6 +534,16 @@ export default function SiteHeader() {
                       <p className="truncate text-xs text-[var(--color-muted-text)]">{sessionUser.email}</p>
                     </div>
                   </div>
+                  {sessionUser.isAdmin ? (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileOpen(false)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] px-4 py-2.5 text-sm font-semibold text-[var(--color-accent)]"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     onClick={handleSignOut}
