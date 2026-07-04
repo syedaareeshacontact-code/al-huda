@@ -164,12 +164,19 @@ export default async function HadithDetailPage({
         </header>
 
         {hadith.hadithArabic ? (
-          <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)]">
-            <CardContent className="border-r-4 border-r-[var(--color-accent)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%)] p-6 md:p-8">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                Arabic Text
-              </p>
-              <ArabicText text={hadith.hadithArabic} size="lg" className="text-[var(--color-heading)]" />
+          <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] shadow-[var(--shadow-soft)]">
+            <CardContent className="space-y-3 border-r-4 border-r-[var(--color-accent)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%)] p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                  Arabic Text
+                </p>
+                <span className="h-px flex-1 bg-[color-mix(in_oklab,var(--color-accent),transparent_78%)]" />
+              </div>
+              <ArabicText
+                text={hadith.hadithArabic}
+                size="md"
+                className="text-[var(--color-heading)] [line-height:2.15]"
+              />
             </CardContent>
           </Card>
         ) : null}
