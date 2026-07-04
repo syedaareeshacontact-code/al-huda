@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MapPin, Navigation, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Mosque } from '@/lib/overpass-api';
@@ -24,7 +24,7 @@ export default function MosqueFinderClient({
   const [userLon, setUserLon] = useState(defaultLon ?? null);
   const [radius, setRadius] = useState(5000);
 
-  const fetchMosques = async (lat: number, lon: number, r: number) => {
+  const fetchMosques = useCallback(async (lat: number, lon: number, r: number) => {
     setLoading(true);
     setError(null);
     try {
@@ -40,20 +40,27 @@ export default function MosqueFinderClient({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (defaultLat && defaultLon) {
       fetchMosques(defaultLat, defaultLon, radius);
     }
-  }, [defaultLat, defaultLon]);
+  }, [defaultLat, defaultLon, fetchMosques, radius]);
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
       return;
     }
+
+    if (!window.isSecureContext) {
+      setError('Location access requires HTTPS or localhost. Please open this page on a secure URL.');
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -61,9 +68,23 @@ export default function MosqueFinderClient({
         setUserLon(longitude);
         fetchMosques(latitude, longitude, radius);
       },
-      () => {
-        setError('Location access denied. Please select a city or enable location permissions.');
+      (geoError) => {
+        const message =
+          geoError.code === geoError.PERMISSION_DENIED
+            ? 'Location permission is blocked. Please allow location access in your browser settings, then try again.'
+            : geoError.code === geoError.POSITION_UNAVAILABLE
+              ? 'Your current location is unavailable. Please try again or select a city.'
+              : geoError.code === geoError.TIMEOUT
+                ? 'Location request timed out. Please try again or select a city.'
+                : 'Unable to get your location. Please try again or select a city.';
+
+        setError(message);
         setLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000,
       }
     );
   };
