@@ -66,10 +66,10 @@ export default function VectorSearchPage() {
                 📚 Semantic Search Examples:
               </h3>
               <ul className="space-y-1 text-sm text-(--color-text)">
-                <li>• "Surahs about patience and perseverance"</li>
-                <li>• "Verses on the Day of Judgment"</li>
-                <li>• "Guidance and wisdom"</li>
-                <li>• "Protection and seeking refuge"</li>
+                <li>• &quot;Surahs about patience and perseverance&quot;</li>
+                <li>• &quot;Verses on the Day of Judgment&quot;</li>
+                <li>• &quot;Guidance and wisdom&quot;</li>
+                <li>• &quot;Protection and seeking refuge&quot;</li>
               </ul>
             </div>
             <div>
@@ -77,10 +77,10 @@ export default function VectorSearchPage() {
                 ❓ Q&A Examples:
               </h3>
               <ul className="space-y-1 text-sm text-(--color-text)">
-                <li>• "What does Ayat ul Kursi mean?"</li>
-                <li>• "What are the benefits of Surah Yasin?"</li>
-                <li>• "How does Islam teach compassion?"</li>
-                <li>• "What is the significance of Surah Al-Fatiha?"</li>
+                <li>• &quot;What does Ayat ul Kursi mean?&quot;</li>
+                <li>• &quot;What are the benefits of Surah Yasin?&quot;</li>
+                <li>• &quot;How does Islam teach compassion?&quot;</li>
+                <li>• &quot;What is the significance of Surah Al-Fatiha?&quot;</li>
               </ul>
             </div>
           </div>

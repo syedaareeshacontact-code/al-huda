@@ -1,23 +1,9 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-
-import { getSessionCookieName, verifySessionToken } from '@/lib/auth/session';
-import { findUserById } from '@/lib/auth/users-store';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { isAdminEmail } from '@/lib/auth/users-store';
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(getSessionCookieName())?.value;
-
-  if (!token) {
-    return NextResponse.json({ user: null });
-  }
-
-  const session = verifySessionToken(token);
-  if (!session) {
-    return NextResponse.json({ user: null });
-  }
-
-  const user = await findUserById(session.id);
+  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ user: null });
   }
@@ -27,6 +13,8 @@ export async function GET() {
       id: user.id,
       name: user.name,
       email: user.email,
+      imageUrl: user.imageUrl,
+      isAdmin: isAdminEmail(user.email),
     },
   });
 }

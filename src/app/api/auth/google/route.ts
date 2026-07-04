@@ -74,6 +74,7 @@ export async function POST(request: Request) {
 
     const email = payload.email.trim().toLowerCase();
     const name = String(payload.name || email.split('@')[0]).trim() || 'Google User';
+    const imageUrl = String(payload.picture ?? '').trim() || null;
     console.log('[Google Auth API] Normalized email:', email, 'name:', name);
 
     console.log('[Google Auth API] Searching for existing user with email:', email);
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       console.log('[Google Auth API] Marking user login for existing user:', existingUser.id);
-      user = await markUserLogin(existingUser.id);
+      user = await markUserLogin(existingUser.id, { name, imageUrl });
       console.log('[Google Auth API] ✅ User login marked.');
     } else {
       console.log('[Google Auth API] Creating new user for email:', email);
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       user = await createUser({
         name,
         email,
+        imageUrl,
         passwordHash: digest.hash,
         passwordSalt: digest.salt,
       });
@@ -117,6 +119,7 @@ export async function POST(request: Request) {
           id: user.id,
           name: user.name,
           email: user.email,
+          imageUrl: user.imageUrl,
         },
       },
       { status: existingUser ? 200 : 201 }
@@ -126,6 +129,7 @@ export async function POST(request: Request) {
       id: user.id,
       name: user.name,
       email: user.email,
+      imageUrl: user.imageUrl,
     });
     console.log('[Google Auth API] ✅ SUCCESS. Response:', existingUser ? '200 (login)' : '201 (signup)');
 

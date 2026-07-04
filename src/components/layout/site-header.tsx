@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   ChevronDown,
@@ -13,7 +14,6 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import AuthModal, {
@@ -33,6 +33,7 @@ import {
 } from '@/lib/navigation-config';
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { cn } from '@/lib/utils';
+import { useAppSettings } from '@/components/providers/app-settings-provider';
 
 const NAV_LINK_BASE =
   'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]';
@@ -44,19 +45,47 @@ const NAV_LINK_ACTIVE =
   'border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent-soft)] shadow-[var(--shadow-soft)]';
 
 function ThemeBtn() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const { themeMode, setThemeMode, isLoaded } = useAppSettings();
+  const isDark = themeMode === 'dark';
 
   return (
     <button
       type="button"
-      onClick={() => mounted && setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-      aria-label={mounted && resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={() => isLoaded && setThemeMode(isDark ? 'light' : 'dark')}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-muted-text)] transition hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]"
     >
-      {mounted && resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
+  );
+}
+
+function UserAvatar({ user, size = 'sm' }: { user: SessionUser; size?: 'sm' | 'md' }) {
+  const dimensionClass = size === 'md' ? 'h-8 w-8 rounded-lg text-xs' : 'h-6 w-6 rounded-md text-[10px]';
+
+  if (user.imageUrl) {
+    return (
+      <Image
+        src={user.imageUrl}
+        alt=""
+        width={size === 'md' ? 32 : 24}
+        height={size === 'md' ? 32 : 24}
+        unoptimized
+        referrerPolicy="no-referrer"
+        className={cn(dimensionClass, 'shrink-0 object-cover')}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        dimensionClass,
+        'flex shrink-0 items-center justify-center bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_80%)] font-bold text-[var(--color-accent-soft)]'
+      )}
+    >
+      {user.name.charAt(0).toUpperCase()}
+    </span>
   );
 }
 
@@ -298,6 +327,7 @@ export default function SiteHeader() {
       setMobileOpen(false);
       setAuthModalOpen(false);
       window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
+      window.location.reload();
     }
   };
 
@@ -373,9 +403,7 @@ export default function SiteHeader() {
                 ) : sessionUser ? (
                   <>
                     <div className="flex max-w-[10rem] items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-2.5 py-1.5">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_80%)] text-[10px] font-bold text-[var(--color-accent-soft)]">
-                        {sessionUser.name.charAt(0).toUpperCase()}
-                      </span>
+                      <UserAvatar user={sessionUser} />
                       <span className="truncate text-sm text-[var(--color-muted-text)]">{sessionUser.name}</span>
                     </div>
                     <button
@@ -490,9 +518,7 @@ export default function SiteHeader() {
               ) : sessionUser ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_80%)] text-xs font-bold text-[var(--color-accent-soft)]">
-                      {sessionUser.name.charAt(0).toUpperCase()}
-                    </span>
+                    <UserAvatar user={sessionUser} size="md" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-[var(--color-heading)]">{sessionUser.name}</p>
                       <p className="truncate text-xs text-[var(--color-muted-text)]">{sessionUser.email}</p>

@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 
+import { getCurrentAdminUser } from '@/lib/auth/current-user';
 import { listUsersForAdmin } from '@/lib/auth/users-store';
 
 export async function GET() {
   try {
+    const adminUser = await getCurrentAdminUser();
+    if (!adminUser) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
     const users = await listUsersForAdmin();
     const summary = users.reduce(
       (acc, user) => {

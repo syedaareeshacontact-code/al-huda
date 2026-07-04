@@ -50,6 +50,7 @@ export async function POST(request: Request) {
         id: authUser.id,
         name: authUser.name,
         email: authUser.email,
+        imageUrl: authUser.imageUrl,
       },
     });
 
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
       id: authUser.id,
       name: authUser.name,
       email: authUser.email,
+      imageUrl: authUser.imageUrl,
     });
 
     return response;

@@ -9,6 +9,7 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
+  imageUrl?: string | null;
 }
 
 interface SessionPayload extends SessionUser {

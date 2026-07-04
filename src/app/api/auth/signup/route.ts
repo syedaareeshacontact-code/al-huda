@@ -35,6 +35,7 @@ export async function POST(request: Request) {
           id: user.id,
           name: user.name,
           email: user.email,
+          imageUrl: user.imageUrl,
         },
       },
       { status: 201 }
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
       id: user.id,
       name: user.name,
       email: user.email,
+      imageUrl: user.imageUrl,
     });
 
     return response;

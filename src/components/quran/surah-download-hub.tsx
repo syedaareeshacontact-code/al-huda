@@ -13,6 +13,7 @@ import {
 import { getDownloadPageIntro } from '@/lib/surah-download-seo';
 import { buildSurahPath } from '@/lib/quran-routing';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
+import AuthDownloadLink from '@/components/quran/auth-download-link';
 
 interface SurahDownloadHubProps {
   surah: SurahIndexEntry;
@@ -46,14 +47,14 @@ function DownloadOptionCard({ option }: { option: SurahDownloadOption }) {
             <p className="mt-1 font-mono text-xs text-[var(--color-muted-text)]">{option.fileName}</p>
           </div>
         </div>
-        <a
+        <AuthDownloadLink
           href={option.href}
-          download={option.fileName}
+          fileName={option.fileName}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-5 py-2.5 text-sm font-bold text-[var(--color-accent-foreground)] shadow-[0_4px_14px_-6px_color-mix(in_oklab,var(--color-accent),transparent_30%)] transition hover:brightness-110"
         >
           <Download className="size-4" aria-hidden="true" />
           Download
-        </a>
+        </AuthDownloadLink>
       </CardContent>
     </Card>
   );
@@ -95,15 +96,15 @@ export default async function SurahDownloadHub({
         </div>
         <div className="flex flex-wrap gap-2">
           {options.slice(0, 4).map((option) => (
-            <a
+            <AuthDownloadLink
               key={option.id}
               href={option.href}
-              download={option.fileName}
+              fileName={option.fileName}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
             >
               <Download className="size-3.5" />
               {option.label}
-            </a>
+            </AuthDownloadLink>
           ))}
         </div>
       </section>

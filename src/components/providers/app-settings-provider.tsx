@@ -6,13 +6,21 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
+  useState,
   type PropsWithChildren,
 } from 'react';
 
-import { useLocalStorageState } from '@/hooks/useLocalStorageState';
-import type { AppSettings, ArabicFont, AudioPreference, ReadingMode } from '@/types/settings';
+import type {
+  AppSettings,
+  ArabicFont,
+  AudioPreference,
+  ReadingMode,
+  ThemeMode,
+  UserSettings,
+} from '@/types/settings';
 
-const APP_SETTINGS_STORAGE_KEY = 'alhuda:app-settings';
+const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
 
 const DEFAULT_SETTINGS: AppSettings = {
   readingMode: 'ayah',
@@ -22,14 +30,22 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoPlayAudio: false,
 };
 
+const DEFAULT_USER_SETTINGS: UserSettings = {
+  ...DEFAULT_SETTINGS,
+  themeMode: 'dark',
+};
+
 interface AppSettingsContextValue {
   settings: AppSettings;
+  themeMode: ThemeMode;
   isLoaded: boolean;
+  isAuthenticated: boolean;
   setReadingMode: (mode: ReadingMode) => void;
   setArabicFont: (font: ArabicFont) => void;
   setArabicFontScale: (value: number) => void;
   setAudioPreference: (value: AudioPreference) => void;
   setAutoPlayAudio: (value: boolean) => void;
+  setThemeMode: (value: ThemeMode) => void;
   resetSettings: () => void;
 }
 
@@ -39,7 +55,7 @@ function clampScale(value: number): number {
   return Math.max(0.9, Math.min(1.9, Number.isFinite(value) ? value : 1.1));
 }
 
-function normalizeSettings(input: Partial<AppSettings>): AppSettings {
+function normalizeUserSettings(input: Partial<UserSettings>): UserSettings {
   return {
     readingMode: input.readingMode === 'continuous' ? 'continuous' : 'ayah',
     arabicFont:
@@ -49,91 +65,225 @@ function normalizeSettings(input: Partial<AppSettings>): AppSettings {
     arabicFontScale: clampScale(Number(input.arabicFontScale ?? DEFAULT_SETTINGS.arabicFontScale)),
     audioPreference: input.audioPreference === 'tr' ? 'tr' : 'ar',
     autoPlayAudio: Boolean(input.autoPlayAudio),
+    themeMode:
+      input.themeMode === 'light' || input.themeMode === 'system' ? input.themeMode : 'dark',
   };
 }
 
-export function AppSettingsProvider({ children }: PropsWithChildren) {
-  const [settings, setSettings, isLoaded] = useLocalStorageState<AppSettings>(
-    APP_SETTINGS_STORAGE_KEY,
-    DEFAULT_SETTINGS
+function applyThemeMode(themeMode: ThemeMode) {
+  const root = document.documentElement;
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const shouldUseDark = themeMode === 'dark' || (themeMode === 'system' && systemDark);
+
+  root.classList.toggle('dark', shouldUseDark);
+  root.style.colorScheme = shouldUseDark ? 'dark' : 'light';
+}
+
+function requestSignin(reason: string) {
+  window.dispatchEvent(
+    new CustomEvent(OPEN_AUTH_MODAL_EVENT, {
+      detail: { tab: 'signin', reason },
+    })
   );
+}
+
+export function AppSettingsProvider({ children }: PropsWithChildren) {
+  const [userSettings, setUserSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const didHydrateRef = useRef(false);
+  const syncedSettingsRef = useRef(JSON.stringify(DEFAULT_USER_SETTINGS));
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/auth/settings', { cache: 'no-store' });
+        if (!response.ok) {
+          if (!ignore) {
+            setIsAuthenticated(false);
+            setUserSettings(DEFAULT_USER_SETTINGS);
+          }
+          return;
+        }
+
+        const payload = (await response.json()) as { settings?: Partial<UserSettings> };
+        const nextSettings = normalizeUserSettings(payload.settings ?? {});
+        if (!ignore) {
+          setIsAuthenticated(true);
+          setUserSettings(nextSettings);
+          syncedSettingsRef.current = JSON.stringify(nextSettings);
+        }
+      } catch {
+        if (!ignore) {
+          setIsAuthenticated(false);
+          setUserSettings(DEFAULT_USER_SETTINGS);
+        }
+      } finally {
+        if (!ignore) {
+          didHydrateRef.current = true;
+          setIsLoaded(true);
+        }
+      }
+    };
+
+    void loadSettings();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLoaded) return;
     const root = document.documentElement;
-    const normalized = normalizeSettings(settings);
+    const normalized = normalizeUserSettings(userSettings);
     root.dataset.arabicFont = normalized.arabicFont;
     root.style.setProperty('--arabic-font-scale', String(normalized.arabicFontScale));
-  }, [isLoaded, settings.arabicFont, settings.arabicFontScale]);
+    applyThemeMode(normalized.themeMode);
+  }, [isLoaded, userSettings]);
+
+  useEffect(() => {
+    if (!isLoaded || userSettings.themeMode !== 'system') return;
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyThemeMode('system');
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [isLoaded, userSettings.themeMode]);
+
+  useEffect(() => {
+    if (!didHydrateRef.current || !isLoaded || !isAuthenticated) {
+      return;
+    }
+
+    const normalized = normalizeUserSettings(userSettings);
+    const snapshot = JSON.stringify(normalized);
+    if (snapshot === syncedSettingsRef.current) {
+      return;
+    }
+
+    syncedSettingsRef.current = snapshot;
+
+    const syncSettings = async () => {
+      try {
+        const response = await fetch('/api/auth/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: snapshot,
+        });
+
+        if (!response.ok) {
+          syncedSettingsRef.current = '';
+          return;
+        }
+
+        const payload = (await response.json()) as { settings?: Partial<UserSettings> };
+        const nextSettings = normalizeUserSettings(payload.settings ?? normalized);
+        syncedSettingsRef.current = JSON.stringify(nextSettings);
+        setUserSettings(nextSettings);
+      } catch {
+        syncedSettingsRef.current = '';
+      }
+    };
+
+    void syncSettings();
+  }, [isAuthenticated, isLoaded, userSettings]);
 
   const updateSettings = useCallback(
-    (updater: (prev: AppSettings) => AppSettings) => {
-      setSettings((prev) => normalizeSettings(updater(normalizeSettings(prev))));
+    (updater: (prev: UserSettings) => UserSettings, reason: string) => {
+      if (!isAuthenticated) {
+        requestSignin(reason);
+        return;
+      }
+
+      setUserSettings((prev) => normalizeUserSettings(updater(normalizeUserSettings(prev))));
     },
-    [setSettings]
+    [isAuthenticated]
   );
 
   const setReadingMode = useCallback(
     (mode: ReadingMode) => {
-      updateSettings((prev) => ({ ...prev, readingMode: mode }));
+      updateSettings((prev) => ({ ...prev, readingMode: mode }), 'save reading settings');
     },
     [updateSettings]
   );
 
   const setArabicFont = useCallback(
     (font: ArabicFont) => {
-      updateSettings((prev) => ({ ...prev, arabicFont: font }));
+      updateSettings((prev) => ({ ...prev, arabicFont: font }), 'save font settings');
     },
     [updateSettings]
   );
 
   const setArabicFontScale = useCallback(
     (value: number) => {
-      updateSettings((prev) => ({ ...prev, arabicFontScale: clampScale(value) }));
+      updateSettings(
+        (prev) => ({ ...prev, arabicFontScale: clampScale(value) }),
+        'save font settings'
+      );
     },
     [updateSettings]
   );
 
   const setAudioPreference = useCallback(
     (value: AudioPreference) => {
-      updateSettings((prev) => ({ ...prev, audioPreference: value }));
+      updateSettings((prev) => ({ ...prev, audioPreference: value }), 'save audio settings');
     },
     [updateSettings]
   );
 
   const setAutoPlayAudio = useCallback(
     (value: boolean) => {
-      updateSettings((prev) => ({ ...prev, autoPlayAudio: value }));
+      updateSettings((prev) => ({ ...prev, autoPlayAudio: value }), 'save audio settings');
+    },
+    [updateSettings]
+  );
+
+  const setThemeMode = useCallback(
+    (value: ThemeMode) => {
+      updateSettings((prev) => ({ ...prev, themeMode: value }), 'save dark mode');
     },
     [updateSettings]
   );
 
   const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS);
-  }, [setSettings]);
+    updateSettings(() => DEFAULT_USER_SETTINGS, 'reset settings');
+  }, [updateSettings]);
 
-  const normalizedSettings = useMemo(() => normalizeSettings(settings), [settings]);
+  const normalizedSettings = useMemo(() => normalizeUserSettings(userSettings), [userSettings]);
 
   const value = useMemo(
     () => ({
-      settings: normalizedSettings,
+      settings: {
+        readingMode: normalizedSettings.readingMode,
+        arabicFont: normalizedSettings.arabicFont,
+        arabicFontScale: normalizedSettings.arabicFontScale,
+        audioPreference: normalizedSettings.audioPreference,
+        autoPlayAudio: normalizedSettings.autoPlayAudio,
+      },
+      themeMode: normalizedSettings.themeMode,
       isLoaded,
+      isAuthenticated,
       setReadingMode,
       setArabicFont,
       setArabicFontScale,
       setAudioPreference,
       setAutoPlayAudio,
+      setThemeMode,
       resetSettings,
     }),
     [
-      normalizedSettings,
+      isAuthenticated,
       isLoaded,
-      setReadingMode,
+      normalizedSettings,
+      resetSettings,
       setArabicFont,
       setArabicFontScale,
       setAudioPreference,
       setAutoPlayAudio,
-      resetSettings,
+      setReadingMode,
+      setThemeMode,
     ]
   );
 

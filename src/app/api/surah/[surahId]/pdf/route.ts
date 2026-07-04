@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getSurahById } from '@/lib/quran-index';
+import { getCurrentUser } from '@/lib/auth/current-user';
 import { getAyahRowsForSurah } from '@/lib/quran-server';
 import {
   buildSurahPdfFileName,
@@ -32,6 +33,11 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ surahId: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { surahId: surahIdParam } = await context.params;
   const surahId = parseSurahId(surahIdParam);
 

@@ -5,6 +5,7 @@ import mongoose, { Schema, type Model } from 'mongoose';
 import { hashPassword } from '@/lib/auth/password';
 import { connectToMongoDatabase } from '@/lib/db/mongodb';
 import { buildBookmarkId } from '@/lib/quran-utils';
+import type { AppSettings, ThemeMode, UserSettings } from '@/types/settings';
 
 export interface StoredAyahBookmark {
   id: string;
@@ -24,6 +25,7 @@ export interface StoredUser {
   id: string;
   name: string;
   email: string;
+  imageUrl: string | null;
   passwordHash: string;
   passwordSalt: string;
   createdAt: string;
@@ -35,12 +37,14 @@ export interface StoredUser {
   favoriteSurahIds: number[];
   bookmarkedAyahs: StoredAyahBookmark[];
   lastRead: StoredLastReadEntry | null;
+  settings: UserSettings;
 }
 
 export interface AdminUserSummary {
   id: string;
   name: string;
   email: string;
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
   loginCount: number;
@@ -50,6 +54,7 @@ export interface AdminUserSummary {
   favoriteSurahIds: number[];
   bookmarkedAyahs: StoredAyahBookmark[];
   lastRead: StoredLastReadEntry | null;
+  settings: UserSettings;
 }
 
 const MIN_SURAH_ID = 1;
@@ -57,9 +62,68 @@ const MAX_SURAH_ID = 114;
 const MAX_AYAH_NUMBER = 286;
 const USERS_COLLECTION = 'users';
 const USER_MODEL_NAME = 'AuthUser';
+export const ADMIN_EMAIL = 'zainqlandar@gmail.com';
+
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  readingMode: 'ayah',
+  arabicFont: 'amiriQuran',
+  arabicFontScale: 1.1,
+  audioPreference: 'ar',
+  autoPlayAudio: false,
+  themeMode: 'dark',
+};
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function normalizeImageUrl(value: unknown) {
+  const imageUrl = String(value ?? '').trim();
+  if (!imageUrl) {
+    return null;
+  }
+
+  try {
+    const url = new URL(imageUrl);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeThemeMode(value: unknown): ThemeMode {
+  return value === 'light' || value === 'system' ? value : 'dark';
+}
+
+function clampArabicFontScale(value: unknown) {
+  const numeric = Number(value);
+  return Math.max(
+    0.9,
+    Math.min(
+      1.9,
+      Number.isFinite(numeric) ? numeric : DEFAULT_USER_SETTINGS.arabicFontScale
+    )
+  );
+}
+
+export function normalizeUserSettings(input: unknown): UserSettings {
+  const candidate =
+    input && typeof input === 'object' ? (input as Partial<UserSettings>) : {};
+
+  return {
+    readingMode: candidate.readingMode === 'continuous' ? 'continuous' : 'ayah',
+    arabicFont:
+      candidate.arabicFont === 'notoNaskh' || candidate.arabicFont === 'scheherazade'
+        ? candidate.arabicFont
+        : 'amiriQuran',
+    arabicFontScale: clampArabicFontScale(candidate.arabicFontScale),
+    audioPreference: candidate.audioPreference === 'tr' ? 'tr' : 'ar',
+    autoPlayAudio: Boolean(candidate.autoPlayAudio),
+    themeMode: normalizeThemeMode(candidate.themeMode),
+  };
 }
 
 function normalizeSurahId(value: unknown) {
@@ -195,6 +259,7 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
     id,
     name,
     email,
+    imageUrl: normalizeImageUrl(candidate.imageUrl),
     passwordHash,
     passwordSalt,
     createdAt,
@@ -211,6 +276,7 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
       candidate.bookmarkedAyahs ?? candidate.bookmarks
     ),
     lastRead: normalizeLastRead(candidate.lastRead),
+    settings: normalizeUserSettings(candidate.settings),
   };
 }
 
@@ -219,6 +285,7 @@ function toAdminSummary(user: StoredUser): AdminUserSummary {
     id: user.id,
     name: user.name,
     email: user.email,
+    imageUrl: user.imageUrl,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     loginCount: user.loginCount,
@@ -228,6 +295,7 @@ function toAdminSummary(user: StoredUser): AdminUserSummary {
     favoriteSurahIds: user.favoriteSurahIds,
     bookmarkedAyahs: user.bookmarkedAyahs,
     lastRead: user.lastRead,
+    settings: user.settings,
   };
 }
 
@@ -259,11 +327,30 @@ const lastReadSchema = new Schema<StoredLastReadEntry>(
   }
 );
 
+const settingsSchema = new Schema<UserSettings>(
+  {
+    readingMode: { type: String, enum: ['ayah', 'continuous'], default: 'ayah' },
+    arabicFont: {
+      type: String,
+      enum: ['amiriQuran', 'notoNaskh', 'scheherazade'],
+      default: 'amiriQuran',
+    },
+    arabicFontScale: { type: Number, min: 0.9, max: 1.9, default: 1.1 },
+    audioPreference: { type: String, enum: ['ar', 'tr'], default: 'ar' },
+    autoPlayAudio: { type: Boolean, default: false },
+    themeMode: { type: String, enum: ['light', 'dark', 'system'], default: 'dark' },
+  },
+  {
+    _id: false,
+  }
+);
+
 const userSchema = new Schema<StoredUser>(
   {
     id: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, index: true, trim: true, lowercase: true },
+    imageUrl: { type: String, default: null },
     passwordHash: { type: String, required: true },
     passwordSalt: { type: String, required: true },
     createdAt: { type: String, required: true },
@@ -275,6 +362,7 @@ const userSchema = new Schema<StoredUser>(
     favoriteSurahIds: { type: [Number], default: [] },
     bookmarkedAyahs: { type: [bookmarkedAyahSchema], default: [] },
     lastRead: { type: lastReadSchema, default: null },
+    settings: { type: settingsSchema, default: () => DEFAULT_USER_SETTINGS },
   },
   {
     collection: USERS_COLLECTION,
@@ -333,6 +421,7 @@ export async function findUserById(id: string): Promise<StoredUser | null> {
 export async function createUser(input: {
   name: string;
   email: string;
+  imageUrl?: string | null;
   passwordHash: string;
   passwordSalt: string;
 }): Promise<StoredUser> {
@@ -344,6 +433,7 @@ export async function createUser(input: {
     id: randomUUID(),
     name: input.name.trim(),
     email: normalizedEmail,
+    imageUrl: normalizeImageUrl(input.imageUrl),
     passwordHash: input.passwordHash,
     passwordSalt: input.passwordSalt,
     createdAt: nowIso,
@@ -355,6 +445,7 @@ export async function createUser(input: {
     favoriteSurahIds: [],
     bookmarkedAyahs: [],
     lastRead: null,
+    settings: DEFAULT_USER_SETTINGS,
   };
 
   try {
@@ -373,11 +464,15 @@ export async function createUser(input: {
 export async function findOrCreateGoogleUser(input: {
   name: string;
   email: string;
+  imageUrl?: string | null;
 }): Promise<StoredUser> {
   const normalizedEmail = normalizeEmail(input.email);
   const existingUser = await findUserByEmail(normalizedEmail);
   if (existingUser) {
-    const updatedUser = await markUserLogin(existingUser.id);
+    const updatedUser = await markUserLogin(existingUser.id, {
+      imageUrl: input.imageUrl,
+      name: input.name,
+    });
     return updatedUser ?? existingUser;
   }
 
@@ -386,14 +481,30 @@ export async function findOrCreateGoogleUser(input: {
   return createUser({
     name: input.name.trim(),
     email: normalizedEmail,
+    imageUrl: input.imageUrl,
     passwordHash: digest.hash,
     passwordSalt: digest.salt,
   });
 }
 
-export async function markUserLogin(userId: string): Promise<StoredUser | null> {
+export async function markUserLogin(
+  userId: string,
+  profile?: { name?: string; imageUrl?: string | null }
+): Promise<StoredUser | null> {
   const User = await ensureUsersModel();
   const nowIso = new Date().toISOString();
+  const $set: Record<string, unknown> = {
+    lastLoginAt: nowIso,
+    updatedAt: nowIso,
+  };
+  const imageUrl = normalizeImageUrl(profile?.imageUrl);
+  if (imageUrl) {
+    $set.imageUrl = imageUrl;
+  }
+  const name = String(profile?.name ?? '').trim();
+  if (name) {
+    $set.name = name;
+  }
 
   const raw = await User.findOneAndUpdate(
     { id: userId },
@@ -401,9 +512,31 @@ export async function markUserLogin(userId: string): Promise<StoredUser | null> 
       $inc: {
         loginCount: 1,
       },
+      $set,
+    },
+    {
+      new: true,
+    }
+  )
+    .lean()
+    .exec();
+
+  return normalizeStoredUser(raw);
+}
+
+export async function replaceUserSettings(
+  userId: string,
+  input: Partial<AppSettings> & { themeMode?: ThemeMode }
+): Promise<StoredUser | null> {
+  const nextSettings = normalizeUserSettings(input);
+  const User = await ensureUsersModel();
+
+  const raw = await User.findOneAndUpdate(
+    { id: userId },
+    {
       $set: {
-        lastLoginAt: nowIso,
-        updatedAt: nowIso,
+        settings: nextSettings,
+        updatedAt: new Date().toISOString(),
       },
     },
     {
@@ -414,6 +547,10 @@ export async function markUserLogin(userId: string): Promise<StoredUser | null> 
     .exec();
 
   return normalizeStoredUser(raw);
+}
+
+export function isAdminEmail(email: string) {
+  return normalizeEmail(email) === ADMIN_EMAIL;
 }
 
 export async function incrementUserUsage(

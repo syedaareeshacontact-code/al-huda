@@ -62,6 +62,8 @@ import {
 } from '@/lib/offline-surah-store';
 import AyahEndMarker from '@/components/quran/AyahEndMarker';
 
+const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
+
 interface AyahWithTranslation {
   ayah: SurahAyah;
   translation?: string;
@@ -391,6 +393,7 @@ export default function QuranReaderPage() {
     settings,
     setReadingMode,
     setAudioPreference,
+    isAuthenticated,
   } = useAppSettings();
 
   const [loading, setLoading] = useState(true);
@@ -1365,6 +1368,15 @@ export default function QuranReaderPage() {
   };
 
   const downloadSurahAudio = async (variant: 'ar' | 'tr') => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(
+        new CustomEvent(OPEN_AUTH_MODAL_EVENT, {
+          detail: { tab: 'signin', reason: 'download audio' },
+        })
+      );
+      return;
+    }
+
     if (!surahDetail) {
       return;
     }
@@ -1609,6 +1621,15 @@ export default function QuranReaderPage() {
   handleNextAudioStepRef.current = handleNextAudioStep;
 
   const saveSurahForOffline = async () => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(
+        new CustomEvent(OPEN_AUTH_MODAL_EVENT, {
+          detail: { tab: 'signin', reason: 'save offline audio' },
+        })
+      );
+      return;
+    }
+
     if (!surahDetail || !surahMeta || offlineDownloading) {
       return;
     }
@@ -1652,6 +1673,15 @@ export default function QuranReaderPage() {
   };
 
   const clearOfflineSurah = async () => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(
+        new CustomEvent(OPEN_AUTH_MODAL_EVENT, {
+          detail: { tab: 'signin', reason: 'manage offline audio' },
+        })
+      );
+      return;
+    }
+
     try {
       await removeOfflineSurah(surahId);
       await refreshOfflineStatus();

@@ -13,3 +13,7 @@ export interface AppSettings {
   audioPreference: AudioPreference;
   autoPlayAudio: boolean;
 }
+
+export interface UserSettings extends AppSettings {
+  themeMode: ThemeMode;
+}

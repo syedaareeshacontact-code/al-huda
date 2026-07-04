@@ -17,6 +17,8 @@ interface SessionUser {
   id: string;
   name: string;
   email: string;
+  imageUrl?: string | null;
+  isAdmin?: boolean;
 }
 
 interface AuthPayload {

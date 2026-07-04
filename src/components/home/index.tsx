@@ -16,10 +16,7 @@ import {
   Timer,
 } from 'lucide-react';
 
-import {
-  AUTH_CHANGED_EVENT,
-  loadGuestQuranState,
-} from '@/lib/quran-user-state';
+import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import type { AyahBookmark, LastReadEntry } from '@/types/quran';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,11 +117,10 @@ export default function HomeRoot() {
         });
 
         if (!sessionResponse.ok) {
-          const guestState = loadGuestQuranState();
           if (!ignore) {
-            setFavorites(guestState?.favoriteSurahIds ?? []);
-            setBookmarks(guestState?.bookmarkedAyahs ?? []);
-            setLastRead(guestState?.lastRead ?? null);
+            setFavorites([]);
+            setBookmarks([]);
+            setLastRead(null);
           }
           return;
         }
@@ -134,17 +130,10 @@ export default function HomeRoot() {
         };
 
         if (!sessionPayload.user?.id) {
-          const guestState = loadGuestQuranState();
           if (!ignore) {
-            if (guestState) {
-              setFavorites(guestState.favoriteSurahIds);
-              setBookmarks(guestState.bookmarkedAyahs);
-              setLastRead(guestState.lastRead);
-            } else {
-              setFavorites([]);
-              setBookmarks([]);
-              setLastRead(null);
-            }
+            setFavorites([]);
+            setBookmarks([]);
+            setLastRead(null);
           }
           return;
         }
@@ -183,10 +172,9 @@ export default function HomeRoot() {
         }
       } catch {
         if (!ignore) {
-          const guestState = loadGuestQuranState();
-          setFavorites(guestState?.favoriteSurahIds ?? []);
-          setBookmarks(guestState?.bookmarkedAyahs ?? []);
-          setLastRead(guestState?.lastRead ?? null);
+          setFavorites([]);
+          setBookmarks([]);
+          setLastRead(null);
         }
       } finally {
         if (!ignore) {

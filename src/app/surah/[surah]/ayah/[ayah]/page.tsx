@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, FileText, Headphones } from 'lucid
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AuthDownloadLink from '@/components/quran/auth-download-link';
 import AyahSidebar from '@/components/ayah-sidebar';
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import {
@@ -270,14 +271,14 @@ export default async function AyahDetailPage({
                 <audio controls preload="none" className="w-full">
                   <source src={audioUrls.arabic} />
                 </audio>
-                <a
+                <AuthDownloadLink
                   href={audioUrls.arabic}
-                  download
+                  fileName={`surah-${surah.id}-ayah-${ayahNumber}-arabic-audio`}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
                 >
                   <Download className="size-4" />
                   Download Arabic Audio
-                </a>
+                </AuthDownloadLink>
               </>
             ) : (
               <p className="text-sm text-[var(--color-muted-text)]">Audio unavailable.</p>
@@ -298,14 +299,14 @@ export default async function AyahDetailPage({
                 <audio controls preload="none" className="w-full">
                   <source src={audioUrls.urdu} />
                 </audio>
-                <a
+                <AuthDownloadLink
                   href={audioUrls.urdu}
-                  download
+                  fileName={`surah-${surah.id}-ayah-${ayahNumber}-urdu-audio`}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
                 >
                   <Download className="size-4" />
                   Download Urdu Audio
-                </a>
+                </AuthDownloadLink>
               </>
             ) : (
               <p className="text-sm text-[var(--color-muted-text)]">Audio unavailable.</p>

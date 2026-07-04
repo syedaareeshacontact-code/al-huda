@@ -34,7 +34,7 @@ export function buildSurahPdfPublicPath(surahId: number, variant: SurahPdfVarian
 }
 
 export function buildSurahPdfApiPath(surahId: number, variant: SurahPdfVariant): string {
-  return buildSurahPdfPublicPath(surahId, variant);
+  return `/api/surah/${surahId}/pdf?variant=${variant}`;
 }
 
 export function buildSurahAudioApiPath(

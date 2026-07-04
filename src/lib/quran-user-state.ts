@@ -103,36 +103,6 @@ export function serializeQuranState(state: PersistedQuranState) {
   return JSON.stringify(normalized);
 }
 
-export function loadGuestQuranState(): PersistedQuranState | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(QURAN_STATE_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as Partial<PersistedQuranState>;
-    return normalizeQuranState(parsed);
-  } catch {
-    return null;
-  }
-}
-
-export function saveGuestQuranState(state: PersistedQuranState) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(QURAN_STATE_STORAGE_KEY, serializeQuranState(state));
-  } catch {
-    // ignore quota or privacy errors
-  }
-}
-
 export function clearGuestQuranState() {
   if (typeof window === 'undefined') {
     return;
@@ -143,47 +113,6 @@ export function clearGuestQuranState() {
   } catch {
     // ignore
   }
-}
-
-export function mergeQuranState(
-  local: PersistedQuranState,
-  remote: PersistedQuranState
-): PersistedQuranState {
-  const favoriteSurahIds = normalizeFavoriteSurahIds([
-    ...remote.favoriteSurahIds,
-    ...local.favoriteSurahIds,
-  ]);
-
-  const bookmarkById = new Map<string, AyahBookmark>();
-  [...remote.bookmarkedAyahs, ...local.bookmarkedAyahs].forEach((bookmark) => {
-    const existing = bookmarkById.get(bookmark.id);
-    if (!existing || bookmark.createdAt.localeCompare(existing.createdAt) > 0) {
-      bookmarkById.set(bookmark.id, bookmark);
-    }
-  });
-
-  const bookmarkedAyahs = Array.from(bookmarkById.values()).sort((left, right) =>
-    right.createdAt.localeCompare(left.createdAt)
-  );
-
-  const localLastRead = normalizeLastReadEntry(local.lastRead);
-  const remoteLastRead = normalizeLastReadEntry(remote.lastRead);
-  let lastRead = remoteLastRead;
-
-  if (localLastRead && remoteLastRead) {
-    lastRead =
-      localLastRead.updatedAt.localeCompare(remoteLastRead.updatedAt) >= 0
-        ? localLastRead
-        : remoteLastRead;
-  } else if (localLastRead) {
-    lastRead = localLastRead;
-  }
-
-  return normalizeQuranState({
-    favoriteSurahIds,
-    bookmarkedAyahs,
-    lastRead,
-  });
 }
 
 export const AUTH_CHANGED_EVENT = 'alhuda:auth-changed';
