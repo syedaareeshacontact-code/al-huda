@@ -130,6 +130,9 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
   const [surahLikes, setSurahLikes] = useState<Record<number, number>>({});
   const syncedQuranStateRef = useRef('');
   const sessionVersionRef = useRef(0);
+  const favoritesRef = useRef(favorites);
+  const bookmarksRef = useRef(bookmarks);
+  const lastReadRef = useRef(lastRead);
 
   const {
     settings,
@@ -289,9 +292,9 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
 
         if (!response.ok) {
           syncedQuranStateRef.current = serializeQuranState({
-            favoriteSurahIds: favorites,
-            bookmarkedAyahs: bookmarks,
-            lastRead,
+            favoriteSurahIds: favoritesRef.current,
+            bookmarkedAyahs: bookmarksRef.current,
+            lastRead: lastReadRef.current,
           });
           return;
         }
@@ -317,9 +320,9 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
         await loadSurahLikes();
       } catch {
         syncedQuranStateRef.current = serializeQuranState({
-          favoriteSurahIds: favorites,
-          bookmarkedAyahs: bookmarks,
-          lastRead,
+          favoriteSurahIds: favoritesRef.current,
+          bookmarkedAyahs: bookmarksRef.current,
+          lastRead: lastReadRef.current,
         });
       } finally {
         if (!ignore) {
@@ -333,15 +336,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
     return () => {
       ignore = true;
     };
-  }, [
-    bookmarks,
-    didHydrateRemoteState,
-    didLoadSession,
-    favorites,
-    isAuthenticated,
-    lastRead,
-    loadSurahLikes,
-  ]);
+  }, [didHydrateRemoteState, didLoadSession, isAuthenticated, loadSurahLikes]);
 
   useEffect(() => {
     if (!didHydrateRemoteState || !isAuthenticated) {
@@ -524,6 +519,18 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
     },
     [isAuthenticated]
   );
+
+  useEffect(() => {
+    favoritesRef.current = favorites;
+  }, [favorites]);
+
+  useEffect(() => {
+    bookmarksRef.current = bookmarks;
+  }, [bookmarks]);
+
+  useEffect(() => {
+    lastReadRef.current = lastRead;
+  }, [lastRead]);
 
   const addLanguage = useCallback(
     (language: 'ar' | 'tr') => {
