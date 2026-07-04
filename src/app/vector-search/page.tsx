@@ -1,18 +1,21 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { VectorSearchTools } from '@/components/vector-search';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'AI-Powered Quran Search - Read al Quran',
-  description: 'Search the Quran by meaning and ask AI questions about Islamic knowledge',
-  robots: {
-    index: false, // Don't index demo page
-  },
-};
+  description:
+    'Search the Quran by meaning and ask AI questions about Islamic knowledge with semantic Quran search tools.',
+  path: '/vector-search',
+  index: false,
+  follow: true,
+  imageUrl: '/og?kind=surah-index',
+});
 
 export default function VectorSearchPage() {
   return (
-    <main className="min-h-screen bg-(--color-bg) container mx-auto px-4 py-12 max-w-4xl text-(--color-text)">
+    <div className="min-h-screen bg-(--color-bg) container mx-auto px-4 py-12 max-w-4xl text-(--color-text)">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="mb-4 bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] bg-clip-text font-display text-4xl font-bold text-transparent md:text-5xl">
@@ -99,6 +102,6 @@ export default function VectorSearchPage() {
             Powered by OpenAI embeddings and MongoDB Vector Search. All content from the Quran.
           </p>
         </div>
-      </main>
+      </div>
   );
 }

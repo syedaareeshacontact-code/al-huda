@@ -1,8 +1,26 @@
+import { getAllCitySlugs } from '@/lib/islamic-cities';
+import { getSiteOrigin } from '@/lib/seo';
+
 export const dynamic = 'force-static';
 
+function escapeXml(input: string) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 function renderLocalSitemapXml() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.readalquran.online';
+  const baseUrl = getSiteOrigin();
   const updatedAt = new Date().toISOString();
+  const cityEntries = getAllCitySlugs().map((slug) => ({
+    url: `${baseUrl}/cities/${slug}`,
+    lastmod: updatedAt,
+    changefreq: 'weekly',
+    priority: '0.75',
+  }));
 
   const entries = [
     {
@@ -23,36 +41,7 @@ function renderLocalSitemapXml() {
       changefreq: 'monthly',
       priority: '0.8',
     },
-    {
-      url: `${baseUrl}/cities/karachi`,
-      lastmod: updatedAt,
-      changefreq: 'weekly',
-      priority: '0.75',
-    },
-    {
-      url: `${baseUrl}/cities/islamabad`,
-      lastmod: updatedAt,
-      changefreq: 'weekly',
-      priority: '0.75',
-    },
-    {
-      url: `${baseUrl}/cities/lahore`,
-      lastmod: updatedAt,
-      changefreq: 'weekly',
-      priority: '0.75',
-    },
-    {
-      url: `${baseUrl}/cities/rawalpindi`,
-      lastmod: updatedAt,
-      changefreq: 'weekly',
-      priority: '0.75',
-    },
-    {
-      url: `${baseUrl}/cities/multan`,
-      lastmod: updatedAt,
-      changefreq: 'weekly',
-      priority: '0.75',
-    },
+    ...cityEntries,
     {
       url: `${baseUrl}/prayer-times`,
       lastmod: updatedAt,
@@ -112,7 +101,7 @@ function renderLocalSitemapXml() {
   const items = entries
     .map(
       (entry) =>
-        `<url><loc>${entry.url}</loc><lastmod>${entry.lastmod}</lastmod><changefreq>${entry.changefreq}</changefreq><priority>${entry.priority}</priority></url>`
+        `<url><loc>${escapeXml(entry.url)}</loc><lastmod>${entry.lastmod}</lastmod><changefreq>${entry.changefreq}</changefreq><priority>${entry.priority}</priority></url>`
     )
     .join('');
 
