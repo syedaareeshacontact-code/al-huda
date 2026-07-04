@@ -1691,7 +1691,7 @@ export default function QuranReaderPage() {
   };
 
   return (
-    <div className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
+    <div id="interactive-reader" className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-5">
           <Card className="animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] shadow-[var(--shadow-glow)]">
@@ -2142,7 +2142,9 @@ export default function QuranReaderPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant={bookmarked ? 'default' : 'outline'}
-                            size="sm"
+                            size="icon"
+                            title={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
+                            aria-label={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
                             onClick={() =>
                               toggleBookmark({
                                 surahId,
@@ -2150,17 +2152,19 @@ export default function QuranReaderPage() {
                                 text: ayah.text,
                               })
                             }
+                            className="size-9"
                           >
                             {bookmarked ? (
                               <BookmarkCheck className="size-4" />
                             ) : (
                               <Bookmark className="size-4" />
                             )}
-                            {bookmarked ? 'Saved' : 'Bookmark'}
                           </Button>
                           <Button
                             variant={isLastRead ? 'default' : 'ghost'}
-                            size="sm"
+                            size="icon"
+                            title={isLastRead ? 'Last read ayah' : 'Mark as last read'}
+                            aria-label={isLastRead ? 'Last read ayah' : 'Mark as last read'}
                             onClick={() =>
                               setLastRead({
                                 surahId,
@@ -2168,17 +2172,19 @@ export default function QuranReaderPage() {
                                 updatedAt: new Date().toISOString(),
                               })
                             }
+                            className="size-9"
                           >
                             <BookCheck className="size-4" />
-                            {isLastRead ? 'Last Read' : 'Mark Last'}
                           </Button>
                           <Button
                             variant={isCurrentTafseerAyah ? 'default' : 'outline'}
-                            size="sm"
+                            size="icon"
+                            title="Open Urdu tafseer"
+                            aria-label="Open Urdu tafseer"
                             onClick={() => openTafseer(ayah.numberInSurah, ayah.text)}
+                            className="size-9"
                           >
                             <BookOpen className="size-4" />
-                            Urdu Tafseer
                           </Button>
                         </div>
                       </div>

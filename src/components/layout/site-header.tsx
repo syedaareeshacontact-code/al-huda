@@ -152,14 +152,34 @@ function NavLinkCard({
 function MegaMenuPanel({
   group,
   onNavigate,
+  showAdminLink,
 }: {
   group: MegaNavGroup;
   onNavigate: () => void;
+  showAdminLink: boolean;
 }) {
   const pathname = usePathname();
 
   const linkActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const menuColumns =
+    group.id === 'explore' && showAdminLink
+      ? [
+          ...group.columns,
+          {
+            title: 'Admin',
+            items: [
+              {
+                label: 'Admin Dashboard',
+                description: 'Restricted access for site administration',
+                href: '/admin',
+                icon: ShieldCheck,
+                exact: true,
+              },
+            ],
+          },
+        ]
+      : group.columns;
 
   return (
     <div
@@ -169,7 +189,7 @@ function MegaMenuPanel({
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent),transparent)] opacity-40" />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
         {group.highlight && (
           <div className="w-full shrink-0 rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%),var(--color-surface-elevated))] p-4 sm:p-5 lg:w-[32%] lg:max-w-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-accent-soft)]">
@@ -193,7 +213,7 @@ function MegaMenuPanel({
             group.columns.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2'
           )}
         >
-          {group.columns.map((column) => (
+          {menuColumns.map((column) => (
             <div key={column.title} className="min-w-0">
               <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-muted-text)]">
                 {column.title}
@@ -341,6 +361,7 @@ export default function SiteHeader() {
   const mobileSections = getAllMobileNavSections();
   const HomeIcon = HOME_NAV.icon;
   const openMegaGroup = MEGA_NAV_GROUPS.find((group) => group.id === openMegaId) ?? null;
+  const showAdminLink = Boolean(sessionUser?.isAdmin);
 
   return (
     <>
@@ -395,6 +416,7 @@ export default function SiteHeader() {
                   </button>
                 );
               })}
+
             </nav>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -403,26 +425,20 @@ export default function SiteHeader() {
                   <span className="text-xs text-[var(--color-muted-text)]">...</span>
                 ) : sessionUser ? (
                   <>
-                    <div className="flex max-w-[10rem] items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-2.5 py-1.5">
+                    <div
+                      className="flex items-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1.5"
+                      title={sessionUser.name}
+                    >
                       <UserAvatar user={sessionUser} />
-                      <span className="truncate text-sm text-[var(--color-muted-text)]">{sessionUser.name}</span>
                     </div>
-                    {sessionUser.isAdmin ? (
-                      <Link
-                        href="/admin"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] hover:bg-[var(--color-surface-2)]"
-                      >
-                        <ShieldCheck className="h-4 w-4" />
-                        Admin
-                      </Link>
-                    ) : null}
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-muted-text)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+                      aria-label="Sign out"
+                      title="Sign out"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-muted-text)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
                     >
                       <LogOut className="h-4 w-4" />
-                      Sign out
                     </button>
                   </>
                 ) : (
@@ -465,6 +481,7 @@ export default function SiteHeader() {
             <MegaMenuPanel
               group={openMegaGroup}
               onNavigate={() => setOpenMegaId(null)}
+              showAdminLink={showAdminLink}
             />
           )}
         </div>
@@ -554,23 +571,35 @@ export default function SiteHeader() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuthModal('signin')}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-sm font-semibold text-[var(--color-muted-text)]"
-                  >
-                    <LogIn className="h-4 w-4" />
-                    Sign In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openAuthModal('signup')}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-3 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)]"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    Sign Up
-                  </button>
+                <div className="space-y-2">
+                  {showAdminLink ? (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileOpen(false)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] px-4 py-2.5 text-sm font-semibold text-[var(--color-accent)]"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin
+                    </Link>
+                  ) : null}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openAuthModal('signin')}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-sm font-semibold text-[var(--color-muted-text)]"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      Sign In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAuthModal('signup')}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-3 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)]"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Sign Up
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

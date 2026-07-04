@@ -1,10 +1,17 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
+import {
+  BookOpenCheck,
+  Bookmark,
+  Download,
+  FileText,
+  Headphones,
+  Settings2,
+  WifiOff,
+} from 'lucide-react';
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
-import SurahCrawlableContent from '@/components/quran/surah-crawlable-content';
-import SurahDownloadHub from '@/components/quran/surah-download-hub';
 import QuranReaderPage from '@/components/sidebar';
 import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
 import { getAyahRowsForSurah } from '@/lib/quran-server';
@@ -88,6 +95,38 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
   const urduTitle = getSurahUrduTitle(surah);
   const schemas = buildSurahPageSchemas(surah, getSurahMetaDescription(surah), ayahRows.length);
+  const featureItems = [
+    {
+      label: 'Read',
+      description: `${surah.totalAyah} ayahs with translation`,
+      icon: BookOpenCheck,
+    },
+    {
+      label: 'Audio',
+      description: 'Arabic and Urdu listening modes',
+      icon: Headphones,
+    },
+    {
+      label: 'Tafseer',
+      description: 'Ayah-wise Urdu tafseer',
+      icon: FileText,
+    },
+    {
+      label: 'Bookmarks',
+      description: 'Save ayahs after login',
+      icon: Bookmark,
+    },
+    {
+      label: 'Offline',
+      description: 'Save text and audio after login',
+      icon: WifiOff,
+    },
+    {
+      label: 'Settings',
+      description: 'Font, theme, and reading mode',
+      icon: Settings2,
+    },
+  ];
 
   return (
     <>
@@ -96,8 +135,8 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.book) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
 
-      <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-4xl">
+      <section className="border-b border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%))] px-4 py-6 sm:px-6 lg:py-8">
+        <div className="mx-auto max-w-7xl">
           <BreadcrumbNav
             items={[
               { label: 'Home', href: '/' },
@@ -106,35 +145,79 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
             ]}
             includeSchema={false}
           />
-          <h1 className="font-display text-3xl text-[var(--color-heading)] sm:text-4xl">
-            Surah {surah.surahName} ({surah.surahNameArabic})
-          </h1>
-          <p className="urdu-font mt-2 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
-            {urduTitle}
-          </p>
-          <p className="mt-2 text-sm text-[var(--color-muted-text)]">
-            {surah.surahNameTranslation} · {surah.totalAyah} ayahs · {surah.revelationPlace}
-          </p>
-          <Link
-            href={buildSurahDownloadPath(surah.id, surah.surahName)}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
-          >
-            Download PDF & Audio →
-          </Link>
+          <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                Surah {surah.id}
+              </p>
+              <h1 className="mt-2 font-display text-4xl leading-tight text-[var(--color-heading)] sm:text-5xl">
+                Surah {surah.surahName}
+              </h1>
+              <p
+                className="arabic-font mt-3 text-4xl leading-relaxed text-[var(--color-heading)] sm:text-5xl"
+                dir="rtl"
+                lang="ar"
+              >
+                {surah.surahNameArabic}
+              </p>
+              <p className="urdu-font mt-2 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
+                {urduTitle}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted-text)]">
+                <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1">
+                  {surah.surahNameTranslation}
+                </span>
+                <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1">
+                  {surah.totalAyah} ayahs
+                </span>
+                <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1">
+                  {surah.revelationPlace}
+                </span>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <a
+                  href="#interactive-reader"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_38%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-4 py-2.5 text-sm font-bold text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]"
+                >
+                  <BookOpenCheck className="size-4" />
+                  Start Reading
+                </a>
+                <Link
+                  href={buildSurahDownloadPath(surah.id, surah.surahName)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
+                >
+                  <Download className="size-4" />
+                  PDF & Audio
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+              {featureItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.label}
+                    className="rounded-xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] p-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]">
+                        <Icon className="size-4" />
+                      </span>
+                      <p className="font-semibold text-[var(--color-heading)]">{item.label}</p>
+                    </div>
+                    <p className="mt-1 text-xs leading-snug text-[var(--color-muted-text)]">
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-4xl">
-          <SurahDownloadHub surah={surah} compact />
-        </div>
-      </section>
-
-      {ayahRows.length > 0 && (
-        <SurahCrawlableContent surah={surah} ayahs={ayahRows} />
-      )}
-
-      {/* Interactive reader — hydrates on top of crawlable SSR content */}
+      {/* Interactive reader is the only visible ayah list to avoid duplicate ayahs. */}
       <QuranReaderPage />
     </>
   );
