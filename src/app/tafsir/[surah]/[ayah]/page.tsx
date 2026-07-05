@@ -31,20 +31,19 @@ interface TafsirPageProps {
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-/** Pre-render Al-Fatiha tafsir at build; other surahs via ISR to avoid API timeouts */
 export async function generateStaticParams() {
   const { getAllSurahs } = await import('@/lib/quran-index');
   const { buildSurahSlug } = await import('@/lib/quran-routing');
   const { getTafsirAyahNumbersBySurah } = await import('@/lib/tafsir-index');
 
-  const surah = getAllSurahs().find((s) => s.id === 1);
-  if (!surah) return [];
+  return getAllSurahs().flatMap((surah) => {
+    const slug = buildSurahSlug(surah.id, surah.surahName);
 
-  const slug = buildSurahSlug(surah.id, surah.surahName);
-  return getTafsirAyahNumbersBySurah(1).map((ayahNumber) => ({
-    surah: slug,
-    ayah: String(ayahNumber),
-  }));
+    return getTafsirAyahNumbersBySurah(surah.id).map((ayahNumber) => ({
+      surah: slug,
+      ayah: String(ayahNumber),
+    }));
+  });
 }
 
 function parseAyahNumber(value: string) {

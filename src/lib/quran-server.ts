@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cache } from 'react';
 
-import type { SurahMeta, UrduTafsirEntry } from '@/types/quran';
+import type { SurahDetail, SurahMeta, UrduTafsirEntry } from '@/types/quran';
 
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
@@ -117,6 +117,25 @@ export const getAyahRowsForSurah = cache(async (surahId: number): Promise<AyahCo
   }));
 });
 
+export const getSurahDetailById = cache(async (surahId: number): Promise<SurahDetail> => {
+  const surahMeta = await getSurahMetaById(surahId);
+  const ayahRows = await getAyahRowsForSurah(surahId);
+
+  return {
+    number: surahId,
+    name: surahMeta.surahNameArabic,
+    englishName: surahMeta.surahName,
+    englishNameTranslation: surahMeta.surahNameTranslation,
+    revelationType: surahMeta.revelationPlace,
+    numberOfAyahs: surahMeta.totalAyah,
+    ayahs: ayahRows.map((ayah) => ({
+      number: ayah.ayahNumber,
+      numberInSurah: ayah.ayahNumber,
+      text: ayah.arabicText,
+    })),
+  };
+});
+
 export const getAyahContent = cache(async (surahId: number, ayahNumber: number) => {
   const ayahs = await getAyahRowsForSurah(surahId);
   const match = ayahs.find((entry) => entry.ayahNumber === ayahNumber);
@@ -125,7 +144,7 @@ export const getAyahContent = cache(async (surahId: number, ayahNumber: number) 
 });
 
 export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number) => {
-  const [arabicResponse, urduResponse] = await Promise.all([
+  const [arabicResult, urduResult] = await Promise.allSettled([
     fetch(`${QURAN_COM_API}/verses/by_verse/ar-default/${surahId}:${ayahNumber}`, {
       next: { revalidate: 60 * 60 * 24 },
     }),
@@ -137,10 +156,13 @@ export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number
     ),
   ]);
 
+  const arabicResponse = arabicResult.status === 'fulfilled' ? arabicResult.value : null;
+  const urduResponse = urduResult.status === 'fulfilled' ? urduResult.value : null;
+
   let arabicAudio: string | null = null;
   let urduAudio: string | null = null;
 
-  if (arabicResponse.ok) {
+  if (arabicResponse?.ok) {
     try {
       const arabicData = (await arabicResponse.json()) as {
         verses?: Array<{
@@ -156,7 +178,7 @@ export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number
     }
   }
 
-  if (urduResponse.ok) {
+  if (urduResponse?.ok) {
     try {
       const urduData = (await urduResponse.json()) as {
         [ayah: string]: string;
@@ -176,21 +198,31 @@ export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number
 export const getUrduTafsirByAyah = cache(
   async (surahId: number, ayahNumber: number): Promise<UrduTafsirEntry | null> => {
     for (const sourceId of QURAN_COM_TAFSIR_IDS) {
-      const response = await fetch(
-        `${QURAN_COM_API}/tafsirs/${sourceId}/by_ayah/${surahId}:${ayahNumber}`,
-        {
-          headers: {
-            Accept: 'application/json',
-          },
-          next: { revalidate: 60 * 60 * 24 },
-        }
-      );
+      let response: Response;
+      try {
+        response = await fetch(
+          `${QURAN_COM_API}/tafsirs/${sourceId}/by_ayah/${surahId}:${ayahNumber}`,
+          {
+            headers: {
+              Accept: 'application/json',
+            },
+            next: { revalidate: 60 * 60 * 24 },
+          }
+        );
+      } catch {
+        continue;
+      }
 
       if (!response.ok) {
         continue;
       }
 
-      const payload = (await response.json()) as QuranComTafsirPayload;
+      let payload: QuranComTafsirPayload;
+      try {
+        payload = (await response.json()) as QuranComTafsirPayload;
+      } catch {
+        continue;
+      }
       const textHtml = String(payload.tafsir?.text ?? '').trim();
       if (!textHtml) {
         continue;

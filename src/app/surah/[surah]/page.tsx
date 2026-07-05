@@ -14,7 +14,7 @@ import {
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import QuranReaderPage from '@/components/sidebar';
 import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
-import { getAyahRowsForSurah } from '@/lib/quran-server';
+import { getAyahRowsForSurah, getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
 import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { buildSurahPageKeywords } from '@/lib/seo-keywords';
@@ -85,8 +85,17 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
   }
 
   let ayahRows: Awaited<ReturnType<typeof getAyahRowsForSurah>> = [];
+  let initialSurahDetail: Awaited<ReturnType<typeof getSurahDetailById>> | null = null;
+  let initialSurahMeta: Awaited<ReturnType<typeof getSurahMetaById>> | null = null;
   try {
-    ayahRows = await getAyahRowsForSurah(surah.id);
+    const [rows, detail, meta] = await Promise.all([
+      getAyahRowsForSurah(surah.id),
+      getSurahDetailById(surah.id),
+      getSurahMetaById(surah.id),
+    ]);
+    ayahRows = rows;
+    initialSurahDetail = detail;
+    initialSurahMeta = meta;
   } catch {
     ayahRows = [];
   }
@@ -218,7 +227,11 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       </section>
 
       {/* Interactive reader is the only visible ayah list to avoid duplicate ayahs. */}
-      <QuranReaderPage />
+      <QuranReaderPage
+        initialSurahId={surah.id}
+        initialSurahDetail={initialSurahDetail}
+        initialSurahMeta={initialSurahMeta}
+      />
     </>
   );
 }

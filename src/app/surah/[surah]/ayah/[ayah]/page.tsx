@@ -31,19 +31,18 @@ interface AyahPageProps {
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-/** Pre-render Al-Fatiha ayahs at build; popular surahs via ISR */
 export async function generateStaticParams() {
   const { getAllSurahs } = await import('@/lib/quran-index');
   const { buildSurahSlug } = await import('@/lib/quran-routing');
 
-  const surah = getAllSurahs().find((s) => s.id === 1);
-  if (!surah) return [];
+  return getAllSurahs().flatMap((surah) => {
+    const slug = buildSurahSlug(surah.id, surah.surahName);
 
-  const slug = buildSurahSlug(surah.id, surah.surahName);
-  return Array.from({ length: surah.totalAyah }, (_, i) => ({
-    surah: slug,
-    ayah: String(i + 1),
-  }));
+    return Array.from({ length: surah.totalAyah }, (_, i) => ({
+      surah: slug,
+      ayah: String(i + 1),
+    }));
+  });
 }
 
 function parseAyahNumber(value: string) {

@@ -69,6 +69,12 @@ interface AyahWithTranslation {
   translation?: string;
 }
 
+interface QuranReaderPageProps {
+  initialSurahId?: number;
+  initialSurahDetail?: SurahDetail | null;
+  initialSurahMeta?: SurahMeta | null;
+}
+
 interface AyahTimingRange {
   ayahNumber: number;
   fromMs: number;
@@ -367,13 +373,17 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-export default function QuranReaderPage() {
+export default function QuranReaderPage({
+  initialSurahId,
+  initialSurahDetail = null,
+  initialSurahMeta = null,
+}: QuranReaderPageProps) {
   const params = useParams<{ id?: string | string[]; surah?: string | string[] }>();
   const router = useRouter();
   const rawParam = Array.isArray(params?.surah)
     ? params.surah[0]
     : params?.surah ?? (Array.isArray(params?.id) ? params.id[0] : params?.id);
-  const surahId = parseSurahIdFromParam(rawParam) ?? 1;
+  const surahId = parseSurahIdFromParam(rawParam) ?? initialSurahId ?? 1;
 
   const {
     setPageNo,
@@ -396,10 +406,15 @@ export default function QuranReaderPage() {
     isAuthenticated,
   } = useAppSettings();
 
-  const [loading, setLoading] = useState(true);
+  const hasInitialSurahContent = initialSurahId === surahId && Boolean(initialSurahDetail && initialSurahMeta);
+  const [loading, setLoading] = useState(!hasInitialSurahContent);
   const [error, setError] = useState<string | null>(null);
-  const [surahDetail, setSurahDetail] = useState<SurahDetail | null>(null);
-  const [surahMeta, setSurahMeta] = useState<SurahMeta | null>(null);
+  const [surahDetail, setSurahDetail] = useState<SurahDetail | null>(
+    hasInitialSurahContent ? initialSurahDetail : null
+  );
+  const [surahMeta, setSurahMeta] = useState<SurahMeta | null>(
+    hasInitialSurahContent ? initialSurahMeta : null
+  );
   const [searchInput, setSearchInput] = useState('');
   const [didAutoResume, setDidAutoResume] = useState(false);
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
@@ -468,6 +483,14 @@ export default function QuranReaderPage() {
 
     setPageNo(surahId);
 
+    if (hasInitialSurahContent) {
+      setSurahDetail(initialSurahDetail);
+      setSurahMeta(initialSurahMeta);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
 
     const load = async () => {
@@ -505,7 +528,7 @@ export default function QuranReaderPage() {
     return () => {
       controller.abort();
     };
-  }, [setPageNo, surahId]);
+  }, [hasInitialSurahContent, initialSurahDetail, initialSurahMeta, setPageNo, surahId]);
 
   const ayahs = useMemo<AyahWithTranslation[]>(() => {
     if (!surahDetail) {
