@@ -512,7 +512,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+0.65rem)] z-[140] w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
+        <div className="fixed left-1/2 top-4 z-[160] max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(0,0,0,0.38)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:translate-x-0">
           <div className="border-b border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),transparent_86%),transparent)] p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -582,7 +582,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
             </label>
           </div>
 
-          <div className="max-h-[23rem] overflow-y-auto p-2">
+          <div className="max-h-[min(23rem,calc(100dvh-18rem))] overflow-y-auto p-2">
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-8 text-sm text-[var(--color-muted-text)]">
                 <Loader2 className="h-4 w-4 animate-spin" />
