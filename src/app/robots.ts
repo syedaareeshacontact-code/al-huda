@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: 'Googlebot',
-        allow: ['/', '/surah', '/surah/', '/download', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
+        allow: ['/', '/surah', '/surah/', '/download', '/tafsir', '/tafsir/', '/about', '/contact', '/read-quran-online', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
         disallow: [
           '/admin',
           '/admin/',
@@ -25,7 +25,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: 'Bingbot',
-        allow: ['/', '/surah', '/surah/', '/download', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
+        allow: ['/', '/surah', '/surah/', '/download', '/tafsir', '/tafsir/', '/about', '/contact', '/read-quran-online', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
         disallow: [
           '/admin',
           '/admin/',
@@ -39,7 +39,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: '*',
-        allow: ['/', '/surah', '/surah/', '/download', '/tafsir', '/tafsir/', '/about', '/contact', '/cities', '/read-quran-online', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
+        allow: ['/', '/surah', '/surah/', '/download', '/tafsir', '/tafsir/', '/about', '/contact', '/read-quran-online', '/hadith', '/hadith/', '/prayer-times', '/prayer-times/', '/duas', '/duas/', '/azkar', '/99-names-of-allah', '/zakat-calculator', '/mosque-finder', '/mosque-finder/'],
         disallow: [
           '/admin',
           '/admin/',

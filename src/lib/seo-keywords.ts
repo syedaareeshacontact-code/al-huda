@@ -267,40 +267,8 @@ export const PAKISTAN_LOCAL_KEYWORDS = [
   'islamic education app pakistan',
 ];
 
-export const CITY_KEYWORDS = {
-  karachi: [
-    'quran app karachi',
-    'quran reader karachi',
-    'islamic learning karachi',
-    'تعليم قرآن کراچی',
-  ],
-  islamabad: [
-    'quran app islamabad',
-    'quran learning islamabad',
-    'islamic education islamabad',
-    'قرآن اسلام آباد',
-  ],
-  lahore: [
-    'quran app lahore',
-    'quran reader lahore',
-    'islamic app lahore',
-    'قرآن لاہور',
-  ],
-  rawalpindi: [
-    'quran app rawalpindi',
-    'islamic learning rawalpindi',
-    'قرآن راولپنڈی',
-  ],
-  multan: [
-    'quran app multan',
-    'islamic education multan',
-    'قرآن ملتان',
-  ],
-};
-
 export const ALL_LOCAL_KEYWORDS = [
   ...PAKISTAN_LOCAL_KEYWORDS,
-  ...Object.values(CITY_KEYWORDS).flat(),
 ];
 
 export const VOICE_SEARCH_KEYWORDS = [
@@ -391,7 +359,6 @@ export {
   ALL_GENERATED_SEO_KEYWORDS,
   GENERATED_SURAH_KEYWORDS,
   GENERATED_AYAH_KEYWORDS,
-  GENERATED_CITY_KEYWORDS,
   GENERATED_HADITH_KEYWORDS,
   GENERATED_JUZ_PARA_KEYWORDS,
   GENERATED_TAFSEER_KEYWORDS,

@@ -373,29 +373,6 @@ export function buildEducationalOrganizationJsonLd(options: {
   };
 }
 
-export function buildCityPageSchema(
-  city: string,
-  country: string = 'Pakistan',
-  citySlug?: string
-) {
-  const slug = citySlug ?? city.toLowerCase().replace(/\s+/g, '-');
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: `Read al Quran - ${city}, ${country}`,
-    description: `Read Quran online in ${city} with Urdu translation, tafseer, and audio`,
-    url: toAbsoluteUrl(`/cities/${slug}`),
-    areaServed: {
-      '@type': 'City',
-      name: city,
-      containedIn: {
-        '@type': 'Country',
-        name: country,
-      },
-    },
-  };
-}
 
 export function buildHowToJsonLd(options: {
   name: string;

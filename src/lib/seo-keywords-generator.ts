@@ -86,39 +86,6 @@ const PARA_KEYWORDS = Array.from({ length: 30 }, (_, index) => {
   ];
 }).flat();
 
-const PAKISTAN_CITIES = [
-  'karachi',
-  'lahore',
-  'islamabad',
-  'rawalpindi',
-  'multan',
-  'faisalabad',
-  'peshawar',
-  'quetta',
-  'sialkot',
-  'gujranwala',
-  'hyderabad',
-  'sukkur',
-  'abbottabad',
-  'mardan',
-  'bahawalpur',
-  'sargodha',
-  'sahiwal',
-  'jhelum',
-  'mirpur',
-  'muzaffarabad',
-];
-
-const CITY_ACTIONS = [
-  'quran app',
-  'read quran online',
-  'quran with urdu translation',
-  'islamic app',
-  'quran learning',
-  'quran classes online',
-  'free quran app',
-];
-
 const HADITH_BOOKS = [
   'sahih bukhari',
   'sahih muslim',
@@ -255,22 +222,6 @@ function buildAyahKeywordSet() {
   return Array.from(keywords);
 }
 
-function buildCityKeywordSet() {
-  const keywords = new Set<string>();
-
-  for (const city of PAKISTAN_CITIES) {
-    for (const action of CITY_ACTIONS) {
-      keywords.add(`${action} ${city}`);
-      keywords.add(`${action} ${city} pakistan`);
-    }
-    keywords.add(`read quran online ${city}`);
-    keywords.add(`quran app ${city} pakistan`);
-    keywords.add(`قرآن ${city}`);
-  }
-
-  return Array.from(keywords);
-}
-
 function buildHadithKeywordSet() {
   const keywords = new Set<string>();
 
@@ -287,7 +238,6 @@ function buildHadithKeywordSet() {
 
 export const GENERATED_SURAH_KEYWORDS = buildSurahKeywordSet();
 export const GENERATED_AYAH_KEYWORDS = buildAyahKeywordSet();
-export const GENERATED_CITY_KEYWORDS = buildCityKeywordSet();
 export const GENERATED_HADITH_KEYWORDS = buildHadithKeywordSet();
 export const GENERATED_JUZ_PARA_KEYWORDS = [...JUZ_KEYWORDS, ...PARA_KEYWORDS];
 export const GENERATED_TAFSEER_KEYWORDS = TAFSEER_TOPICS.map(normalizeKeyword);
@@ -378,7 +328,6 @@ export const ALL_GENERATED_SEO_KEYWORDS = Array.from(
   new Set([
     ...GENERATED_SURAH_KEYWORDS,
     ...GENERATED_AYAH_KEYWORDS,
-    ...GENERATED_CITY_KEYWORDS,
     ...GENERATED_HADITH_KEYWORDS,
     ...GENERATED_JUZ_PARA_KEYWORDS,
     ...GENERATED_TAFSEER_KEYWORDS,

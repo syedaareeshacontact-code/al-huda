@@ -1,4 +1,3 @@
-import { getAllCitySlugs } from '@/lib/islamic-cities';
 import { getSiteOrigin } from '@/lib/seo';
 
 export const dynamic = 'force-static';
@@ -15,12 +14,6 @@ function escapeXml(input: string) {
 function renderLocalSitemapXml() {
   const baseUrl = getSiteOrigin();
   const updatedAt = new Date().toISOString();
-  const cityEntries = getAllCitySlugs().map((slug) => ({
-    url: `${baseUrl}/cities/${slug}`,
-    lastmod: updatedAt,
-    changefreq: 'weekly',
-    priority: '0.75',
-  }));
 
   const entries = [
     {
@@ -41,7 +34,6 @@ function renderLocalSitemapXml() {
       changefreq: 'monthly',
       priority: '0.8',
     },
-    ...cityEntries,
     {
       url: `${baseUrl}/prayer-times`,
       lastmod: updatedAt,

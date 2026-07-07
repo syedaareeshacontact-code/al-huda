@@ -334,35 +334,6 @@ export const EXPLORE_MEGA_NAV: MegaNavGroup = {
       ],
     },
     {
-      title: 'Local Reading',
-      items: [
-        {
-          label: 'Karachi',
-          description: 'Read Quran online in Karachi',
-          href: '/cities/karachi',
-          icon: MapPin,
-        },
-        {
-          label: 'Lahore',
-          description: 'Read Quran online in Lahore',
-          href: '/cities/lahore',
-          icon: MapPin,
-        },
-        {
-          label: 'Islamabad',
-          description: 'Read Quran online in Islamabad',
-          href: '/cities/islamabad',
-          icon: MapPin,
-        },
-        {
-          label: 'Rawalpindi',
-          description: 'Read Quran online in Rawalpindi',
-          href: '/cities/rawalpindi',
-          icon: MapPin,
-        },
-      ],
-    },
-    {
       title: 'Platform',
       items: [
         {
