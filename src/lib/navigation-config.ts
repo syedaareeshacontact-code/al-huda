@@ -111,24 +111,6 @@ export const QURAN_MEGA_NAV: MegaNavGroup = {
       ],
     },
     {
-      title: 'Smart Search',
-      items: [
-        {
-          label: 'AI Semantic Search',
-          description: 'Find ayahs by meaning & topic',
-          href: '/vector-search',
-          icon: BrainCircuit,
-          badge: 'AI',
-        },
-        {
-          label: 'Voice Search',
-          description: 'Ask questions about the Quran naturally',
-          href: '/voice-search',
-          icon: Mic,
-        },
-      ],
-    },
-    {
       title: 'Popular Surahs',
       items: [
         {

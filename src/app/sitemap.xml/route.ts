@@ -53,7 +53,6 @@ async function renderSitemapIndexXml() {
   const extraSitemaps = [
     `${origin}/local-sitemap.xml`,
     `${origin}/islamic-tools-sitemap.xml`,
-    `${origin}/voice-sitemap.xml`,
   ];
 
   const chunkItems = names

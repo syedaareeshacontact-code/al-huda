@@ -4,12 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "test-api-key": "node scripts/test-api-key.mjs",
     "seo:generate": "node scripts/generate-surah-index.mjs",
     "seo:generate-tafsir": "node scripts/generate-tafsir-availability.mjs",
     "generate:surah-pdfs": "node scripts/generate-surah-pdfs.mjs",
     "build:seo": "npm run seo:generate && npm run seo:generate-tafsir && npm run generate:surah-pdfs && npm run build",
-    "embed:generate": "node scripts/generate-embeddings.mjs",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build --webpack",
     "start": "next start",
     "lint": "eslint",

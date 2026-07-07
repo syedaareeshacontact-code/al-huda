@@ -29,7 +29,6 @@ import {
   flattenMegaNavLinks,
   HOME_NAV,
   MEGA_NAV_GROUPS,
-  getAllMobileNavSections,
   type MegaNavGroup,
   type NavLinkItem,
 } from '@/lib/navigation-config';
@@ -242,6 +241,7 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMegaId, setOpenMegaId] = useState<string | null>(null);
+  const [openMobileSectionId, setOpenMobileSectionId] = useState<string | null>(null);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -252,6 +252,7 @@ export default function SiteHeader() {
   useEffect(() => {
     setMobileOpen(false);
     setOpenMegaId(null);
+    setOpenMobileSectionId(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -359,7 +360,6 @@ export default function SiteHeader() {
   const isMegaGroupActive = (group: MegaNavGroup) =>
     flattenMegaNavLinks(group).some((item) => isActive(item.href, item.exact));
 
-  const mobileSections = getAllMobileNavSections();
   const HomeIcon = HOME_NAV.icon;
   const openMegaGroup = MEGA_NAV_GROUPS.find((group) => group.id === openMegaId) ?? null;
   const showAdminLink = Boolean(sessionUser?.isAdmin);
@@ -517,28 +517,91 @@ export default function SiteHeader() {
             </div>
 
             <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
-              {mobileSections.map((section) => (
-                <div key={section.id} className="mb-5">
-                  <div className="mb-2 px-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-muted-text)]">
-                      {section.title}
-                    </p>
-                    {'tagline' in section && section.tagline && (
-                      <p className="mt-0.5 text-xs text-[var(--color-muted-text)]">{section.tagline}</p>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    {section.items.map((item) => (
-                      <NavLinkCard
-                        key={`${section.id}-${item.href}-${item.label}`}
-                        item={item}
-                        active={isActive(item.href, item.exact)}
-                        onNavigate={() => setMobileOpen(false)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <div className="mb-3">
+                <NavLinkCard
+                  item={{
+                    ...HOME_NAV,
+                    description: 'Return to the main dashboard',
+                  }}
+                  active={isActive(HOME_NAV.href, HOME_NAV.exact)}
+                  onNavigate={() => setMobileOpen(false)}
+                  compact
+                />
+              </div>
+
+              <div className="space-y-2">
+                {MEGA_NAV_GROUPS.map((group) => {
+                  const GroupIcon = group.icon;
+                  const open = openMobileSectionId === group.id;
+                  const active = isMegaGroupActive(group);
+                  const sectionLinks = flattenMegaNavLinks(group);
+                  const panelId = `mobile-nav-section-${group.id}`;
+
+                  return (
+                    <section
+                      key={group.id}
+                      className={cn(
+                        'overflow-hidden rounded-2xl border transition',
+                        active || open
+                          ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)]'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)]'
+                      )}
+                    >
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        onClick={() => setOpenMobileSectionId(open ? null : group.id)}
+                        className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-[var(--color-surface-2)]"
+                      >
+                        <span
+                          className={cn(
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border',
+                            active || open
+                              ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent)]'
+                              : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted-text)]'
+                          )}
+                        >
+                          <GroupIcon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              'block truncate text-sm font-semibold',
+                              active || open ? 'text-[var(--color-accent-soft)]' : 'text-[var(--color-heading)]'
+                            )}
+                          >
+                            {group.label}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-[var(--color-muted-text)]">
+                            {group.tagline}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-muted-text)]">
+                            {sectionLinks.length}
+                          </span>
+                          <ChevronDown className={cn('h-4 w-4 text-[var(--color-muted-text)] transition-transform', open && 'rotate-180')} />
+                        </span>
+                      </button>
+
+                      {open && (
+                        <div id={panelId} className="space-y-1 border-t border-[var(--color-border)] px-2 py-2">
+                          {sectionLinks.map((item) => (
+                            <NavLinkCard
+                              key={`${group.id}-${item.href}-${item.label}`}
+                              item={item}
+                              active={isActive(item.href, item.exact)}
+                              onNavigate={() => setMobileOpen(false)}
+                              compact
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
             </nav>
 
             <div className="border-t border-[var(--color-border)] p-4">

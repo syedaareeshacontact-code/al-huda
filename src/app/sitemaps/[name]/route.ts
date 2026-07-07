@@ -110,7 +110,6 @@ export async function GET(
       `${origin}/tafsir`,
       `${origin}${buildHadithIndexPath()}`,
       `${origin}/read-quran-online`,
-      `${origin}/voice-search`,
       ...surahs.map((surah) => `${origin}${buildSurahPath(surah.id, surah.surahName)}`),
     ];
 
