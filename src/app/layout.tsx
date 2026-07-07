@@ -176,14 +176,34 @@ const organizationJsonLd = buildOrganizationJsonLd();
 
 const websiteJsonLd = buildWebsiteJsonLd();
 
+const themeInitScript = `
+(function() {
+  try {
+    var themeMode = window.localStorage.getItem('alhuda:theme-mode') || 'dark';
+    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var shouldUseDark = themeMode === 'dark' || (themeMode === 'system' && systemDark);
+    document.documentElement.classList.toggle('dark', shouldUseDark);
+    document.documentElement.style.colorScheme = shouldUseDark ? 'dark' : 'light';
+  } catch (error) {
+    document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'dark';
+  }
+})();
+`;
+
 export default function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" data-arabic-font="amiriQuran" suppressHydrationWarning>
+		<html
+			lang="en"
+			data-arabic-font="amiriQuran"
+			suppressHydrationWarning
+		>
 			<head>
+				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 				{/* DNS prefetch for external API services */}
 			<link rel="dns-prefetch" href="//api.quran.com" />
 			<link rel="dns-prefetch" href="//hadithapi.com" />

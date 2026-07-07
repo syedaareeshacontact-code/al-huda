@@ -21,6 +21,7 @@ import type {
 } from '@/types/settings';
 
 const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
+const THEME_MODE_STORAGE_KEY = 'alhuda:theme-mode';
 
 const DEFAULT_SETTINGS: AppSettings = {
   readingMode: 'ayah',
@@ -79,6 +80,23 @@ function applyThemeMode(themeMode: ThemeMode) {
   root.style.colorScheme = shouldUseDark ? 'dark' : 'light';
 }
 
+function readStoredThemeMode(): ThemeMode | null {
+  try {
+    const value = window.localStorage.getItem(THEME_MODE_STORAGE_KEY);
+    return value === 'light' || value === 'dark' || value === 'system' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredThemeMode(themeMode: ThemeMode) {
+  try {
+    window.localStorage.setItem(THEME_MODE_STORAGE_KEY, themeMode);
+  } catch {
+    // Theme persistence is best-effort; rendering should still continue.
+  }
+}
+
 function requestSignin(reason: string) {
   window.dispatchEvent(
     new CustomEvent(OPEN_AUTH_MODAL_EVENT, {
@@ -98,12 +116,18 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     let ignore = false;
 
     const loadSettings = async () => {
+      const localThemeMode = readStoredThemeMode();
+      const localFallbackSettings = normalizeUserSettings({
+        ...DEFAULT_USER_SETTINGS,
+        themeMode: localThemeMode ?? DEFAULT_USER_SETTINGS.themeMode,
+      });
+
       try {
         const response = await fetch('/api/auth/settings', { cache: 'no-store' });
         if (!response.ok) {
           if (!ignore) {
             setIsAuthenticated(false);
-            setUserSettings(DEFAULT_USER_SETTINGS);
+            setUserSettings(localFallbackSettings);
           }
           return;
         }
@@ -113,12 +137,13 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
         if (!ignore) {
           setIsAuthenticated(true);
           setUserSettings(nextSettings);
+          writeStoredThemeMode(nextSettings.themeMode);
           syncedSettingsRef.current = JSON.stringify(nextSettings);
         }
       } catch {
         if (!ignore) {
           setIsAuthenticated(false);
-          setUserSettings(DEFAULT_USER_SETTINGS);
+          setUserSettings(localFallbackSettings);
         }
       } finally {
         if (!ignore) {
@@ -140,6 +165,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     const normalized = normalizeUserSettings(userSettings);
     root.dataset.arabicFont = normalized.arabicFont;
     root.style.setProperty('--arabic-font-scale', String(normalized.arabicFontScale));
+    writeStoredThemeMode(normalized.themeMode);
     applyThemeMode(normalized.themeMode);
   }, [isLoaded, userSettings]);
 
