@@ -324,6 +324,13 @@ export const EXPLORE_MEGA_NAV: MegaNavGroup = {
           href: '/contact',
           icon: MessageSquare,
         },
+        {
+          label: 'Feedback',
+          description: 'Share suggestions and report issues',
+          href: '/feedback',
+          icon: MessageSquare,
+          exact: true,
+        },
       ],
     },
     {

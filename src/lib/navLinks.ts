@@ -15,6 +15,7 @@ const navLinks: NavLinkItem[] = [
   { id: 4, name: 'Read Online', link: '/read-quran-online' },
   { id: 5, name: 'About', link: '/about' },
   { id: 6, name: 'Contact', link: '/contact' },
+  { id: 7, name: 'Feedback', link: '/feedback' },
 ];
 
 function buildPopularSurahLink(surahId: number, ayahNumber?: number) {
