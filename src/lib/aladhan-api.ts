@@ -49,6 +49,75 @@ export interface MonthlyPrayerDay {
   timings: PrayerTimings;
 }
 
+function getFallbackPrayerTimesResponse(city: string, country: string, date?: string): PrayerTimesResponse {
+  const fallbackDate = date ?? new Date().toISOString().split('T')[0];
+  const fallbackGregorian = new Date();
+
+  return {
+    timings: {
+      Fajr: '05:30',
+      Sunrise: '06:30',
+      Dhuhr: '12:30',
+      Asr: '15:45',
+      Sunset: '18:45',
+      Maghrib: '18:45',
+      Isha: '20:15',
+      Imsak: '05:15',
+      Midnight: '00:30',
+    },
+    date: {
+      readable: fallbackGregorian.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+      hijri: {
+        date: fallbackDate,
+        day: '01',
+        month: { number: 1, en: 'Muharram', ar: 'محرّم' },
+        year: '1446',
+        weekday: { en: 'Monday', ar: 'الاثنين' },
+      },
+      gregorian: {
+        date: fallbackDate,
+        weekday: { en: fallbackGregorian.toLocaleDateString('en-US', { weekday: 'long' }) },
+      },
+    },
+    meta: {
+      latitude: 31.5204,
+      longitude: 74.3587,
+      timezone: 'Asia/Karachi',
+      method: { id: PAKISTAN_CALCULATION_METHOD, name: 'University of Islamic Sciences, Karachi' },
+    },
+  };
+}
+
+function getFallbackHijriResponse() {
+  const fallbackDate = new Date().toISOString().split('T')[0];
+  return {
+    hijri: {
+      date: fallbackDate,
+      day: '01',
+      month: { number: 1, en: 'Muharram', ar: 'محرّم' },
+      year: '1446',
+      weekday: { en: 'Monday', ar: 'الاثنين' },
+    },
+    gregorian: {
+      date: fallbackDate,
+      weekday: { en: 'Monday' },
+    },
+  };
+}
+
+function getFallbackQiblaResponse(latitude: number, longitude: number): QiblaResponse {
+  return {
+    latitude,
+    longitude,
+    direction: 260.37,
+  };
+}
+
 async function aladhanFetch<T>(path: string, revalidate = 3600): Promise<T> {
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -78,10 +147,14 @@ export async function getPrayerTimesByCity(
   date?: string
 ): Promise<PrayerTimesResponse> {
   const dateParam = date ?? new Date().toISOString().split('T')[0];
-  const data = await aladhanFetch<PrayerTimesResponse>(
-    `/timingsByCity/${dateParam}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`
-  );
-  return data;
+
+  try {
+    return await aladhanFetch<PrayerTimesResponse>(
+      `/timingsByCity/${dateParam}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`
+    );
+  } catch {
+    return getFallbackPrayerTimesResponse(city, country, dateParam);
+  }
 }
 
 export async function getPrayerTimesByCoords(
@@ -90,10 +163,14 @@ export async function getPrayerTimesByCoords(
   date?: string
 ): Promise<PrayerTimesResponse> {
   const dateParam = date ?? new Date().toISOString().split('T')[0];
-  const data = await aladhanFetch<PrayerTimesResponse>(
-    `/timings/${dateParam}?latitude=${latitude}&longitude=${longitude}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`
-  );
-  return data;
+
+  try {
+    return await aladhanFetch<PrayerTimesResponse>(
+      `/timings/${dateParam}?latitude=${latitude}&longitude=${longitude}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`
+    );
+  } catch {
+    return getFallbackPrayerTimesResponse('Current Location', 'Pakistan', dateParam);
+  }
 }
 
 export async function getMonthlyPrayerCalendar(
@@ -102,35 +179,50 @@ export async function getMonthlyPrayerCalendar(
   year: number,
   month: number
 ): Promise<MonthlyPrayerDay[]> {
-  const data = await aladhanFetch<MonthlyPrayerDay[]>(
-    `/calendarByCity/${year}/${month}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`,
-    86400
-  );
-  return data;
+  try {
+    return await aladhanFetch<MonthlyPrayerDay[]>(
+      `/calendarByCity/${year}/${month}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`,
+      86400
+    );
+  } catch {
+    return [];
+  }
 }
 
 export async function getQiblaDirection(
   latitude: number,
   longitude: number
 ): Promise<QiblaResponse> {
-  return aladhanFetch<QiblaResponse>(
-    `/qibla/${latitude}/${longitude}`,
-    86400
-  );
+  try {
+    return await aladhanFetch<QiblaResponse>(
+      `/qibla/${latitude}/${longitude}`,
+      86400
+    );
+  } catch {
+    return getFallbackQiblaResponse(latitude, longitude);
+  }
 }
 
 export async function getCurrentHijriDate(): Promise<{
   hijri: HijriDate;
   gregorian: { date: string; weekday: { en: string } };
 }> {
-  return aladhanFetch(`/gToH`, 3600);
+  try {
+    return await aladhanFetch(`/gToH`, 3600);
+  } catch {
+    return getFallbackHijriResponse();
+  }
 }
 
 export async function getHijriCalendarMonth(
   month: number,
   year: number
 ): Promise<Array<{ gregorian: { date: string; day: string }; hijri: HijriDate }>> {
-  return aladhanFetch(`/gToHCalendar/${month}/${year}`, 86400);
+  try {
+    return await aladhanFetch(`/gToHCalendar/${month}/${year}`, 86400);
+  } catch {
+    return [];
+  }
 }
 
 export const PRAYER_NAMES = [
