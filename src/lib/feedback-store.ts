@@ -116,3 +116,9 @@ export async function listFeedbackForAdmin(): Promise<StoredFeedback[]> {
     updatedAt: String(entry.updatedAt),
   }));
 }
+
+export async function deleteFeedbackForAdmin(id: string) {
+  const Feedback = await ensureFeedbackModel();
+  const result = await Feedback.deleteOne({ id }).exec();
+  return result.deletedCount > 0;
+}

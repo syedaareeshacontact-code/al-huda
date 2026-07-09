@@ -11,6 +11,7 @@ import {
   RefreshCcw,
   Search,
   Star,
+  Trash2,
   Users,
 } from 'lucide-react';
 
@@ -134,6 +135,7 @@ export default function AdminUsersPage() {
   const [summary, setSummary] = useState<AdminUsageSummary>(EMPTY_SUMMARY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [clearingFeedbackId, setClearingFeedbackId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
 
   const loadUsers = async () => {
@@ -183,6 +185,29 @@ export default function AdminUsersPage() {
     void loadUsers();
   }, []);
 
+  const clearFeedback = async (id: string) => {
+    try {
+      setClearingFeedbackId(id);
+      setError(null);
+
+      const response = await fetch(`/api/admin/feedback/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+
+      if (!response.ok) {
+        setError(payload?.message ?? 'Unable to clear feedback.');
+        return;
+      }
+
+      setFeedback((current) => current.filter((entry) => entry.id !== id));
+    } catch {
+      setError('Unable to clear feedback right now.');
+    } finally {
+      setClearingFeedbackId(null);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
@@ -224,7 +249,7 @@ export default function AdminUsersPage() {
         </p>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-[5rem] lg:h-fit">
           <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_56%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_16%),color-mix(in_oklab,var(--color-highlight),var(--color-surface)_95%))]">
             <CardHeader>
@@ -251,7 +276,7 @@ export default function AdminUsersPage() {
           </Card>
         </aside>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <Card className="animate-fade-up">
             <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="grid gap-2 text-xs text-[var(--color-text)] sm:grid-cols-4 sm:text-sm">
@@ -460,7 +485,7 @@ export default function AdminUsersPage() {
               </p>
             </div>
 
-            <div className="grid gap-3 md:hidden">
+            <div className="grid gap-3 xl:hidden">
               {loading ? (
                 <Card>
                   <CardContent className="p-4 text-sm text-[var(--color-muted-text)]">
@@ -504,6 +529,17 @@ export default function AdminUsersPage() {
                           {formatDate(entry.createdAt)}
                         </span>
                       </div>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        className="w-full"
+                        disabled={clearingFeedbackId === entry.id}
+                        onClick={() => void clearFeedback(entry.id)}
+                      >
+                        <Trash2 className="size-4" />
+                        {clearingFeedbackId === entry.id ? 'Clearing...' : 'Clear'}
+                      </Button>
                     </CardContent>
                   </Card>
                 ))
@@ -516,10 +552,20 @@ export default function AdminUsersPage() {
               )}
             </div>
 
-            <Card className="hidden animate-fade-up-delay-1 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_66%)] md:block">
+            <Card className="hidden min-w-0 animate-fade-up-delay-1 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_66%)] xl:block">
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1080px] text-left text-sm">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full table-fixed text-left text-sm">
+                    <colgroup>
+                      <col className="w-[17%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[24%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[7%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[10%]" />
+                    </colgroup>
                     <thead className="bg-[linear-gradient(90deg,color-mix(in_oklab,var(--color-surface-2),white_12%),color-mix(in_oklab,var(--color-highlight),var(--color-surface-2)_94%))] text-xs uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
                       <tr>
                         <th className="px-4 py-3 font-semibold">User</th>
@@ -528,8 +574,8 @@ export default function AdminUsersPage() {
                         <th className="px-4 py-3 font-semibold">Category</th>
                         <th className="px-4 py-3 font-semibold">Rating</th>
                         <th className="px-4 py-3 font-semibold">Page</th>
-                        <th className="px-4 py-3 font-semibold">Status</th>
                         <th className="px-4 py-3 font-semibold">Sent</th>
+                        <th className="px-4 py-3 font-semibold">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -548,16 +594,16 @@ export default function AdminUsersPage() {
                             key={entry.id}
                             className="border-t border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_74%)] align-top transition-colors hover:bg-[color-mix(in_oklab,var(--color-surface-2),white_8%)]"
                           >
-                            <td className="px-4 py-3 font-semibold text-[var(--color-heading)]">
+                            <td className="break-words px-4 py-3 font-semibold text-[var(--color-heading)]">
                               {entry.userName}
                               <p className="mt-0.5 text-xs font-normal text-[var(--color-muted-text)]">
                                 {entry.userEmail}
                               </p>
                             </td>
-                            <td className="max-w-[180px] px-4 py-3 text-[var(--color-text)]">
+                            <td className="break-words px-4 py-3 text-[var(--color-text)]">
                               {entry.subject}
                             </td>
-                            <td className="max-w-[320px] px-4 py-3 text-[var(--color-text)]">
+                            <td className="break-words px-4 py-3 text-[var(--color-text)]">
                               <p className="line-clamp-4">{entry.message}</p>
                             </td>
                             <td className="px-4 py-3 capitalize text-[var(--color-text)]">
@@ -566,14 +612,23 @@ export default function AdminUsersPage() {
                             <td className="px-4 py-3 text-[var(--color-text)]">
                               {entry.rating}/5
                             </td>
-                            <td className="max-w-[160px] px-4 py-3 text-[var(--color-text)]">
-                              {entry.pageUrl ?? 'None'}
-                            </td>
-                            <td className="px-4 py-3 capitalize text-[var(--color-text)]">
-                              {entry.status}
+                            <td className="break-words px-4 py-3 text-[var(--color-text)]">
+                              <p className="line-clamp-3">{entry.pageUrl ?? 'None'}</p>
                             </td>
                             <td className="px-4 py-3 text-[var(--color-text)]">
                               {formatDate(entry.createdAt)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                disabled={clearingFeedbackId === entry.id}
+                                onClick={() => void clearFeedback(entry.id)}
+                              >
+                                <Trash2 className="size-4" />
+                                {clearingFeedbackId === entry.id ? 'Clearing...' : 'Clear'}
+                              </Button>
                             </td>
                           </tr>
                         ))
