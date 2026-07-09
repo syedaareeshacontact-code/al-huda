@@ -94,3 +94,25 @@ export async function createFeedback(input: {
   return feedback;
 }
 
+export async function listFeedbackForAdmin(): Promise<StoredFeedback[]> {
+  const Feedback = await ensureFeedbackModel();
+  const entries = await Feedback.find({}, { _id: 0 })
+    .sort({ createdAt: -1 })
+    .lean<StoredFeedback[]>()
+    .exec();
+
+  return entries.map((entry) => ({
+    id: String(entry.id),
+    userId: String(entry.userId),
+    userName: String(entry.userName),
+    userEmail: String(entry.userEmail),
+    category: entry.category,
+    rating: Number(entry.rating) || 0,
+    subject: String(entry.subject),
+    message: String(entry.message),
+    pageUrl: entry.pageUrl ? String(entry.pageUrl) : null,
+    status: entry.status,
+    createdAt: String(entry.createdAt),
+    updatedAt: String(entry.updatedAt),
+  }));
+}

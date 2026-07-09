@@ -7,8 +7,10 @@ import {
   Headphones,
   LayoutDashboard,
   Mail,
+  MessageSquareText,
   RefreshCcw,
   Search,
+  Star,
   Users,
 } from 'lucide-react';
 
@@ -41,8 +43,24 @@ interface AdminUsageSummary {
   totalAudioSeconds: number;
 }
 
+interface AdminFeedbackRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: 'bug' | 'feature' | 'content' | 'design' | 'general';
+  rating: number;
+  subject: string;
+  message: string;
+  pageUrl: string | null;
+  status: 'new' | 'reviewed' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersPayload {
   users?: AdminUserRecord[];
+  feedback?: AdminFeedbackRecord[];
   summary?: AdminUsageSummary;
   message?: string;
 }
@@ -112,6 +130,7 @@ function formatBookmarkedAyahs(
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [feedback, setFeedback] = useState<AdminFeedbackRecord[]>([]);
   const [summary, setSummary] = useState<AdminUsageSummary>(EMPTY_SUMMARY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +153,9 @@ export default function AdminUsersPage() {
       }
 
       const nextUsers = Array.isArray(payload.users) ? payload.users : [];
+      const nextFeedback = Array.isArray(payload.feedback) ? payload.feedback : [];
       setUsers(nextUsers);
+      setFeedback(nextFeedback);
 
       const nextSummary = payload.summary ?? nextUsers.reduce<AdminUsageSummary>(
         (acc, user) => {
@@ -176,6 +197,23 @@ export default function AdminUsersPage() {
     });
   }, [query, users]);
 
+  const filteredFeedback = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return feedback;
+    }
+
+    return feedback.filter((entry) => {
+      return (
+        entry.userName.toLowerCase().includes(normalizedQuery) ||
+        entry.userEmail.toLowerCase().includes(normalizedQuery) ||
+        entry.subject.toLowerCase().includes(normalizedQuery) ||
+        entry.message.toLowerCase().includes(normalizedQuery) ||
+        entry.category.toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }, [feedback, query]);
+
   return (
     <div className="pb-16 pt-10" data-slot="page-shell">
       <section className="mb-6 animate-fade-up">
@@ -216,7 +254,7 @@ export default function AdminUsersPage() {
         <section className="space-y-4">
           <Card className="animate-fade-up">
             <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="grid gap-2 text-xs text-[var(--color-text)] sm:grid-cols-3 sm:text-sm">
+              <div className="grid gap-2 text-xs text-[var(--color-text)] sm:grid-cols-4 sm:text-sm">
                 <p className="flex items-center gap-1.5">
                   <Users className="size-4 text-[var(--color-accent)]" />
                   Logged-in Users: <span className="font-semibold">{summary.totalUsers}</span>
@@ -234,6 +272,10 @@ export default function AdminUsersPage() {
                   <span className="font-semibold">
                     {formatDuration(summary.totalAudioSeconds)}
                   </span>
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <MessageSquareText className="size-4 text-[var(--color-accent)]" />
+                  Feedback: <span className="font-semibold">{feedback.length}</span>
                 </p>
               </div>
 
@@ -409,6 +451,148 @@ export default function AdminUsersPage() {
               </div>
             </CardContent>
           </Card>
+
+          <section className="space-y-3 pt-4">
+            <div>
+              <h2 className="font-display text-2xl text-[var(--color-heading)]">Feedback Table</h2>
+              <p className="mt-1 text-sm text-[var(--color-muted-text)]">
+                Messages sent by signed-in users from the feedback page.
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:hidden">
+              {loading ? (
+                <Card>
+                  <CardContent className="p-4 text-sm text-[var(--color-muted-text)]">
+                    Feedback loading...
+                  </CardContent>
+                </Card>
+              ) : filteredFeedback.length > 0 ? (
+                filteredFeedback.map((entry) => (
+                  <Card
+                    key={entry.id}
+                    className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_66%)]"
+                  >
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-[var(--color-heading)]">
+                            {entry.subject}
+                          </p>
+                          <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted-text)]">
+                            <Mail className="size-3.5" />
+                            {entry.userName} - {entry.userEmail}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
+                          {entry.status}
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-[var(--color-text)]">{entry.message}</p>
+
+                      <div className="flex flex-wrap gap-2 text-xs text-[var(--color-muted-text)]">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-1">
+                          <MessageSquareText className="size-3.5" />
+                          {entry.category}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-1">
+                          <Star className="size-3.5 fill-current text-[var(--color-accent)]" />
+                          {entry.rating}/5
+                        </span>
+                        <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                          {formatDate(entry.createdAt)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="p-4 text-sm text-[var(--color-muted-text)]">
+                    No feedback found.
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <Card className="hidden animate-fade-up-delay-1 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_66%)] md:block">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1080px] text-left text-sm">
+                    <thead className="bg-[linear-gradient(90deg,color-mix(in_oklab,var(--color-surface-2),white_12%),color-mix(in_oklab,var(--color-highlight),var(--color-surface-2)_94%))] text-xs uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">User</th>
+                        <th className="px-4 py-3 font-semibold">Subject</th>
+                        <th className="px-4 py-3 font-semibold">Message</th>
+                        <th className="px-4 py-3 font-semibold">Category</th>
+                        <th className="px-4 py-3 font-semibold">Rating</th>
+                        <th className="px-4 py-3 font-semibold">Page</th>
+                        <th className="px-4 py-3 font-semibold">Status</th>
+                        <th className="px-4 py-3 font-semibold">Sent</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="px-4 py-5 text-center text-[var(--color-muted-text)]"
+                          >
+                            Feedback loading...
+                          </td>
+                        </tr>
+                      ) : filteredFeedback.length > 0 ? (
+                        filteredFeedback.map((entry) => (
+                          <tr
+                            key={entry.id}
+                            className="border-t border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_74%)] align-top transition-colors hover:bg-[color-mix(in_oklab,var(--color-surface-2),white_8%)]"
+                          >
+                            <td className="px-4 py-3 font-semibold text-[var(--color-heading)]">
+                              {entry.userName}
+                              <p className="mt-0.5 text-xs font-normal text-[var(--color-muted-text)]">
+                                {entry.userEmail}
+                              </p>
+                            </td>
+                            <td className="max-w-[180px] px-4 py-3 text-[var(--color-text)]">
+                              {entry.subject}
+                            </td>
+                            <td className="max-w-[320px] px-4 py-3 text-[var(--color-text)]">
+                              <p className="line-clamp-4">{entry.message}</p>
+                            </td>
+                            <td className="px-4 py-3 capitalize text-[var(--color-text)]">
+                              {entry.category}
+                            </td>
+                            <td className="px-4 py-3 text-[var(--color-text)]">
+                              {entry.rating}/5
+                            </td>
+                            <td className="max-w-[160px] px-4 py-3 text-[var(--color-text)]">
+                              {entry.pageUrl ?? 'None'}
+                            </td>
+                            <td className="px-4 py-3 capitalize text-[var(--color-text)]">
+                              {entry.status}
+                            </td>
+                            <td className="px-4 py-3 text-[var(--color-text)]">
+                              {formatDate(entry.createdAt)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="px-4 py-5 text-center text-[var(--color-muted-text)]"
+                          >
+                            No feedback found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
         </section>
       </div>
     </div>

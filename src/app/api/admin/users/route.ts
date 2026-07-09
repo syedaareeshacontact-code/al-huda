@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentAdminUser } from '@/lib/auth/current-user';
 import { listUsersForAdmin } from '@/lib/auth/users-store';
+import { listFeedbackForAdmin } from '@/lib/feedback-store';
 
 export async function GET() {
   try {
@@ -10,7 +11,10 @@ export async function GET() {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    const users = await listUsersForAdmin();
+    const [users, feedback] = await Promise.all([
+      listUsersForAdmin(),
+      listFeedbackForAdmin(),
+    ]);
     const summary = users.reduce(
       (acc, user) => {
         acc.totalUsers += 1;
@@ -25,7 +29,7 @@ export async function GET() {
       }
     );
 
-    return NextResponse.json({ users, summary });
+    return NextResponse.json({ users, feedback, summary });
   } catch {
     return NextResponse.json(
       { message: 'Unable to load users right now.' },
