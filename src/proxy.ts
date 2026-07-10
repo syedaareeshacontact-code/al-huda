@@ -58,7 +58,7 @@ async function hasValidSession(token: string | undefined) {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (await hasValidSession(request.cookies.get(SESSION_COOKIE_NAME)?.value)) {
     return NextResponse.next();
   }
