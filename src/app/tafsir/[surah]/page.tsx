@@ -6,6 +6,7 @@ import { BookOpen, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { resolveSurahParam, getAllSurahs } from '@/lib/quran-index';
 import { buildSurahPath, buildSurahSlug, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
@@ -229,6 +230,8 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
           ))}
         </div>
       </aside>
+
+      <StickyScrollNav position="right" minScroll={0} compact />
     </div>
   );
 }

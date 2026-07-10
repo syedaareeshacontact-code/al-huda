@@ -1,12 +1,13 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ChevronLeft, Download, Headphones } from 'lucide-react';
+import { Download, Headphones } from 'lucide-react';
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthDownloadLink from '@/components/quran/auth-download-link';
+import TafsirAyahBottomNav from '@/components/tafsir/TafsirAyahBottomNav';
+import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import {
   getAyahAudioUrls,
   getAyahContent,
@@ -174,7 +175,7 @@ export default async function TafsirDetailPage({
   ].filter(Boolean);
 
   return (
-    <div className="pb-16 pt-10" data-slot="page-shell">
+    <div className="pb-28 pt-10" data-slot="page-shell">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }}
@@ -305,43 +306,20 @@ export default async function TafsirDetailPage({
         </Card>
       </section>
 
-      <section className="flex flex-wrap items-center gap-2">
-        <Link
-          href={ayahPath}
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
-        >
-          <ChevronLeft className="size-4" />
-          Back to Ayah Page
-        </Link>
-        <Link
-          href={tafsirSurahPath}
-          className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
-        >
-          All {surah.surahName} Tafseer
-        </Link>
-        <Link
-          href={surahPath}
-          className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
-        >
-          Back to Surah
-        </Link>
-        {prevTafsirPath ? (
-          <Link
-            href={prevTafsirPath}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
-          >
-            Previous Tafseer
-          </Link>
-        ) : null}
-        {nextTafsirPath ? (
-          <Link
-            href={nextTafsirPath}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
-          >
-            Next Tafseer
-          </Link>
-        ) : null}
-      </section>
+      <TafsirAyahBottomNav
+        ayahPath={ayahPath}
+        tafsirSurahPath={tafsirSurahPath}
+        surahPath={surahPath}
+        surahName={surah.surahName}
+        prevTafsirPath={prevTafsirPath}
+        nextTafsirPath={nextTafsirPath}
+      />
+      <StickyScrollNav
+        position="right"
+        minScroll={0}
+        compact
+        bottomClassName="bottom-[4.75rem] right-2.5 sm:bottom-[5.25rem] sm:right-6"
+      />
     </div>
   );
 }

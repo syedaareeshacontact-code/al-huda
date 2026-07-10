@@ -2426,21 +2426,29 @@ export default function QuranReaderPage({
       ) : null}
 
       {tafseerOpen ? (
-        <div className="fixed inset-0 z-[90]">
+        <div className="fixed inset-0 z-[110]">
           <button
             type="button"
-            className="absolute inset-0 bg-black/58 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
             onClick={() => setTafseerOpen(false)}
             aria-label="Close tafseer panel"
           />
-          <aside className="absolute right-0 top-0 h-full w-full max-w-2xl animate-fade-up border-l border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(160deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))] shadow-2xl">
-            <div className="flex h-full flex-col">
-              <div className="flex items-start justify-between gap-4 border-b border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] p-4 sm:p-5">
-                <div>
+          <button
+            type="button"
+            onClick={() => setTafseerOpen(false)}
+            aria-label="Close tafseer"
+            className="absolute left-4 top-4 z-20 hidden size-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 md:flex"
+          >
+            <X className="size-5" aria-hidden="true" />
+          </button>
+          <aside className="absolute right-0 top-0 flex h-dvh w-full max-w-2xl animate-fade-up flex-col border-l border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(160deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))] shadow-2xl">
+            <div className="sticky top-0 z-10 shrink-0 border-b border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(160deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4 sm:pb-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted-text)]">
                     Urdu Tafseer
                   </p>
-                  <h3 className="mt-1 font-display text-2xl text-[var(--color-heading)]">
+                  <h3 className="mt-1 font-display text-xl text-[var(--color-heading)] sm:text-2xl">
                     Ayah {tafseerAyahNumber ?? '-'}
                   </h3>
                   <p className="mt-1 text-xs text-[var(--color-muted-text)]">
@@ -2448,57 +2456,59 @@ export default function QuranReaderPage({
                   </p>
                 </div>
                 <Button
+                  type="button"
                   variant="outline"
-                  size="icon"
                   onClick={() => setTafseerOpen(false)}
-                  aria-label="Close panel"
+                  aria-label="Close tafseer"
+                  className="h-10 shrink-0 gap-1.5 rounded-xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_24%)] px-3 shadow-sm md:h-9"
                 >
-                  <X className="size-4" />
+                  <X className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="text-sm font-semibold">Close</span>
                 </Button>
               </div>
+            </div>
 
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-                <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_93%))] shadow-[var(--shadow-soft)]">
-                  <CardContent className="space-y-2 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color-mix(in_oklab,var(--color-muted-text),#f3d690_38%)]">
-                      Arabic Ayah
-                    </p>
-                    <p className="arabic-font text-right text-[color-mix(in_oklab,#f7e1ad,var(--color-heading)_58%)]">
-                      {tafseerAyahText}
-                    </p>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-5">
+              <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_93%))] shadow-[var(--shadow-soft)]">
+                <CardContent className="space-y-2 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color-mix(in_oklab,var(--color-muted-text),#f3d690_38%)]">
+                    Arabic Ayah
+                  </p>
+                  <p className="arabic-font text-right text-[color-mix(in_oklab,#f7e1ad,var(--color-heading)_58%)]">
+                    {tafseerAyahText}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {tafseerLoading ? (
+                <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_14%)]">
+                  <CardContent className="p-5 text-sm text-[var(--color-muted-text)]">
+                    Tafseer is Loading...
                   </CardContent>
                 </Card>
+              ) : null}
 
-                {tafseerLoading ? (
-                  <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_14%)]">
-                    <CardContent className="p-5 text-sm text-[var(--color-muted-text)]">
-                      Tafseer is Loading...
-                    </CardContent>
-                  </Card>
-                ) : null}
+              {tafseerError ? (
+                <Card className="border-[color-mix(in_oklab,var(--color-danger),var(--color-border)_65%)] bg-[color-mix(in_oklab,var(--color-surface),white_10%)]">
+                  <CardContent className="p-5 text-sm text-[var(--color-danger)]">
+                    {tafseerError}
+                  </CardContent>
+                </Card>
+              ) : null}
 
-                {tafseerError ? (
-                  <Card className="border-[color-mix(in_oklab,var(--color-danger),var(--color-border)_65%)] bg-[color-mix(in_oklab,var(--color-surface),white_10%)]">
-                    <CardContent className="p-5 text-sm text-[var(--color-danger)]">
-                      {tafseerError}
-                    </CardContent>
-                  </Card>
-                ) : null}
-
-                {tafseerData ? (
-                  <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_48%)] bg-[linear-gradient(155deg,color-mix(in_oklab,var(--color-surface),white_10%),color-mix(in_oklab,var(--color-surface-2),white_4%))] shadow-[var(--shadow-soft)]">
-                    <CardContent className="p-5 sm:p-6">
-                      <div
-                        className="tafseer-rich urdu-font text-right leading-relaxed text-[var(--color-text)]"
-                        dir="rtl"
-                        dangerouslySetInnerHTML={{
-                          __html: formattedTafsirHtml,
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                ) : null}
-              </div>
+              {tafseerData ? (
+                <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_48%)] bg-[linear-gradient(155deg,color-mix(in_oklab,var(--color-surface),white_10%),color-mix(in_oklab,var(--color-surface-2),white_4%))] shadow-[var(--shadow-soft)]">
+                  <CardContent className="p-5 sm:p-6">
+                    <div
+                      className="tafseer-rich urdu-font text-right leading-relaxed text-[var(--color-text)]"
+                      dir="rtl"
+                      dangerouslySetInnerHTML={{
+                        __html: formattedTafsirHtml,
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              ) : null}
             </div>
           </aside>
         </div>
