@@ -8,7 +8,6 @@ import {
   FileText,
   Headphones,
   Settings2,
-  WifiOff,
 } from 'lucide-react';
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
@@ -124,11 +123,6 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       label: 'Bookmarks',
       description: 'Save ayahs after login',
       icon: Bookmark,
-    },
-    {
-      label: 'Offline',
-      description: 'Save text and audio after login',
-      icon: WifiOff,
     },
     {
       label: 'Settings',
