@@ -27,6 +27,7 @@ import IslamicTopBanner from '@/components/layout/islamic-top-banner';
 import NotificationCenter from '@/components/notifications/notification-center';
 import {
   flattenMegaNavLinks,
+  getMobileMegaNavColumns,
   HOME_NAV,
   MEGA_NAV_GROUPS,
   type MegaNavGroup,
@@ -534,7 +535,8 @@ export default function SiteHeader() {
                   const GroupIcon = group.icon;
                   const open = openMobileSectionId === group.id;
                   const active = isMegaGroupActive(group);
-                  const sectionLinks = flattenMegaNavLinks(group);
+                  const mobileColumns = getMobileMegaNavColumns(group);
+                  const sectionLinks = mobileColumns.flatMap((column) => column.items);
                   const panelId = `mobile-nav-section-${group.id}`;
 
                   return (
@@ -586,15 +588,22 @@ export default function SiteHeader() {
                       </button>
 
                       {open && (
-                        <div id={panelId} className="space-y-1 border-t border-[var(--color-border)] px-2 py-2">
-                          {sectionLinks.map((item) => (
-                            <NavLinkCard
-                              key={`${group.id}-${item.href}-${item.label}`}
-                              item={item}
-                              active={isActive(item.href, item.exact)}
-                              onNavigate={() => setMobileOpen(false)}
-                              compact
-                            />
+                        <div id={panelId} className="space-y-4 border-t border-[var(--color-border)] px-2 py-3">
+                          {mobileColumns.map((column) => (
+                            <div key={`${group.id}-${column.title}`} className="space-y-1">
+                              <p className="px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-muted-text)]">
+                                {column.title}
+                              </p>
+                              {column.items.map((item) => (
+                                <NavLinkCard
+                                  key={`${group.id}-${column.title}-${item.href}-${item.label}`}
+                                  item={item}
+                                  active={isActive(item.href, item.exact)}
+                                  onNavigate={() => setMobileOpen(false)}
+                                  compact
+                                />
+                              ))}
+                            </div>
                           ))}
                         </div>
                       )}

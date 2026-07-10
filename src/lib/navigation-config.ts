@@ -37,6 +37,7 @@ export interface NavLinkItem {
 export interface NavColumn {
   title: string;
   items: NavLinkItem[];
+  hideOnMobile?: boolean;
 }
 
 export interface MegaNavGroup {
@@ -85,12 +86,6 @@ export const QURAN_MEGA_NAV: MegaNavGroup = {
           icon: BookOpenText,
         },
         {
-          label: 'Read Quran Online',
-          description: 'Full Quran reader with translations & audio',
-          href: '/read-quran-online',
-          icon: ScrollText,
-        },
-        {
           label: 'Quran Downloads',
           description: 'Download Surah PDF and audio files',
           href: '/download',
@@ -112,6 +107,7 @@ export const QURAN_MEGA_NAV: MegaNavGroup = {
     },
     {
       title: 'Popular Surahs',
+      hideOnMobile: true,
       items: [
         {
           label: 'Surah Yaseen',
@@ -176,6 +172,7 @@ export const HADITH_MEGA_NAV: MegaNavGroup = {
     },
     {
       title: 'Major Collections',
+      hideOnMobile: true,
       items: [
         {
           label: 'Sahih al-Bukhari',
@@ -362,6 +359,10 @@ export function flattenMegaNavLinks(group: MegaNavGroup): NavLinkItem[] {
   return links;
 }
 
+export function getMobileMegaNavColumns(group: MegaNavGroup): NavColumn[] {
+  return group.columns.filter((column) => !column.hideOnMobile);
+}
+
 export function getAllMobileNavSections() {
   return [
     { id: 'main', title: 'Main', items: [HOME_NAV] },
@@ -369,7 +370,7 @@ export function getAllMobileNavSections() {
       id: group.id,
       title: group.label,
       tagline: group.tagline,
-      items: flattenMegaNavLinks(group),
+      items: getMobileMegaNavColumns(group).flatMap((column) => column.items),
     })),
   ];
 }
