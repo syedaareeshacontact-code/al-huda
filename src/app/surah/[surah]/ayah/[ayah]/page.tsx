@@ -31,18 +31,9 @@ interface AyahPageProps {
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-export async function generateStaticParams() {
-  const { getAllSurahs } = await import('@/lib/quran-index');
-  const { buildSurahSlug } = await import('@/lib/quran-routing');
-
-  return getAllSurahs().flatMap((surah) => {
-    const slug = buildSurahSlug(surah.id, surah.surahName);
-
-    return Array.from({ length: surah.totalAyah }, (_, i) => ({
-      surah: slug,
-      ayah: String(i + 1),
-    }));
-  });
+export function generateStaticParams() {
+  // Ayah content comes from external APIs, so generate and cache these pages on demand via ISR.
+  return [];
 }
 
 function parseAyahNumber(value: string) {

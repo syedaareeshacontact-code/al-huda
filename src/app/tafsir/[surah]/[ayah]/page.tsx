@@ -32,19 +32,9 @@ interface TafsirPageProps {
 export const revalidate = 86400;
 export const dynamicParams = true;
 
-export async function generateStaticParams() {
-  const { getAllSurahs } = await import('@/lib/quran-index');
-  const { buildSurahSlug } = await import('@/lib/quran-routing');
-  const { getTafsirAyahNumbersBySurah } = await import('@/lib/tafsir-index');
-
-  return getAllSurahs().flatMap((surah) => {
-    const slug = buildSurahSlug(surah.id, surah.surahName);
-
-    return getTafsirAyahNumbersBySurah(surah.id).map((ayahNumber) => ({
-      surah: slug,
-      ayah: String(ayahNumber),
-    }));
-  });
+export function generateStaticParams() {
+  // Tafsir content comes from external APIs, so generate and cache these pages on demand via ISR.
+  return [];
 }
 
 function parseAyahNumber(value: string) {
