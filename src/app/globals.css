@@ -252,14 +252,29 @@ select {
 }
 
 .arabic-reading {
-  font-size: calc(clamp(1.65rem, 1.1rem + 2.4vw, 2.45rem) * var(--arabic-font-scale));
-  line-height: 2.45;
+  font-size: calc(clamp(1.35rem, 1.18rem + 0.72vw, 1.7rem) * var(--arabic-font-scale));
+  line-height: 2;
   letter-spacing: 0;
-  word-spacing: 0.1em;
+  word-spacing: 0.025em;
   display: block;
   text-align: right;
   font-feature-settings: 'liga' 1, 'calt' 1, 'kern' 1;
   text-rendering: optimizeLegibility;
+}
+
+.arabic-reading[data-size='sm'] {
+  font-size: calc(clamp(1.05rem, 0.99rem + 0.3vw, 1.2rem) * var(--arabic-font-scale));
+  line-height: 1.85;
+}
+
+.arabic-reading[data-size='lg'] {
+  font-size: calc(clamp(1.65rem, 1.43rem + 0.9vw, 2.05rem) * var(--arabic-font-scale));
+  line-height: 2.1;
+}
+
+.arabic-reading[data-size='xl'] {
+  font-size: calc(clamp(1.9rem, 1.58rem + 1.2vw, 2.45rem) * var(--arabic-font-scale));
+  line-height: 2.2;
 }
 
 .arabic-mushaf {

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { BookOpen, Hash, Languages, Quote, UserRound } from 'lucide-react';
 
 import ArabicText from '@/components/hadith/ArabicText';
 import BreadcrumbNav from '@/components/hadith/BreadcrumbNav';
@@ -123,83 +124,136 @@ export default async function HadithDetailPage({
         })}
       />
 
-      <article className="mx-auto max-w-3xl space-y-6 animate-fade-up">
+      <article className="mx-auto max-w-4xl space-y-5 animate-fade-up">
         <BreadcrumbNav items={navBreadcrumbs} includeSchema={false} />
 
-        <header className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <header className="relative overflow-hidden rounded-3xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_72%)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--color-accent),transparent_84%),transparent_65%)]"
+            aria-hidden="true"
+          />
+
+          <div className="relative p-5 sm:p-7 md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{hadith.book.bookName}</Badge>
-                <Badge variant="outline">#{hadithNumber}</Badge>
+                <Badge variant="secondary" className="normal-case tracking-normal">
+                  <BookOpen className="mr-1.5 size-3" aria-hidden="true" />
+                  {hadith.book.bookName}
+                </Badge>
+                <Badge variant="outline" className="font-mono tracking-normal">
+                  <Hash className="mr-0.5 size-3" aria-hidden="true" />
+                  {hadithNumber}
+                </Badge>
               </div>
-              <h1 className="font-display text-3xl font-bold text-[var(--color-heading)]">
+              <HadithGrade grade={hadith.status} />
+            </div>
+
+            <div className="mt-5 max-w-3xl">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
                 Hadith {hadithNumber}
+              </p>
+              <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight text-[var(--color-heading)] sm:text-4xl">
+                {hadith.chapter.chapterEnglish || `${hadith.book.bookName} Hadith ${hadithNumber}`}
               </h1>
               {hadith.chapter.chapterUrdu ? (
-                <p dir="rtl" lang="ur" className="font-urdu-nastaliq text-lg text-[var(--color-accent-soft)]">
+                <p
+                  dir="rtl"
+                  lang="ur"
+                  className="mt-3 text-right font-urdu-nastaliq text-lg leading-loose text-[var(--color-accent-soft)] sm:text-xl"
+                >
                   {hadith.chapter.chapterUrdu}
                 </p>
               ) : null}
-              <p className="text-sm text-[var(--color-muted-text)]">
-                {hadith.chapter.chapterEnglish}
-              </p>
-              <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-muted-text)]">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-muted-text)]">
                 {intro}
               </p>
             </div>
-            <HadithGrade grade={hadith.status} />
-          </div>
 
-          {hadith.englishNarrator ? (
-            <p className="text-sm font-medium text-[var(--color-accent-soft)]">
-              Narrated by: {hadith.englishNarrator}
-            </p>
-          ) : null}
-          {hadith.urduNarrator ? (
-            <p dir="rtl" lang="ur" className="font-urdu-nastaliq text-sm text-[var(--color-muted-text)]">
-              {hadith.urduNarrator}
-            </p>
-          ) : null}
+            {hadith.englishNarrator || hadith.urduNarrator ? (
+              <div className="mt-6 grid gap-2.5 rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_24%)] p-3.5 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-x-3 sm:p-4">
+                <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),transparent_88%)] text-[var(--color-accent)]">
+                  <UserRound className="size-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  {hadith.englishNarrator ? (
+                    <p className="text-sm font-medium leading-relaxed text-[var(--color-heading)]">
+                      <span className="text-[var(--color-muted-text)]">Narrated by </span>
+                      {hadith.englishNarrator}
+                    </p>
+                  ) : null}
+                  {hadith.urduNarrator ? (
+                    <p
+                      dir="rtl"
+                      lang="ur"
+                      className="mt-1 text-right font-urdu-nastaliq text-sm leading-loose text-[var(--color-muted-text)]"
+                    >
+                      {hadith.urduNarrator}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </header>
 
         {hadith.hadithArabic ? (
-          <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] shadow-[var(--shadow-soft)]">
-            <CardContent className="space-y-3 border-r-4 border-r-[var(--color-accent)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%)] p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-                  Arabic Text
-                </p>
-                <span className="h-px flex-1 bg-[color-mix(in_oklab,var(--color-accent),transparent_78%)]" />
+          <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft)]">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2.5 border-b border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_72%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%)] px-4 py-3 sm:px-6">
+                <span className="inline-flex size-7 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),transparent_86%)] text-[var(--color-accent)]">
+                  <Languages className="size-3.5" aria-hidden="true" />
+                </span>
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
+                    Arabic Text
+                  </h2>
+                  <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">Original narration</p>
+                </div>
               </div>
-              <ArabicText
-                text={hadith.hadithArabic}
-                size="md"
-                className="text-[var(--color-heading)] [line-height:2.15]"
-              />
+              <div className="border-r-2 border-r-[var(--color-accent)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%)] px-4 py-4 sm:px-6 sm:py-5 md:px-7">
+                <ArabicText text={hadith.hadithArabic} size="md" className="m-0 text-[var(--color-heading)]" />
+              </div>
             </CardContent>
           </Card>
         ) : null}
 
-        <Card>
-          <CardContent className="space-y-3 p-6 md:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-              English Translation
+        <Card className="hover:shadow-[var(--shadow-soft)]">
+          <CardContent className="p-5 sm:p-6 md:p-7">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-accent)]">
+                <Quote className="size-4" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
+                  English Translation
+                </h2>
+                <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">Meaning of the narration</p>
+              </div>
+            </div>
+            <p className="text-base leading-7 text-[var(--color-text)] sm:text-[1.05rem] sm:leading-8">
+              {hadith.hadithEnglish}
             </p>
-            <p className="text-lg leading-relaxed text-[var(--color-text)]">{hadith.hadithEnglish}</p>
           </CardContent>
         </Card>
 
         {hadith.hadithUrdu ? (
-          <Card>
-            <CardContent className="space-y-3 p-6 md:p-8">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                Urdu Translation
-              </p>
+          <Card className="hover:shadow-[var(--shadow-soft)]">
+            <CardContent className="p-5 sm:p-6 md:p-7">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
+                    Urdu Translation
+                  </h2>
+                  <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">اردو ترجمہ</p>
+                </div>
+                <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--color-surface-2)] font-urdu-nastaliq text-sm text-[var(--color-accent)]">
+                  اردو
+                </span>
+              </div>
               <p
                 dir="rtl"
                 lang="ur"
-                className="text-right font-urdu-nastaliq text-xl leading-loose text-[var(--color-text)]"
+                className="text-right font-urdu-nastaliq text-lg leading-[2.15] text-[var(--color-text)] sm:text-xl"
               >
                 {hadith.hadithUrdu}
               </p>
@@ -207,10 +261,17 @@ export default async function HadithDetailPage({
           </Card>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <p className="text-sm text-[var(--color-muted-text)]">
-            Source: {hadith.book.bookName} · {hadith.book.writerName}
-          </p>
+        <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-surface-2)] text-[var(--color-accent)]">
+              <BookOpen className="size-4" aria-hidden="true" />
+            </span>
+            <p className="min-w-0 text-sm leading-relaxed text-[var(--color-muted-text)]">
+              <span className="font-semibold text-[var(--color-heading)]">Source</span>
+              <span className="mx-1.5">·</span>
+              {hadith.book.bookName} by {hadith.book.writerName}
+            </p>
+          </div>
           <HadithActions hadith={hadith} shareUrl={detailPath} variant="full" />
         </div>
 
