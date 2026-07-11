@@ -429,79 +429,78 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredSurahs.map((surah, index) => {
             const surahPath = buildSurahPath(surah.id, surah.surahName);
-            const isMeccan = surah.revelationPlace.toLowerCase() === 'mecca' || surah.revelationPlace.toLowerCase() === 'mecca';
+            const isMeccan = surah.revelationPlace.toLowerCase() === 'mecca';
 
             return (
               <Link
                 key={surah.id}
                 href={surahPath}
-                className="group transition-all duration-300 hover:scale-105"
+                className="group rounded-2xl outline-none transition-transform duration-200 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                 style={{ animationDelay: `${Math.min(index, 12) * 20}ms` }}
               >
                 <Card 
-                  className="h-full border-2 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_72%)] bg-gradient-to-br from-[color-mix(in_oklab,var(--color-surface),white_8%)] to-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_94%)] transition-all duration-300 hover:border-[var(--color-accent)] hover:shadow-[var(--shadow-glow)] dark:hover:shadow-[var(--shadow-glow)]"
+                  className="h-full overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_78%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_4%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%))] transition-all duration-200 group-hover:border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_28%)] group-hover:shadow-[var(--shadow-card)]"
                 >
-                  <CardContent className="h-full flex flex-col p-6 space-y-4">
-                    {/* Top Section - Number and Badge */}
-                    <div className="flex items-start justify-between gap-3">
+                  <CardContent className="flex h-full flex-col p-4 sm:p-4.5">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--color-accent)]/20 to-[var(--color-accent-soft)]/20 border border-[var(--color-accent)]/30">
-                          <span className="font-bold text-sm text-[var(--color-accent)]">
+                        <div className="inline-flex size-8 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)]">
+                          <span className="font-mono text-xs font-bold text-[var(--color-accent)]">
                             {surah.id}
                           </span>
                         </div>
-                        <div className="text-xs uppercase tracking-wider text-[var(--color-muted-text)] font-semibold">
+                        <div className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted-text)]">
                           Surah
                         </div>
                       </div>
                       
-                      <div className="flex gap-1">
-                        {isMeccan ? (
-                          <Badge variant="secondary" className="text-xs bg-[var(--color-info)]/10 text-[var(--color-info)] border-[var(--color-info)]/20">
-                            Meccan
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/20">
-                            Medinan
-                          </Badge>
-                        )}
-                      </div>
+                      {isMeccan ? (
+                        <Badge variant="secondary" className="border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-2 py-0 text-[0.62rem] text-[var(--color-info)]">
+                          Meccan
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="border-[var(--color-accent)]/20 bg-[var(--color-accent)]/10 px-2 py-0 text-[0.62rem] text-[var(--color-accent)]">
+                          Medinan
+                        </Badge>
+                      )}
                     </div>
 
-                    {/* Title Section */}
-                    <div className="flex-1">
-                      <h2 className="font-display text-xl md:text-2xl font-bold text-[var(--color-heading)] mb-1 group-hover:text-[var(--color-accent)] transition-colors">
-                        {surah.surahName}
-                      </h2>
-                      <p className="text-sm text-[var(--color-muted-text)] mb-3">
-                        {surah.surahNameTranslation}
-                      </p>
-                      <p className="arabic-font text-lg md:text-xl text-[var(--color-heading)] text-right font-semibold group-hover:text-[var(--color-accent)] transition-colors">
+                    <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                      <div className="min-w-0">
+                        <h2 className="truncate font-display text-xl font-bold leading-tight text-[var(--color-heading)] transition-colors group-hover:text-[var(--color-accent)]">
+                          {surah.surahName}
+                        </h2>
+                        <p className="mt-1 truncate text-xs text-[var(--color-muted-text)]">
+                          {surah.surahNameTranslation}
+                        </p>
+                      </div>
+                      <p
+                        dir="rtl"
+                        lang="ar"
+                        className="font-arabic-amiri text-2xl font-medium leading-relaxed text-[var(--color-heading)] transition-colors group-hover:text-[var(--color-accent)]"
+                      >
                         {surah.surahNameArabic}
                       </p>
                     </div>
 
-                    {/* Info Section */}
-                    <div className="space-y-2 pt-4 border-t border-[var(--color-border)]">
-                      <div className="flex items-center gap-2 text-sm text-[var(--color-muted-text)]">
-                        <BookOpenText className="size-4 text-[var(--color-accent)] flex-shrink-0" />
-                        <span className="font-medium">{surah.totalAyah} Ayahs</span>
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--color-border)] pt-3">
+                      <div className="flex min-w-0 items-center gap-3 text-xs text-[var(--color-muted-text)]">
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                          <BookOpenText className="size-3.5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+                          {surah.totalAyah} Ayahs
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                          <Headphones className="size-3.5 shrink-0 text-[var(--color-info)]" aria-hidden="true" />
+                          Audio
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-[var(--color-muted-text)]">
-                        <Headphones className="size-4 text-[var(--color-info)] flex-shrink-0" />
-                        <span className="font-medium">Full Audio</span>
-                      </div>
-                    </div>
-
-                    {/* Footer - Read Button Indicator */}
-                    <div className="pt-2 flex items-center justify-between group-hover:gap-3 transition-all">
-                      <span className="text-xs font-semibold text-[var(--color-accent)] uppercase tracking-wider">
-                        Read Now
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                        Read
+                        <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                       </span>
-                      <ChevronRight className="size-4 text-[var(--color-accent)] group-hover:translate-x-1 transition-transform" />
                     </div>
                   </CardContent>
                 </Card>
