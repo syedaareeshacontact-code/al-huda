@@ -72,12 +72,25 @@ interface AyahTimingRange {
   toMs: number;
 }
 
+interface WordTimingRange {
+  ayahNumber: number;
+  wordIndex: number;
+  fromMs: number;
+  toMs: number;
+}
+
+interface ActiveAudioWord {
+  ayahNumber: number;
+  wordIndex: number;
+}
+
 interface ChapterRecitationPayload {
   audio_file?: {
     timestamps?: Array<{
       verse_key?: string;
       timestamp_from?: number;
       timestamp_to?: number;
+      segments?: number[][] | null;
     }>;
   };
 }
@@ -364,6 +377,46 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
+function AudioSyncedArabicText({
+  text,
+  query,
+  ayahNumber,
+  activeWord,
+}: {
+  text: string;
+  query: string;
+  ayahNumber: number;
+  activeWord: ActiveAudioWord | null;
+}) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+
+  return (
+    <>
+      {words.map((word, index) => {
+        const wordIndex = index + 1;
+        const isActive =
+          activeWord?.ayahNumber === ayahNumber && activeWord.wordIndex === wordIndex;
+
+        return (
+          <span key={`${ayahNumber}-${wordIndex}-${word}`}>
+            <span
+              data-audio-active={isActive ? 'true' : undefined}
+              className={
+                isActive
+                  ? 'text-[#dc2626] transition-colors duration-100 dark:text-[#f87171]'
+                  : 'transition-colors duration-100'
+              }
+            >
+              <HighlightText text={word} query={isActive ? '' : query} />
+            </span>
+            {index < words.length - 1 ? ' ' : null}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 export default function QuranReaderPage({
   initialSurahId,
   initialSurahDetail = null,
@@ -434,6 +487,7 @@ export default function QuranReaderPage({
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [ayahTimings, setAyahTimings] = useState<AyahTimingRange[]>([]);
+  const [wordTimings, setWordTimings] = useState<WordTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
   const lastCommittedAudioTimeRef = useRef(0);
   const [abStartAyah, setAbStartAyah] = useState(1);
@@ -712,19 +766,26 @@ export default function QuranReaderPage({
     };
   }, [selectedReciter, settings.audioPreference, surahId]);
 
+  const selectedAudioReciterName = audioReciters[selectedReciter]?.reciter ?? '';
+
   useEffect(() => {
+    const clearTimings = () => {
+      setAyahTimings((current) => (current.length === 0 ? current : []));
+      setWordTimings((current) => (current.length === 0 ? current : []));
+    };
+
     if (settings.audioPreference !== 'ar') {
-      setAyahTimings([]);
+      clearTimings();
       return;
     }
 
-    const reciterName = audioReciters[selectedReciter]?.reciter;
-    const recitationId = getQuranComRecitationId(reciterName);
+    const recitationId = getQuranComRecitationId(selectedAudioReciterName);
     if (!recitationId) {
-      setAyahTimings([]);
+      clearTimings();
       return;
     }
 
+    clearTimings();
     const controller = new AbortController();
 
     const loadTimings = async () => {
@@ -740,11 +801,12 @@ export default function QuranReaderPage({
         );
 
         if (!response.ok) {
-          setAyahTimings([]);
+          clearTimings();
           return;
         }
 
         const payload = (await response.json()) as ChapterRecitationPayload;
+        const parsedWordTimings: WordTimingRange[] = [];
         const parsedTimings = (payload.audio_file?.timestamps ?? [])
           .map((entry) => {
             const ayahPart = entry.verse_key?.split(':')?.[1];
@@ -762,6 +824,30 @@ export default function QuranReaderPage({
               return null;
             }
 
+            for (const segment of entry.segments ?? []) {
+              const wordIndex = Number(segment[0]);
+              const wordFromMs = Number(segment[1]);
+              const wordToMs = Number(segment[2]);
+
+              if (
+                segment.length < 3 ||
+                !Number.isInteger(wordIndex) ||
+                wordIndex < 1 ||
+                !Number.isFinite(wordFromMs) ||
+                !Number.isFinite(wordToMs) ||
+                wordToMs <= wordFromMs
+              ) {
+                continue;
+              }
+
+              parsedWordTimings.push({
+                ayahNumber,
+                wordIndex,
+                fromMs: wordFromMs,
+                toMs: wordToMs,
+              });
+            }
+
             return {
               ayahNumber,
               fromMs,
@@ -772,9 +858,12 @@ export default function QuranReaderPage({
           .sort((left, right) => left.ayahNumber - right.ayahNumber);
 
         setAyahTimings(parsedTimings);
+        setWordTimings(
+          parsedWordTimings.sort((left, right) => left.fromMs - right.fromMs)
+        );
       } catch {
         if (!controller.signal.aborted) {
-          setAyahTimings([]);
+          clearTimings();
         }
       }
     };
@@ -784,7 +873,7 @@ export default function QuranReaderPage({
     return () => {
       controller.abort();
     };
-  }, [audioReciters, selectedReciter, settings.audioPreference, surahId]);
+  }, [selectedAudioReciterName, settings.audioPreference, surahId]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -853,7 +942,7 @@ export default function QuranReaderPage({
     const onTime = () => {
       const nextTime = audio.currentTime || 0;
       if (
-        Math.abs(nextTime - lastCommittedAudioTimeRef.current) >= 0.45 ||
+        Math.abs(nextTime - lastCommittedAudioTimeRef.current) >= 0.12 ||
         audio.paused ||
         audio.ended
       ) {
@@ -1011,6 +1100,37 @@ export default function QuranReaderPage({
 
     setActiveAudioAyahNumber((previousAyah) => (previousAyah === null ? previousAyah : null));
   }, [audioCurrentTime, audioDuration, ayahTimings, ayahs, isPlaying]);
+
+  const activeAudioWord = useMemo<ActiveAudioWord | null>(() => {
+    if (!isPlaying || wordTimings.length === 0) {
+      return null;
+    }
+
+    const currentMs = Math.max(audioCurrentTime, 0) * 1000;
+    let low = 0;
+    let high = wordTimings.length - 1;
+    let candidateIndex = -1;
+
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      if (wordTimings[middle].fromMs <= currentMs) {
+        candidateIndex = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+
+    const timing = candidateIndex >= 0 ? wordTimings[candidateIndex] : null;
+    if (!timing || currentMs >= timing.toMs + 180) {
+      return null;
+    }
+
+    return {
+      ayahNumber: timing.ayahNumber,
+      wordIndex: timing.wordIndex,
+    };
+  }, [audioCurrentTime, isPlaying, wordTimings]);
 
   useEffect(() => {
     if (
@@ -2095,7 +2215,12 @@ export default function QuranReaderPage({
                         lang="ar"
                         className={`arabic-font quran-script arabic-reading mt-4 text-[var(--color-heading)] ${isAudioActiveAyah ? 'rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] px-3 py-2 shadow-[var(--shadow-glow)]' : ''}`}
                       >
-                        <HighlightText text={ayah.text} query={highlightQuery} />
+                        <AudioSyncedArabicText
+                          text={ayah.text}
+                          query={highlightQuery}
+                          ayahNumber={ayah.numberInSurah}
+                          activeWord={activeAudioWord}
+                        />
                         <AyahEndMarker number={ayah.numberInSurah} />
                       </p>
 
