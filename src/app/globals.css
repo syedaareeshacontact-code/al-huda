@@ -99,14 +99,19 @@ body {
 }
 
 .font-arabic {
-  font-family: var(--font-arabic-quran), 'Amiri Quran', var(--font-arabic-naskh), 'Noto Naskh Arabic', serif;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
 .font-arabic-amiri {
-  font-family: var(--font-arabic-quran), var(--font-arabic-amiri), 'Amiri Quran', 'Noto Naskh Arabic', serif;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
 .quran-script {
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
+}
+
+/* Keep every semantically marked Arabic passage on the same Uthmani script. */
+[lang='ar'] {
   font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
@@ -115,7 +120,7 @@ body {
 }
 
 :root[data-arabic-font='amiriQuran'] .arabic-font {
-  font-family: var(--font-arabic-quran), 'Amiri Quran', var(--font-arabic-amiri), 'Noto Naskh Arabic', serif;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
 :root[data-arabic-font='uthmaniHafs'] .arabic-font {
@@ -123,7 +128,7 @@ body {
 }
 
 :root[data-arabic-font='notoNaskh'] .arabic-font {
-  font-family: var(--font-arabic-naskh), 'Noto Naskh Arabic', var(--font-arabic-quran), 'Amiri Quran', serif;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
 /* Enhanced Animations */
@@ -252,10 +257,11 @@ select {
 }
 
 :root[data-arabic-font='scheherazade'] .arabic-font {
-  font-family: var(--font-arabic-scheherazade), 'Scheherazade New', var(--font-arabic-naskh), 'Noto Naskh Arabic', serif;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
 .arabic-font {
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
   direction: rtl;
   unicode-bidi: plaintext;
   line-height: 2.35;
@@ -489,7 +495,7 @@ select {
 }
 
 .tafseer-rich .tafseer-arabic-inline {
-  font-family: var(--font-arabic-quran), 'Amiri Quran', var(--font-arabic-naskh), 'Noto Naskh Arabic', serif;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
   font-weight: 700;
   color: color-mix(in oklab, var(--color-accent-soft), var(--color-heading) 48%);
   background: color-mix(in oklab, var(--color-highlight), transparent 80%);

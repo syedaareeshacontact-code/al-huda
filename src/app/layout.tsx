@@ -199,13 +199,14 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
-			data-arabic-font="amiriQuran"
+			data-arabic-font="uthmaniHafs"
 			suppressHydrationWarning
 		>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 				{/* DNS prefetch for external API services */}
 			<link rel="dns-prefetch" href="//api.quran.com" />
+			<link rel="preconnect" href="https://verses.quran.foundation" crossOrigin="anonymous" />
 			<link rel="dns-prefetch" href="//hadithapi.com" />
 			<link rel="dns-prefetch" href="//ia801503.us.archive.org" />
 

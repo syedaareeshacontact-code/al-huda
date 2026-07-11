@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ChevronDown,
   ChevronUp,
   MapPin,
   Paintbrush,
@@ -30,7 +29,6 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
   const {
     settings,
     setReadingMode,
-    setArabicFont,
     setArabicFontScale,
     setAudioPreference,
     setAutoPlayAudio,
@@ -80,22 +78,15 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
 
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-text)]">
-                Arabic Font
+                Arabic Script
               </p>
-              <div className="relative">
-                <select
-                  className="app-select h-10 w-full appearance-none rounded-xl px-3 pr-9 text-sm font-medium"
-                  value={settings.arabicFont}
-                  onChange={(event) =>
-                    setArabicFont(event.target.value as typeof settings.arabicFont)
-                  }
-                >
-                  <option value="uthmaniHafs">Uthmani Hafs (Quran.com)</option>
-                  <option value="amiriQuran">Amiri Quran</option>
-                  <option value="notoNaskh">Noto Naskh</option>
-                  <option value="scheherazade">Scheherazade</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--color-muted-text)]" />
+              <div className="flex h-10 items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3">
+                <span className="text-sm font-medium text-[var(--color-heading)]">
+                  Uthmani Hafs
+                </span>
+                <Badge variant="secondary" className="text-[0.6rem]">
+                  Site-wide
+                </Badge>
               </div>
             </div>
 
