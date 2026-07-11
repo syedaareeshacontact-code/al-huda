@@ -1,5 +1,17 @@
 @import 'tailwindcss';
 
+/* Official Quran Foundation Unicode font used by Quran.com's Uthmani study view. */
+@font-face {
+  font-family: 'Uthmanic Hafs';
+  src:
+    local('KFGQPC HAFS Uthmanic Script'),
+    local('KFGQPC Uthmanic Script HAFS'),
+    url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --color-bg: #fafafa;
   --color-bg-alt: #f4f4f5;
@@ -94,12 +106,20 @@ body {
   font-family: var(--font-arabic-quran), var(--font-arabic-amiri), 'Amiri Quran', 'Noto Naskh Arabic', serif;
 }
 
+.quran-script {
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
+}
+
 .font-urdu-nastaliq {
   font-family: var(--font-urdu-nastaliq), 'Noto Nastaliq Urdu', serif;
 }
 
 :root[data-arabic-font='amiriQuran'] .arabic-font {
   font-family: var(--font-arabic-quran), 'Amiri Quran', var(--font-arabic-amiri), 'Noto Naskh Arabic', serif;
+}
+
+:root[data-arabic-font='uthmaniHafs'] .arabic-font {
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
 }
 
 :root[data-arabic-font='notoNaskh'] .arabic-font {
@@ -301,27 +321,20 @@ select {
 }
 
 .ayah-end-marker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.95em;
-  height: 1.95em;
-  margin-inline: 0.35em;
-  padding-inline: 0.15em;
-  vertical-align: middle;
-  border-radius: 999px;
-  border: 1.5px solid color-mix(in oklab, var(--color-accent), var(--color-border) 35%);
-  background: color-mix(in oklab, var(--color-accent), var(--color-surface) 90%);
-  color: var(--color-accent-soft);
-  font-family: var(--font-arabic-quran), 'Amiri Quran', var(--font-arabic-naskh), serif;
-  font-size: 0.46em;
+  display: inline-block;
+  margin-inline: 0.16em;
+  vertical-align: -0.08em;
+  color: currentColor;
+  font-family: 'Uthmanic Hafs', var(--font-arabic-quran), 'Amiri Quran', serif;
+  font-size: 0.88em;
   font-weight: 400;
   line-height: 1;
+  white-space: nowrap;
   user-select: none;
 }
 
 .arabic-reading .ayah-end-marker {
-  font-size: 0.52em;
+  font-size: 0.88em;
 }
 
 .urdu-font {

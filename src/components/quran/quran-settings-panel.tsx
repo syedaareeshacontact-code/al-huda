@@ -90,6 +90,7 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
                     setArabicFont(event.target.value as typeof settings.arabicFont)
                   }
                 >
+                  <option value="uthmaniHafs">Uthmani Hafs (Quran.com)</option>
                   <option value="amiriQuran">Amiri Quran</option>
                   <option value="notoNaskh">Noto Naskh</option>
                   <option value="scheherazade">Scheherazade</option>

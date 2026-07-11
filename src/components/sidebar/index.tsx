@@ -1984,7 +1984,11 @@ export default function QuranReaderPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="arabic-font arabic-mushaf text-[var(--color-heading)]">
+                <p
+                  dir="rtl"
+                  lang="ar"
+                  className="arabic-font quran-script arabic-mushaf text-[var(--color-heading)]"
+                >
                   {filteredAyahs.map(({ ayah }, index) => {
                     const isActive =
                       isPlaying && activeAudioAyahNumber === ayah.numberInSurah;
@@ -2087,7 +2091,9 @@ export default function QuranReaderPage({
                       </div>
 
                       <p
-                        className={`arabic-font arabic-reading mt-4 text-[var(--color-heading)] ${isAudioActiveAyah ? 'rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] px-3 py-2 shadow-[var(--shadow-glow)]' : ''}`}
+                        dir="rtl"
+                        lang="ar"
+                        className={`arabic-font quran-script arabic-reading mt-4 text-[var(--color-heading)] ${isAudioActiveAyah ? 'rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] px-3 py-2 shadow-[var(--shadow-glow)]' : ''}`}
                       >
                         <HighlightText text={ayah.text} query={highlightQuery} />
                         <AyahEndMarker number={ayah.numberInSurah} />

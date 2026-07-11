@@ -6,7 +6,7 @@ import { replaceUserSettings } from '@/lib/auth/users-store';
 
 const settingsSchema = z.object({
   readingMode: z.enum(['ayah', 'continuous']),
-  arabicFont: z.enum(['amiriQuran', 'notoNaskh', 'scheherazade']),
+  arabicFont: z.enum(['uthmaniHafs', 'amiriQuran', 'notoNaskh', 'scheherazade']),
   arabicFontScale: z.number().min(0.9).max(1.9),
   audioPreference: z.enum(['ar', 'tr']),
   autoPlayAudio: z.boolean(),

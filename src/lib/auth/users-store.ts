@@ -70,7 +70,7 @@ export const ADMIN_EMAIL = 'zainqlandar@gmail.com';
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   readingMode: 'ayah',
-  arabicFont: 'amiriQuran',
+  arabicFont: 'uthmaniHafs',
   arabicFontScale: 1.1,
   audioPreference: 'ar',
   autoPlayAudio: false,
@@ -120,9 +120,11 @@ export function normalizeUserSettings(input: unknown): UserSettings {
   return {
     readingMode: candidate.readingMode === 'continuous' ? 'continuous' : 'ayah',
     arabicFont:
-      candidate.arabicFont === 'notoNaskh' || candidate.arabicFont === 'scheherazade'
+      candidate.arabicFont === 'amiriQuran' ||
+      candidate.arabicFont === 'notoNaskh' ||
+      candidate.arabicFont === 'scheherazade'
         ? candidate.arabicFont
-        : 'amiriQuran',
+        : 'uthmaniHafs',
     arabicFontScale: clampArabicFontScale(candidate.arabicFontScale),
     audioPreference: candidate.audioPreference === 'tr' ? 'tr' : 'ar',
     autoPlayAudio: Boolean(candidate.autoPlayAudio),
@@ -468,8 +470,8 @@ const settingsSchema = new Schema<UserSettings>(
     readingMode: { type: String, enum: ['ayah', 'continuous'], default: 'ayah' },
     arabicFont: {
       type: String,
-      enum: ['amiriQuran', 'notoNaskh', 'scheherazade'],
-      default: 'amiriQuran',
+      enum: ['uthmaniHafs', 'amiriQuran', 'notoNaskh', 'scheherazade'],
+      default: 'uthmaniHafs',
     },
     arabicFontScale: { type: Number, min: 0.9, max: 1.9, default: 1.1 },
     audioPreference: { type: String, enum: ['ar', 'tr'], default: 'ar' },

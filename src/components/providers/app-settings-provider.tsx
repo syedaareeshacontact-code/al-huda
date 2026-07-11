@@ -25,7 +25,7 @@ const THEME_MODE_STORAGE_KEY = 'alhuda:theme-mode';
 
 const DEFAULT_SETTINGS: AppSettings = {
   readingMode: 'ayah',
-  arabicFont: 'amiriQuran',
+  arabicFont: 'uthmaniHafs',
   arabicFontScale: 1.1,
   audioPreference: 'ar',
   autoPlayAudio: false,
@@ -60,9 +60,11 @@ function normalizeUserSettings(input: Partial<UserSettings>): UserSettings {
   return {
     readingMode: input.readingMode === 'continuous' ? 'continuous' : 'ayah',
     arabicFont:
-      input.arabicFont === 'notoNaskh' || input.arabicFont === 'scheherazade'
+      input.arabicFont === 'amiriQuran' ||
+      input.arabicFont === 'notoNaskh' ||
+      input.arabicFont === 'scheherazade'
         ? input.arabicFont
-        : 'amiriQuran',
+        : 'uthmaniHafs',
     arabicFontScale: clampScale(Number(input.arabicFontScale ?? DEFAULT_SETTINGS.arabicFontScale)),
     audioPreference: input.audioPreference === 'tr' ? 'tr' : 'ar',
     autoPlayAudio: Boolean(input.autoPlayAudio),
