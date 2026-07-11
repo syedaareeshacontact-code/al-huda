@@ -5,100 +5,38 @@ import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   BookMarked,
+  BookOpen,
   BookOpenText,
   ChevronRight,
-  Heart,
   Headphones,
+  Heart,
   Languages,
+  Search,
   Settings2,
   Sparkles,
-  Star,
-  Timer,
+  ScrollText,
 } from 'lucide-react';
 
-import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
-import type { AyahBookmark, LastReadEntry } from '@/types/quran';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import HomeFeatureTour from '@/components/home/home-feature-tour';
-import HomeContextualWidgets from '@/components/home/contextual-widgets';
+import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { getSurahById } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import { buildSurahPath } from '@/lib/quran-routing';
+import type { AyahBookmark, LastReadEntry } from '@/types/quran';
 
 function resolveSurahPath(surahId: number | null | undefined) {
-  if (!surahId || !Number.isInteger(surahId)) {
-    return '/surah';
-  }
+  if (!surahId || !Number.isInteger(surahId)) return '/surah';
 
   const surah = getSurahById(surahId);
-  if (!surah) {
-    return `/surah/${surahId}`;
-  }
-
-  return buildSurahPath(surah.id, surah.surahName);
+  return surah ? buildSurahPath(surah.id, surah.surahName) : `/surah/${surahId}`;
 }
 
-function resolveAyahPath(surahId: number, ayahNumber: number) {
-  const surah = getSurahById(surahId);
-  if (!surah) {
-    return `/surah/${surahId}/ayah/${ayahNumber}`;
-  }
-
-  return buildAyahPath(surah.id, surah.surahName, ayahNumber);
-}
-
-function resolveTafsirPath(surahId: number, ayahNumber: number) {
-  const surah = getSurahById(surahId);
-  if (!surah) {
-    return `/tafsir/${surahId}/${ayahNumber}`;
-  }
-
-  return buildTafsirPath(surah.id, surah.surahName, ayahNumber);
-}
-
-const POPULAR_SEARCH_PHRASES = [
-  'quran online read',
-  'read quran online',
-  'quran with urdu translation',
-  'listen quran online',
-  'quran audio download',
-  'quran tafseer urdu',
-  'surah yasin read online',
-  'surah rahman with urdu translation',
-  'surah kahf friday read',
-  'surah mulk read before sleep',
-  'surah waqiah with urdu tarjuma',
-  'ayat ul kursi urdu translation',
-];
-
-const QUICK_SURAH_LINKS = [
-  { label: 'Surah Yaseen', surahId: 36 },
-  { label: 'Surah Rahman', surahId: 55 },
-  { label: 'Surah Kahf', surahId: 18 },
-  { label: 'Surah Mulk', surahId: 67 },
-  { label: 'Surah Waqiah', surahId: 56 },
-  { label: 'Surah Fatiha', surahId: 1 },
-];
-
-const QUICK_AYAH_LINKS = [
-  {
-    label: 'Ayat ul Kursi (2:255)',
-    ayahPath: resolveAyahPath(2, 255),
-  },
-  {
-    label: 'Last 2 Ayat of Baqarah (2:285-286)',
-    ayahPath: resolveAyahPath(2, 285),
-  },
-  {
-    label: '3 Qul (Ikhlas, Falaq, Naas)',
-    ayahPath: resolveSurahPath(112),
-  },
-  {
-    label: 'Surah Fatiha Ayah 1 Tafseer',
-    ayahPath: resolveAyahPath(1, 1),
-    tafsirPath: resolveTafsirPath(1, 1),
-  },
+const POPULAR_SURAHS = [
+  { label: 'Al-Fatihah', arabic: 'الفاتحة', id: 1 },
+  { label: 'Ya-Sin', arabic: 'يس', id: 36 },
+  { label: 'Al-Kahf', arabic: 'الكهف', id: 18 },
+  { label: 'Ar-Rahman', arabic: 'الرحمن', id: 55 },
+  { label: 'Al-Mulk', arabic: 'الملك', id: 67 },
+  { label: 'Al-Waqiah', arabic: 'الواقعة', id: 56 },
 ];
 
 export default function HomeRoot() {
@@ -112,44 +50,16 @@ export default function HomeRoot() {
 
     const loadQuranState = async () => {
       try {
-        const sessionResponse = await fetch('/api/auth/session', {
-          cache: 'no-store',
-        });
-
-        if (!sessionResponse.ok) {
-          if (!ignore) {
-            setFavorites([]);
-            setBookmarks([]);
-            setLastRead(null);
-          }
-          return;
-        }
+        const sessionResponse = await fetch('/api/auth/session', { cache: 'no-store' });
+        if (!sessionResponse.ok) throw new Error('Session unavailable');
 
         const sessionPayload = (await sessionResponse.json()) as {
           user?: { id?: string | null } | null;
         };
+        if (!sessionPayload.user?.id) throw new Error('Signed out');
 
-        if (!sessionPayload.user?.id) {
-          if (!ignore) {
-            setFavorites([]);
-            setBookmarks([]);
-            setLastRead(null);
-          }
-          return;
-        }
-
-        const quranStateResponse = await fetch('/api/auth/quran-state', {
-          cache: 'no-store',
-        });
-
-        if (!quranStateResponse.ok) {
-          if (!ignore) {
-            setFavorites([]);
-            setBookmarks([]);
-            setLastRead(null);
-          }
-          return;
-        }
+        const quranStateResponse = await fetch('/api/auth/quran-state', { cache: 'no-store' });
+        if (!quranStateResponse.ok) throw new Error('Quran state unavailable');
 
         const quranStatePayload = (await quranStateResponse.json()) as {
           favoriteSurahIds?: number[];
@@ -158,16 +68,8 @@ export default function HomeRoot() {
         };
 
         if (!ignore) {
-          setFavorites(
-            Array.isArray(quranStatePayload.favoriteSurahIds)
-              ? quranStatePayload.favoriteSurahIds
-              : []
-          );
-          setBookmarks(
-            Array.isArray(quranStatePayload.bookmarkedAyahs)
-              ? quranStatePayload.bookmarkedAyahs
-              : []
-          );
+          setFavorites(quranStatePayload.favoriteSurahIds ?? []);
+          setBookmarks(quranStatePayload.bookmarkedAyahs ?? []);
           setLastRead(quranStatePayload.lastRead ?? null);
         }
       } catch {
@@ -177,18 +79,12 @@ export default function HomeRoot() {
           setLastRead(null);
         }
       } finally {
-        if (!ignore) {
-          setIsLoaded(true);
-        }
+        if (!ignore) setIsLoaded(true);
       }
     };
 
     void loadQuranState();
-
-    const onAuthChanged = () => {
-      void loadQuranState();
-    };
-
+    const onAuthChanged = () => void loadQuranState();
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
 
     return () => {
@@ -198,304 +94,203 @@ export default function HomeRoot() {
   }, []);
 
   const hasLastRead = Boolean(lastRead?.surahId && lastRead?.ayahNumber);
-  const firstFavoriteSurahId = favorites[0] ?? null;
-  const latestBookmark = bookmarks[0] ?? null;
+  const lastReadSurah = lastRead ? getSurahById(lastRead.surahId) : null;
   const lastReadPath = hasLastRead
-    ? `${resolveSurahPath(lastRead.surahId)}#ayah-${lastRead.ayahNumber}`
+    ? `${resolveSurahPath(lastRead?.surahId)}#ayah-${lastRead?.ayahNumber}`
     : '/surah';
-  const firstFavoritePath = resolveSurahPath(firstFavoriteSurahId);
-  const latestBookmarkPath = latestBookmark
-    ? `${resolveSurahPath(latestBookmark.surahId)}#ayah-${latestBookmark.ayahNumber}`
-    : '/surah';
+  const firstFavoriteId = favorites[0];
+  const latestBookmark = bookmarks[0];
 
   return (
-    <div className="pb-20 pt-10 sm:pt-16">
+    <main className="pb-20 pt-5 sm:pt-9">
       <HomeFeatureTour />
-      <section className="relative overflow-hidden" data-slot="page-shell">
-        <div className="pointer-events-none absolute -top-16 right-[-10%] size-60 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-accent),transparent_88%)_0%,transparent_72%)] opacity-60 blur-3xl animate-float" />
-        <div className="pointer-events-none absolute -bottom-16 left-[-8%] size-64 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-accent-soft),transparent_90%)_0%,transparent_72%)] opacity-40 blur-3xl animate-float" />
 
-        <Card className="relative overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%))] shadow-[var(--shadow-glow)] animate-fade-up">
-          <CardContent className="p-6 sm:p-10 lg:p-14">
-            <Badge className="mb-4 w-fit">
-              <Sparkles className="mr-1 size-3.5" />
-              Quran First
-            </Badge>
-            <h1 className="font-display text-4xl leading-tight tracking-tight text-[var(--color-heading)] sm:text-5xl lg:text-6xl">
-              Read Quran with focus, resume fast, and stay consistent.
-            </h1>
-            <p className="mt-5 max-w-2xl text-base text-[var(--color-muted-text)] sm:text-lg">
-              Start recitation quickly, continue from your last ayah, and keep your
-              favorite surahs and bookmarks organized in one place.
+      <section data-slot="page-shell" aria-labelledby="home-heading">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-9 lg:px-12 lg:py-11">
+          <div className="pointer-events-none absolute -right-14 -top-20 size-64 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_82%)] opacity-60" />
+          <div className="pointer-events-none absolute -right-4 -top-10 size-40 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_78%)] opacity-40" />
+
+          <div className="relative max-w-3xl">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">
+              Your Quran companion
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <span id="home-tour-primary-cta" className="inline-flex">
-                <Button asChild size="lg">
-                  <Link href={lastReadPath}>
-                    {hasLastRead ? 'Continue Reading' : 'Open Quran'}
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              </span>
-              <span id="home-tour-quran-settings" className="inline-flex">
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/surah#quran-settings">
-                    <Settings2 className="size-4" />
-                    Quran Settings
-                  </Link>
-                </Button>
-              </span>
-              <span id="home-tour-read-online" className="inline-flex">
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/read-quran-online">
-                    Read Quran Online
-                    <ChevronRight className="size-4" />
-                  </Link>
-                </Button>
+            <p className="font-arabic text-right text-2xl leading-loose text-[var(--color-heading)] sm:text-3xl" dir="rtl">
+              بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
+            </p>
+            <h1 id="home-heading" className="mt-1 font-display text-4xl font-semibold leading-[1.05] tracking-tight text-[var(--color-heading)] sm:text-5xl lg:text-6xl">
+              Read. Understand. Reflect.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--color-muted-text)] sm:text-base">
+              Read the Quran with translation and tafseer, and return to your last ayah without losing your place.
+            </p>
+          </div>
+
+          <form action="/surah" method="get" className="relative mt-6 max-w-2xl" role="search" id="home-tour-search">
+            <label htmlFor="home-quran-search" className="sr-only">Search the Quran by Surah name or number</label>
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--color-muted-text)]" />
+            <input
+              id="home-quran-search"
+              name="search"
+              type="search"
+              placeholder="Search a Surah..."
+              className="h-14 w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-12 pr-28 text-sm text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-accent),transparent_75%)] sm:text-base"
+            />
+            <button type="submit" className="absolute right-2 top-2 h-10 rounded-xl bg-[var(--color-heading)] px-4 text-sm font-semibold text-[var(--color-bg)] hover:opacity-85">
+              Search
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section className="mt-4 sm:mt-5" data-slot="page-shell" aria-label="Main Quran actions">
+        <div className="grid gap-3 lg:grid-cols-[1.35fr_0.65fr] lg:gap-4">
+          <Link
+            id="home-tour-primary-cta"
+            href={lastReadPath}
+            className="group relative flex min-h-40 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(135deg,#8c6a08,var(--color-accent-soft))] p-5 text-[var(--color-accent-foreground)] shadow-[0_22px_45px_-25px_color-mix(in_oklab,var(--color-accent),black_25%)] sm:min-h-48 sm:p-7"
+          >
+            <div className="flex min-w-0 flex-1 flex-col justify-between">
+              <div>
+                <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] opacity-80">
+                  <BookOpenText className="size-4" />
+                  {hasLastRead ? 'Continue reading' : 'Begin your reading'}
+                </span>
+                <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
+                  {hasLastRead && lastReadSurah ? lastReadSurah.surahName : 'Open the Holy Quran'}
+                </h2>
+                <p className="mt-1 text-sm opacity-80">
+                  {hasLastRead
+                    ? `Surah ${lastRead?.surahId} · Ayah ${lastRead?.ayahNumber}`
+                    : 'Choose from all 114 Surahs'}
+                </p>
+              </div>
+              <span className="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
+                {hasLastRead ? 'Resume now' : 'Start reading'}
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
               </span>
             </div>
+            <BookOpen className="absolute -bottom-6 -right-5 size-36 rotate-[-8deg] opacity-15 sm:size-44" strokeWidth={1.2} />
+          </Link>
 
-            <dl className="mt-8 grid gap-3 text-sm sm:grid-cols-4">
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)] animate-fade-up-delay-1">
-                <dt className="inline-flex items-center gap-1 text-[var(--color-muted-text)]">
-                  <BookOpenText className="size-3.5 text-[var(--color-accent)]" />
-                  Surahs
-                </dt>
-                <dd className="mt-1 text-2xl font-semibold text-[var(--color-heading)]">114</dd>
-              </div>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)] animate-fade-up-delay-1">
-                <dt className="inline-flex items-center gap-1 text-[var(--color-muted-text)]">
-                  <Star className="size-3.5 text-[var(--color-highlight)]" />
-                  Favorites
-                </dt>
-                <dd className="mt-1 text-2xl font-semibold text-[var(--color-heading)]">
-                  {isLoaded ? favorites.length : '...'}
-                </dd>
-              </div>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)] animate-fade-up-delay-2">
-                <dt className="inline-flex items-center gap-1 text-[var(--color-muted-text)]">
-                  <BookMarked className="size-3.5 text-[var(--color-accent)]" />
-                  Bookmarks
-                </dt>
-                <dd className="mt-1 text-2xl font-semibold text-[var(--color-heading)]">
-                  {isLoaded ? bookmarks.length : '...'}
-                </dd>
-              </div>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)] animate-fade-up-delay-2">
-                <dt className="inline-flex items-center gap-1 text-[var(--color-muted-text)]">
-                  <Headphones className="size-3.5 text-[var(--color-info)]" />
-                  Audio
-                </dt>
-                <dd className="mt-1 text-2xl font-semibold text-[var(--color-heading)]">Ready</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="mt-12" data-slot="page-shell">
-        <h2 className="mb-5 font-display text-3xl tracking-tight text-[var(--color-heading)]">
-          Quick Quran Actions
-        </h2>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="animate-fade-up">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <BookOpenText className="size-5 text-[var(--color-accent)]" /> Last Read
-              </CardTitle>
-              <CardDescription>
-                {hasLastRead
-                  ? `Surah ${lastRead.surahId}, Ayah ${lastRead.ayahNumber}`
-                  : 'No last read found yet.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                asChild
-                className="w-full"
-                variant={hasLastRead ? 'default' : 'outline'}
-              >
-                <Link href={lastReadPath}>
-                  {hasLastRead ? 'Resume Now' : 'Start Reading'}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-up-delay-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Heart className="size-5 text-[var(--color-highlight)]" /> Favorite Surah
-              </CardTitle>
-              <CardDescription>
-                {firstFavoriteSurahId
-                  ? `Open favorite Surah ${firstFavoriteSurahId}`
-                  : 'Mark a surah as favorite to access quickly.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                asChild
-                className="w-full"
-                variant={firstFavoriteSurahId ? 'default' : 'outline'}
-              >
-                <Link href={firstFavoritePath}>
-                  {firstFavoriteSurahId ? 'Open Favorite' : 'Pick Favorite'}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-up-delay-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <BookMarked className="size-5 text-[var(--color-accent)]" /> Latest Bookmark
-              </CardTitle>
-              <CardDescription>
-                {latestBookmark
-                  ? `Surah ${latestBookmark.surahId}, Ayah ${latestBookmark.ayahNumber}`
-                  : 'Save bookmarks from Quran reader.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full" variant={latestBookmark ? 'default' : 'outline'}>
-                <Link href={latestBookmarkPath}>
-                  {latestBookmark ? 'Open Bookmark' : 'Create Bookmark'}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <HomeContextualWidgets />
-
-      <section className="mt-12" data-slot="page-shell">
-        <h2 className="mb-5 font-display text-3xl tracking-tight text-[var(--color-heading)]">Core Quran Tools</h2>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="animate-fade-up">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Headphones className="size-5 text-[var(--color-info)]" /> Recitation Audio
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-[var(--color-muted-text)]">
-              Play/Pause, range seek, voice selection, and ayah highlight with scrolling.
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-up-delay-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Languages className="size-5 text-[var(--color-accent)]" /> Translation & Tafseer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-[var(--color-muted-text)]">
-              Urdu translation toggle and ayah-wise tafseer panel inside the Quran reader.
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-up-delay-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Timer className="size-5 text-[var(--color-highlight)]" /> Learning Flow
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-[var(--color-muted-text)]">
-              Resume markers, bookmark list, and session continuity for better daily routine.
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <section className="mt-10" data-slot="page-shell">
-        <h2 className="mb-4 font-display text-3xl text-[var(--color-heading)]">
-          Popular Quran Searches
-        </h2>
-        <p className="mb-4 max-w-3xl text-sm text-[var(--color-muted-text)] sm:text-base">
-          These are common search intents for Quran online reading, Urdu translation,
-          tilawat audio, ayah tafseer, and daily surah recitation.
-        </p>
-
-        <Card className="animate-fade-up">
-          <CardContent className="flex flex-wrap gap-2 p-5">
-            {POPULAR_SEARCH_PHRASES.map((phrase) => (
-              <span
-                key={phrase}
-                className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-medium text-[var(--color-muted-text)]"
-              >
-                {phrase}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+            <Link
+              id="home-tour-read-online"
+              href="/surah"
+              className="group relative flex min-h-36 flex-col justify-between overflow-hidden rounded-[1.4rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_68%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface-elevated)_92%),var(--color-surface-elevated)_58%)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:p-5 lg:min-h-0 lg:flex-row lg:items-center"
+            >
+              <span className="relative z-10">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),transparent_68%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_80%)] text-[var(--color-accent-soft)] shadow-sm">
+                  <BookOpenText className="size-5" strokeWidth={2} />
+                </span>
+                <span className="mt-4 block font-semibold text-[var(--color-heading)] lg:mt-2">Read Quran</span>
+                <span className="mt-0.5 hidden text-xs text-[var(--color-muted-text)] sm:block">All 114 Surahs</span>
               </span>
-            ))}
-          </CardContent>
-        </Card>
-      </section>
+              <span className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted-text)] lg:static lg:shrink-0">
+                <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
 
-      <section className="mt-10" data-slot="page-shell">
-        <h2 className="mb-4 font-display text-3xl text-[var(--color-heading)]">
-          Quick Links for High-Intent Queries
-        </h2>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="animate-fade-up">
-            <CardHeader>
-              <CardTitle className="text-xl">Popular Surahs</CardTitle>
-              <CardDescription>
-                Open surah pages with Arabic text, Urdu/English translation, audio, and
-                tafseer actions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {QUICK_SURAH_LINKS.map((item) => (
-                <Link
-                  key={item.label}
-                  href={resolveSurahPath(item.surahId)}
-                  className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm text-[var(--color-text)] transition-colors hover:border-[var(--color-accent-soft)]"
-                >
-                  <span>{item.label}</span>
-                  <ChevronRight className="size-4 text-[var(--color-muted-text)]" />
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-up-delay-1">
-            <CardHeader>
-              <CardTitle className="text-xl">Ayah & Tafseer Access</CardTitle>
-              <CardDescription>
-                Direct entry points for Ayat ul Kursi, last ayahs, and tafseer pages.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {QUICK_AYAH_LINKS.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3"
-                >
-                  <p className="text-sm font-semibold text-[var(--color-heading)]">{item.label}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Link
-                      href={item.ayahPath}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text)] transition-colors hover:border-[var(--color-accent-soft)]"
-                    >
-                      Open Ayah
-                    </Link>
-                    {item.tafsirPath ? (
-                      <Link
-                        href={item.tafsirPath}
-                        className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text)] transition-colors hover:border-[var(--color-accent-soft)]"
-                      >
-                        Open Tafseer
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+            <Link
+              href="/tafsir"
+              className="group relative flex min-h-36 flex-col justify-between overflow-hidden rounded-[1.4rem] border border-[color-mix(in_oklab,var(--color-highlight),var(--color-border)_72%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-highlight),var(--color-surface-elevated)_93%),var(--color-surface-elevated)_58%)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:p-5 lg:min-h-0 lg:flex-row lg:items-center"
+            >
+              <span className="relative z-10">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-[color-mix(in_oklab,var(--color-highlight),transparent_68%)] bg-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_82%)] text-[color-mix(in_oklab,var(--color-highlight),var(--color-heading)_30%)] shadow-sm">
+                  <ScrollText className="size-5" strokeWidth={2} />
+                </span>
+                <span className="mt-4 block font-semibold text-[var(--color-heading)] lg:mt-2">Explore Tafseer</span>
+                <span className="mt-0.5 hidden text-xs text-[var(--color-muted-text)] sm:block">Understand each Ayah</span>
+              </span>
+              <span className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted-text)] lg:static lg:shrink-0">
+                <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          </div>
         </div>
       </section>
-    </div>
+
+      <section className="mt-10 sm:mt-14" data-slot="page-shell" aria-labelledby="popular-surahs-heading">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Quick access</p>
+            <h2 id="popular-surahs-heading" className="mt-1 font-display text-3xl font-semibold text-[var(--color-heading)]">Popular Surahs</h2>
+          </div>
+          <Link href="/surah" className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[var(--color-accent-soft)] hover:underline">
+            View all <ChevronRight className="size-4" />
+          </Link>
+        </div>
+
+        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
+          {POPULAR_SURAHS.map((surah) => (
+            <Link
+              key={surah.id}
+              href={resolveSurahPath(surah.id)}
+              className="group min-w-[9.5rem] snap-start rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:min-w-0"
+            >
+              <span className="font-arabic block text-right text-2xl leading-relaxed text-[var(--color-accent)]" dir="rtl">{surah.arabic}</span>
+              <span className="mt-3 block text-sm font-semibold text-[var(--color-heading)]">{surah.label}</span>
+              <span className="mt-1 flex items-center justify-between text-xs text-[var(--color-muted-text)]">
+                Surah {surah.id}
+                <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 sm:mt-14" data-slot="page-shell" aria-labelledby="library-heading">
+        <div className="mb-4">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Personal space</p>
+          <h2 id="library-heading" className="mt-1 font-display text-3xl font-semibold text-[var(--color-heading)]">Your Quran Library</h2>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href={firstFavoriteId ? resolveSurahPath(firstFavoriteId) : '/surah'}
+            className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)]"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_88%)] text-[var(--color-highlight)]"><Heart className="size-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-[var(--color-heading)]">Favorite Surahs</span>
+              <span className="block text-sm text-[var(--color-muted-text)]">{isLoaded ? `${favorites.length} saved` : 'Loading…'}</span>
+            </span>
+            <ChevronRight className="size-5 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-1" />
+          </Link>
+
+          <Link
+            href={latestBookmark ? `${resolveSurahPath(latestBookmark.surahId)}#ayah-${latestBookmark.ayahNumber}` : '/surah'}
+            className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)]"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]"><BookMarked className="size-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-[var(--color-heading)]">Bookmarks</span>
+              <span className="block text-sm text-[var(--color-muted-text)]">{isLoaded ? `${bookmarks.length} saved ayahs` : 'Loading…'}</span>
+            </span>
+            <ChevronRight className="size-5 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+      </section>
+
+      <section className="mt-10 sm:mt-14" data-slot="page-shell" aria-labelledby="study-heading">
+        <div className="rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-7">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-xl">
+              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-accent-soft)]"><Sparkles className="size-4" /> Go beyond recitation</span>
+              <h2 id="study-heading" className="mt-2 font-display text-3xl font-semibold text-[var(--color-heading)]">Study every Ayah with Tafseer</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-muted-text)]">Open Urdu tafseer alongside the Quran to explore meaning and context, ayah by ayah.</p>
+            </div>
+            <Link href="/tafsir" className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-5 text-sm font-bold !text-[var(--color-accent-foreground)] shadow-[0_14px_30px_-18px_color-mix(in_oklab,var(--color-accent),transparent_25%)] hover:brightness-110">
+              Browse Tafseer <ArrowRight className="size-4" />
+            </Link>
+          </div>
+
+          <div className="mt-6 grid gap-2 border-t border-[var(--color-border)] pt-5 sm:grid-cols-3">
+            <span className="flex items-center gap-2 text-sm text-[var(--color-muted-text)]"><Languages className="size-4 text-[var(--color-accent)]" /> Urdu translation</span>
+            <span className="flex items-center gap-2 text-sm text-[var(--color-muted-text)]"><Headphones className="size-4 text-[var(--color-accent)]" /> Recitation audio</span>
+            <Link id="home-tour-quran-settings" href="/surah#quran-settings" className="flex items-center gap-2 text-sm text-[var(--color-muted-text)] hover:text-[var(--color-heading)]"><Settings2 className="size-4 text-[var(--color-accent)]" /> Reading settings</Link>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

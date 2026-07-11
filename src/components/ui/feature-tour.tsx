@@ -24,6 +24,8 @@ interface PopupPosition {
 const POPUP_WIDTH = 320;
 const POPUP_GAP = 14;
 const SPOTLIGHT_PADDING = 8;
+const POPUP_HEIGHT_ESTIMATE = 280;
+const VIEWPORT_EDGE_GAP = 12;
 
 function getSpotlightRect(targetId: string): SpotlightRect | null {
   const element = document.getElementById(targetId);
@@ -46,26 +48,43 @@ function getPopupPosition(
 ): PopupPosition {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const popupHeightEstimate = 220;
+  const spaceAbove = spotlight.top - POPUP_GAP - VIEWPORT_EDGE_GAP;
+  const spaceBelow =
+    viewportHeight - (spotlight.top + spotlight.height) - POPUP_GAP - VIEWPORT_EDGE_GAP;
 
   let nextPlacement = placement;
+  if (
+    (placement === 'bottom' && spaceBelow < POPUP_HEIGHT_ESTIMATE && spaceAbove > spaceBelow) ||
+    (placement === 'top' && spaceAbove < POPUP_HEIGHT_ESTIMATE && spaceBelow > spaceAbove)
+  ) {
+    nextPlacement = placement === 'bottom' ? 'top' : 'bottom';
+  }
+
   let top =
     nextPlacement === 'bottom'
       ? spotlight.top + spotlight.height + POPUP_GAP
-      : spotlight.top - popupHeightEstimate - POPUP_GAP;
+      : spotlight.top - POPUP_HEIGHT_ESTIMATE - POPUP_GAP;
 
-  if (top + popupHeightEstimate > viewportHeight - 12) {
-    top = spotlight.top - popupHeightEstimate - POPUP_GAP;
+  if (top + POPUP_HEIGHT_ESTIMATE > viewportHeight - VIEWPORT_EDGE_GAP) {
+    top = spotlight.top - POPUP_HEIGHT_ESTIMATE - POPUP_GAP;
     nextPlacement = 'top';
   }
 
-  if (top < 12) {
+  if (top < VIEWPORT_EDGE_GAP) {
     top = spotlight.top + spotlight.height + POPUP_GAP;
     nextPlacement = 'bottom';
   }
 
+  top = Math.max(
+    VIEWPORT_EDGE_GAP,
+    Math.min(top, viewportHeight - POPUP_HEIGHT_ESTIMATE - VIEWPORT_EDGE_GAP)
+  );
+
   let left = spotlight.left + spotlight.width / 2 - POPUP_WIDTH / 2;
-  left = Math.max(12, Math.min(left, viewportWidth - POPUP_WIDTH - 12));
+  left = Math.max(
+    VIEWPORT_EDGE_GAP,
+    Math.min(left, viewportWidth - POPUP_WIDTH - VIEWPORT_EDGE_GAP)
+  );
 
   return { top, left, placement: nextPlacement };
 }
@@ -258,7 +277,7 @@ export default function FeatureTour({
         </div>
       ) : popupPosition ? (
         <div
-          className="fixed z-[310] w-[min(320px,calc(100vw-24px))] rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[var(--color-surface)] p-5 shadow-2xl pointer-events-auto transition-all duration-300"
+          className="fixed z-[310] max-h-[calc(100dvh-24px)] w-[min(320px,calc(100vw-24px))] overflow-y-auto overscroll-contain rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[var(--color-surface)] p-5 shadow-2xl pointer-events-auto transition-all duration-300"
           style={{ top: popupPosition.top, left: popupPosition.left }}
         >
           <div
