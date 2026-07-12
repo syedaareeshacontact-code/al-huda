@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 function sanitize(input: string | null, fallback: string) {
   const normalized = String(input ?? '').trim();
