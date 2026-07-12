@@ -8,15 +8,10 @@ import {
   Bookmark,
   BookmarkCheck,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Download,
   Hash,
   Heart,
   Menu,
-  Loader2,
-  Pause,
-  Play,
   Repeat,
   Search,
   Sparkles,
@@ -49,7 +44,7 @@ import type {
   UrduTafsirEntry,
 } from '@/types/quran';
 import { useAppSettings } from '@/components/providers/app-settings-provider';
-import { clampRange, formatAudioTime, isValidSurahId } from '@/lib/quran-utils';
+import { clampRange, isValidSurahId } from '@/lib/quran-utils';
 import { buildSurahPath, parseSurahIdFromParam } from '@/lib/quran-routing';
 import AyahEndMarker from '@/components/quran/AyahEndMarker';
 
@@ -468,12 +463,8 @@ export default function QuranReaderPage({
 
   const debouncedSearch = useDebouncedValue(searchInput, 280);
   const resumeTargetRef = useRef<HTMLButtonElement | null>(null);
-  const { audioRef, registerReader, unregisterReader, updateSession } = useGlobalQuranAudio();
+  const { audioRef, updateSession } = useGlobalQuranAudio();
   const audioUsageLastTimeRef = useRef(0);
-  const toggleAudioPlayRef = useRef<() => Promise<void>>(async () => {});
-  const handleSeekChangeRef = useRef<(rawValue: number) => void>(() => {});
-  const handlePreviousAudioStepRef = useRef<() => void>(() => {});
-  const handleNextAudioStepRef = useRef<() => void>(() => {});
 
   const [audioSrc, setAudioSrc] = useState('');
   const [audioReciters, setAudioReciters] = useState<SurahAudioOption[]>([]);
@@ -1376,19 +1367,6 @@ export default function QuranReaderPage({
   ]);
 
   useEffect(() => {
-    registerReader({
-      togglePlay: () => void toggleAudioPlayRef.current(),
-      seek: (value) => handleSeekChangeRef.current(value),
-      skipBack: () => handlePreviousAudioStepRef.current(),
-      skipForward: () => handleNextAudioStepRef.current(),
-    });
-
-    return () => {
-      unregisterReader();
-    };
-  }, [registerReader, unregisterReader]);
-
-  useEffect(() => {
     if (!audioSrc) {
       updateSession(null);
       return;
@@ -1615,70 +1593,6 @@ export default function QuranReaderPage({
     }
   };
 
-  const handleSeekChange = (rawValue: number) => {
-    const audio = audioRef.current;
-    if (!audio || !Number.isFinite(rawValue)) {
-      return;
-    }
-
-    const effectiveDuration =
-      audioDuration > 0 ? audioDuration : getAudioDuration(audio);
-
-    if (effectiveDuration <= 0) {
-      setAudioSourceError('Seek will be available after audio starts.');
-      return;
-    }
-
-    const nextValue = clampRange(rawValue, 0, effectiveDuration);
-    try {
-      audio.currentTime = nextValue;
-      setAudioCurrentTime(nextValue);
-      setAudioDuration(effectiveDuration);
-      setAudioSourceError(null);
-    } catch {
-      setAudioSourceError('Could not apply seek right now. Please try again.');
-    }
-  };
-
-  const jumpAudioBy = (seconds: number) => {
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) {
-      setAudioSourceError('Audio source is not ready yet.');
-      return;
-    }
-
-    const detectedDuration = getAudioDuration(audio);
-    const effectiveDuration = detectedDuration > 0 ? detectedDuration : audioDuration;
-    const baseTime = Number.isFinite(audio.currentTime)
-      ? audio.currentTime
-      : audioCurrentTime;
-    const upperLimit =
-      effectiveDuration > 0
-        ? effectiveDuration
-        : Math.max(baseTime + Math.abs(seconds), 0);
-
-    const nextValue = clampRange(baseTime + seconds, 0, upperLimit);
-
-    try {
-      audio.currentTime = nextValue;
-      setAudioCurrentTime(nextValue);
-      if (effectiveDuration > 0) {
-        setAudioDuration(effectiveDuration);
-      }
-      setAudioSourceError(null);
-    } catch {
-      setAudioSourceError('Could not skip audio.');
-    }
-  };
-
-  const handlePreviousAudioStep = () => {
-    jumpAudioBy(-10);
-  };
-
-  const handleNextAudioStep = () => {
-    jumpAudioBy(10);
-  };
-
   const handleSurahNavigation = (targetSurahId: number) => {
     setExpandedSurahId(targetSurahId);
     setIsNavigatorOpen(false);
@@ -1712,57 +1626,6 @@ export default function QuranReaderPage({
     const target = document.getElementById(anchor);
     target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
-
-  const toggleAudioPlay = async () => {
-    const audio = audioRef.current;
-    if (loadingAudioSource) {
-      setAudioSourceError('Audio source is loading. Please wait a moment.');
-      return;
-    }
-
-    if (!audio || !audioSrc) {
-      setAudioSourceError('Audio source is not ready yet.');
-      return;
-    }
-
-    setAudioSourceError(null);
-
-    const isCurrentlyPlaying = !audio.paused && !audio.ended;
-    if (isCurrentlyPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      setIsPlayPending(false);
-      return;
-    }
-
-    setIsPlayPending(true);
-
-    if (audio.src !== audioSrc) {
-      audio.src = audioSrc;
-      audio.load();
-    }
-
-    const playPromise = audio.play();
-    if (!playPromise) {
-      setIsPlayPending(false);
-      return;
-    }
-
-    playPromise
-      .then(() => undefined)
-      .catch(() => {
-        setIsPlaying(false);
-        setIsPlayPending(false);
-        setAudioSourceError('Could not start playback. Try another reciter.');
-      });
-  };
-
-  toggleAudioPlayRef.current = toggleAudioPlay;
-  handleSeekChangeRef.current = handleSeekChange;
-  handlePreviousAudioStepRef.current = handlePreviousAudioStep;
-  handleNextAudioStepRef.current = handleNextAudioStep;
-
-  
 
   return (
     <div id="interactive-reader" className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
@@ -1850,6 +1713,31 @@ export default function QuranReaderPage({
                     <p className="mt-1 font-display text-xl text-[var(--color-heading)]">
                       {activeReciterName}
                     </p>
+                    {settings.audioPreference === 'ar' && audioReciters.length > 0 ? (
+                      <div className="relative mt-2 w-full min-w-[13rem] sm:w-64">
+                        <select
+                          id="reader-reciter"
+                          className="app-select h-9 w-full appearance-none rounded-xl px-3 pr-9 text-xs font-medium"
+                          value={selectedReciter}
+                          onChange={(event) => setSelectedReciter(Number(event.target.value))}
+                          aria-label="Reciter voice"
+                        >
+                          {audioReciters.map((reciter, index) => (
+                            <option key={`${reciter.reciter}-${index}`} value={index}>
+                              {reciter.reciter ?? `Reciter ${index + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-muted-text)]" />
+                      </div>
+                    ) : null}
+                    {loadingAudioSource || audioSourceError ? (
+                      <p
+                        className={`mt-2 text-xs ${audioSourceError ? 'text-[var(--color-danger)]' : 'text-[var(--color-muted-text)]'}`}
+                      >
+                        {audioSourceError || 'Loading audio source...'}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -2238,107 +2126,6 @@ export default function QuranReaderPage({
 
       </div>
 
-      <div className="fixed bottom-2 left-1/2 z-[70] w-[min(46rem,calc(100vw-0.75rem))] -translate-x-1/2">
-        <div className="rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_50%)] bg-[linear-gradient(150deg,color-mix(in_oklab,var(--color-surface),white_12%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%))] p-2 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-2.5">
-          <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-[var(--color-muted-text)] sm:text-[11px]">
-            <span className="truncate">
-              {isPlaying && activeAudioAyahNumber
-                ? `Now Playing Ayah ${activeAudioAyahNumber}`
-                : activeReciterName}
-            </span>
-            <span className="whitespace-nowrap">
-              {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
-            </span>
-          </div>
-
-          <input
-            type="range"
-            min={0}
-            max={audioDuration > 0 ? audioDuration : 1}
-            step={0.1}
-            value={
-              audioDuration > 0
-                ? clampRange(audioCurrentTime, 0, audioDuration)
-                : 0
-            }
-            onChange={(event) => handleSeekChange(Number(event.target.value))}
-            onInput={(event) =>
-              handleSeekChange(Number((event.target as HTMLInputElement).value))
-            }
-            className="app-range h-1.5 cursor-pointer"
-            aria-label="Audio seek"
-          />
-
-          <div className="mt-2 flex items-center gap-1.5">
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={handlePreviousAudioStep}
-              aria-label="Previous 10 seconds"
-              className="size-8 rounded-xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_18%)]"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              className="size-9 rounded-xl shadow-[var(--shadow-soft)]"
-              onClick={toggleAudioPlay}
-              aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
-            >
-              {isPlaying ? (
-                <Pause className="size-4" />
-              ) : isPlayPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Play className="size-4" />
-              )}
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={handleNextAudioStep}
-              aria-label="Next 10 seconds"
-              className="size-8 rounded-xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_18%)]"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-
-            <div className="ml-auto min-w-0">
-              {settings.audioPreference === 'ar' && audioReciters.length > 0 ? (
-                <div className="relative w-[9.8rem] max-w-full sm:w-[12rem]">
-                  <select
-                    id="reader-reciter-top"
-                    className="app-select h-8 w-full appearance-none rounded-xl px-2.5 pr-8 text-[11px] font-medium"
-                    value={selectedReciter}
-                    onChange={(event) => setSelectedReciter(Number(event.target.value))}
-                    aria-label="Reciter voice"
-                  >
-                    {audioReciters.map((reciter, index) => (
-                      <option key={`${reciter.reciter}-${index}`} value={index}>
-                        {reciter.reciter ?? `Reciter ${index + 1}`}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-muted-text)]" />
-                </div>
-              ) : (
-                <p className="truncate text-[10px] text-[var(--color-muted-text)] sm:text-[11px]">
-                  {settings.audioPreference === 'tr' ? 'Urdu mode' : 'Voice unavailable'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {(loadingAudioSource || audioSourceError) ? (
-            <p className={`mt-1 text-[10px] sm:text-[11px] ${audioSourceError ? 'text-[var(--color-danger)]' : 'text-[var(--color-muted-text)]'}`}>
-              {audioSourceError || 'Loading audio source...'}
-            </p>
-          ) : null}
-        </div>
-      </div>
       <SmartAyahScrollNav
         ayahNumbers={filteredAyahNumbers}
         activeAudioAyahNumber={activeAudioAyahNumber}
