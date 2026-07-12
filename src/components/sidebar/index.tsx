@@ -8,11 +8,9 @@ import {
   Bookmark,
   BookmarkCheck,
   ChevronDown,
-  Download,
   Hash,
   Heart,
   Menu,
-  Repeat,
   Search,
   Sparkles,
   X,
@@ -47,8 +45,6 @@ import { useAppSettings } from '@/components/providers/app-settings-provider';
 import { clampRange, isValidSurahId } from '@/lib/quran-utils';
 import { buildSurahPath, parseSurahIdFromParam } from '@/lib/quran-routing';
 import AyahEndMarker from '@/components/quran/AyahEndMarker';
-
-const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
 
 interface AyahWithTranslation {
   ayah: SurahAyah;
@@ -88,14 +84,6 @@ interface ChapterRecitationPayload {
       segments?: number[][] | null;
     }>;
   };
-}
-
-interface AbRepeatRange {
-  startAyah: number;
-  endAyah: number;
-  startSeconds: number;
-  endSeconds: number;
-  source: 'timing' | 'approx';
 }
 
 function getQuranComRecitationId(reciterName: string | undefined) {
@@ -271,80 +259,6 @@ function escapeRegExp(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function slugifyForFileName(input: string) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 64);
-}
-
-function clickFileDownloadLink(
-  href: string,
-  fileName: string,
-  openInNewTab = false
-) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return;
-  }
-
-  const anchor = document.createElement('a');
-  anchor.href = href;
-  if (openInNewTab) {
-    anchor.target = '_blank';
-    anchor.rel = 'noopener noreferrer';
-  }
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-}
-
-function getAudioFileExtension(url: string) {
-  const normalizedUrl = url.toLowerCase();
-  if (normalizedUrl.includes('.ogg')) {
-    return 'ogg';
-  }
-
-  if (normalizedUrl.includes('.m4a')) {
-    return 'm4a';
-  }
-
-  return 'mp3';
-}
-
-async function downloadAudioFromUrl(fileNameBase: string, audioUrl: string) {
-  if (!audioUrl) {
-    throw new globalThis.Error('Audio source unavailable for download.');
-  }
-
-  if (typeof window === 'undefined') {
-    throw new globalThis.Error('Download is only available in browser.');
-  }
-
-  const fileName = `${fileNameBase}.${getAudioFileExtension(audioUrl)}`;
-  let objectUrl: string | null = null;
-
-  try {
-    const response = await fetch(audioUrl, { mode: 'cors' });
-    if (!response.ok) {
-      throw new globalThis.Error(`Audio request failed (${response.status}).`);
-    }
-
-    const blob = await response.blob();
-    objectUrl = window.URL.createObjectURL(blob);
-    clickFileDownloadLink(objectUrl, fileName);
-  } catch {
-    clickFileDownloadLink(audioUrl, fileName, true);
-  } finally {
-    if (objectUrl) {
-      window.setTimeout(() => {
-        window.URL.revokeObjectURL(objectUrl);
-      }, 0);
-    }
-  }
-}
-
 function HighlightText({ text, query }: { text: string; query: string }) {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) {
@@ -441,7 +355,6 @@ export default function QuranReaderPage({
     settings,
     setReadingMode,
     setAudioPreference,
-    isAuthenticated,
   } = useAppSettings();
 
   const hasInitialSurahContent = initialSurahId === surahId && Boolean(initialSurahDetail && initialSurahMeta);
@@ -480,19 +393,6 @@ export default function QuranReaderPage({
   const [wordTimings, setWordTimings] = useState<WordTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
   const lastCommittedAudioTimeRef = useRef(0);
-  const [abStartAyah, setAbStartAyah] = useState(1);
-  const [abEndAyah, setAbEndAyah] = useState(3);
-  const [abRepeatCount, setAbRepeatCount] = useState(3);
-  const [abRepeatEnabled, setAbRepeatEnabled] = useState(false);
-  const [abRepeatCycle, setAbRepeatCycle] = useState(1);
-  const [abRepeatError, setAbRepeatError] = useState<string | null>(null);
-  const [isAbRepeatPanelOpen, setIsAbRepeatPanelOpen] = useState(false);
-  const [downloadAudioSelection, setDownloadAudioSelection] = useState<'ar' | 'tr'>('ar');
-  const [isDownloadAudioSelectorOpen, setIsDownloadAudioSelectorOpen] = useState(false);
-  const [downloadingAudioVariant, setDownloadingAudioVariant] = useState<'ar' | 'tr' | null>(
-    null
-  );
-  const [downloadError, setDownloadError] = useState<string | null>(null);
   
 
   const [tafseerOpen, setTafseerOpen] = useState(false);
@@ -504,7 +404,6 @@ export default function QuranReaderPage({
 
   const tafseerCacheRef = useRef<Record<string, UrduTafsirEntry>>({});
   const tafseerRequestRef = useRef(0);
-  const abRepeatJumpLockRef = useRef(false);
 
   useEffect(() => {
     if (!isValidSurahId(surahId)) {
@@ -621,18 +520,6 @@ export default function QuranReaderPage({
 
   useEffect(() => {
     setExpandedSurahId(surahId);
-    setAbStartAyah(1);
-    setAbEndAyah(3);
-    setAbRepeatCount(3);
-    setAbRepeatEnabled(false);
-    setAbRepeatCycle(1);
-    setAbRepeatError(null);
-    setIsAbRepeatPanelOpen(false);
-    setDownloadAudioSelection('ar');
-    setIsDownloadAudioSelectorOpen(false);
-    abRepeatJumpLockRef.current = false;
-    setDownloadingAudioVariant(null);
-    setDownloadError(null);
   }, [surahId]);
 
   useEffect(() => {
@@ -1162,209 +1049,24 @@ export default function QuranReaderPage({
   const highlightQuery = debouncedSearch.trim();
   const favorite = isFavoriteSurah(surahId);
   const likesCount = getSurahLikesCount(surahId);
-  const totalAyahCount = surahDetail?.numberOfAyahs ?? 0;
   const activeReciterName =
     settings.audioPreference === 'tr'
       ? 'Arabic + Urdu'
       : audioReciters[selectedReciter]?.reciter ?? 'Arabic Recitation';
-  const arabicAudioSources = useMemo(
-    () =>
-      Object.values(surahMeta?.audio ?? {}).filter(
-        (item) => (item.originalUrl ?? item.url ?? '').trim().length > 0
-      ),
-    [surahMeta?.audio]
-  );
   const currentSurahPath = useMemo(() => {
     const targetSurah = surahs.find((entry) => entry.id === surahId);
     return targetSurah
       ? buildSurahPath(targetSurah.id, targetSurah.surahName)
       : `/surah/${surahId}`;
   }, [surahId, surahs]);
-  const hasArabicAudioSource = arabicAudioSources.length > 0;
-  const selectedDownloadLabel =
-    downloadAudioSelection === 'ar' ? 'Arabic Audio' : 'Arabic + Urdu Audio';
-  const isSelectedDownloadBusy = downloadingAudioVariant === downloadAudioSelection;
-  const isSelectedDownloadDisabled =
-    Boolean(downloadingAudioVariant) ||
-    (downloadAudioSelection === 'ar' && !hasArabicAudioSource);
   const formattedTafsirHtml = useMemo(
     () => (tafseerData?.textHtml ? formatTafsirHtml(tafseerData.textHtml) : ''),
     [tafseerData?.textHtml]
-  );
-  const ayahOptionValues = useMemo(
-    () => Array.from({ length: totalAyahCount }, (_, index) => index + 1),
-    [totalAyahCount]
   );
   const filteredAyahNumbers = useMemo(
     () => filteredAyahs.map(({ ayah }) => ayah.numberInSurah),
     [filteredAyahs]
   );
-  const repeatCountOptions = useMemo(() => Array.from({ length: 10 }, (_, index) => index + 1), []);
-  const abRepeatRange = useMemo<AbRepeatRange | null>(() => {
-    if (totalAyahCount <= 0) {
-      return null;
-    }
-
-    const normalizedStart = Math.round(clampRange(abStartAyah, 1, totalAyahCount));
-    const normalizedEnd = Math.round(clampRange(abEndAyah, 1, totalAyahCount));
-    const startAyah = Math.min(normalizedStart, normalizedEnd);
-    const endAyah = Math.max(normalizedStart, normalizedEnd);
-
-    const startTiming = ayahTimings.find((timing) => timing.ayahNumber === startAyah);
-    const endTiming = ayahTimings.find((timing) => timing.ayahNumber === endAyah);
-    if (
-      startTiming &&
-      endTiming &&
-      Number.isFinite(startTiming.fromMs) &&
-      Number.isFinite(endTiming.toMs) &&
-      endTiming.toMs > startTiming.fromMs
-    ) {
-      return {
-        startAyah,
-        endAyah,
-        startSeconds: startTiming.fromMs / 1000,
-        endSeconds: endTiming.toMs / 1000,
-        source: 'timing',
-      };
-    }
-
-    if (audioDuration > 0) {
-      const startSeconds = ((startAyah - 1) / totalAyahCount) * audioDuration;
-      const endSeconds = (endAyah / totalAyahCount) * audioDuration;
-      if (endSeconds - startSeconds > 0.08) {
-        return {
-          startAyah,
-          endAyah,
-          startSeconds,
-          endSeconds: Math.min(endSeconds, audioDuration),
-          source: 'approx',
-        };
-      }
-    }
-
-    return null;
-  }, [abEndAyah, abStartAyah, audioDuration, ayahTimings, totalAyahCount]);
-  const abRepeatStartSeconds = abRepeatRange?.startSeconds ?? null;
-  const abRepeatEndSeconds = abRepeatRange?.endSeconds ?? null;
-  const abRepeatStartAyah = abRepeatRange?.startAyah ?? null;
-  const abRepeatEndAyah = abRepeatRange?.endAyah ?? null;
-  const abRepeatSource = abRepeatRange?.source ?? null;
-
-  useEffect(() => {
-    if (totalAyahCount <= 0) {
-      return;
-    }
-
-    const normalizedStart = Math.round(clampRange(abStartAyah, 1, totalAyahCount));
-    const normalizedEnd = Math.round(clampRange(abEndAyah, 1, totalAyahCount));
-    const nextStart = Math.min(normalizedStart, normalizedEnd);
-    const nextEnd = Math.max(normalizedStart, normalizedEnd);
-
-    if (abStartAyah !== nextStart) {
-      setAbStartAyah(nextStart);
-    }
-
-    if (abEndAyah !== nextEnd) {
-      setAbEndAyah(nextEnd);
-    }
-  }, [abEndAyah, abStartAyah, totalAyahCount]);
-
-  useEffect(() => {
-    if (!abRepeatEnabled || abRepeatStartSeconds === null) {
-      return;
-    }
-
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) {
-      return;
-    }
-
-    abRepeatJumpLockRef.current = false;
-    setAbRepeatCycle(1);
-
-    try {
-      audio.currentTime = abRepeatStartSeconds;
-      lastCommittedAudioTimeRef.current = abRepeatStartSeconds;
-      setAudioCurrentTime(abRepeatStartSeconds);
-    } catch {
-      setAbRepeatError('Could not apply A-B repeat start point.');
-      setAbRepeatEnabled(false);
-    }
-  }, [abRepeatCount, abRepeatEnabled, abRepeatStartSeconds, audioRef, audioSrc]);
-
-  useEffect(() => {
-    if (
-      !abRepeatEnabled ||
-      !isPlaying ||
-      abRepeatStartSeconds === null ||
-      abRepeatEndSeconds === null
-    ) {
-      return;
-    }
-
-    const audio = audioRef.current;
-    if (!audio) {
-      return;
-    }
-
-    const endThresholdSeconds = 0.05;
-    if (audioCurrentTime + endThresholdSeconds < abRepeatEndSeconds) {
-      if (abRepeatJumpLockRef.current && audioCurrentTime < abRepeatEndSeconds - 0.25) {
-        abRepeatJumpLockRef.current = false;
-      }
-      return;
-    }
-
-    if (abRepeatJumpLockRef.current) {
-      return;
-    }
-
-    abRepeatJumpLockRef.current = true;
-
-    if (abRepeatCycle >= abRepeatCount) {
-      const stopAt = Math.max(0, abRepeatEndSeconds);
-
-      try {
-        audio.currentTime = stopAt;
-        lastCommittedAudioTimeRef.current = stopAt;
-      } catch {
-        // ignore seek bounds edge cases
-      }
-
-      audio.pause();
-      setAudioCurrentTime(stopAt);
-      setAbRepeatEnabled(false);
-      setAbRepeatError(null);
-      window.setTimeout(() => {
-        abRepeatJumpLockRef.current = false;
-      }, 220);
-      return;
-    }
-
-    try {
-      audio.currentTime = abRepeatStartSeconds;
-      lastCommittedAudioTimeRef.current = abRepeatStartSeconds;
-      setAudioCurrentTime(abRepeatStartSeconds);
-      setAbRepeatCycle((currentCycle) => currentCycle + 1);
-      setAbRepeatError(null);
-    } catch {
-      setAbRepeatError('Could not apply A-B repeat jump.');
-      setAbRepeatEnabled(false);
-    } finally {
-      window.setTimeout(() => {
-        abRepeatJumpLockRef.current = false;
-      }, 220);
-    }
-  }, [
-    abRepeatCount,
-    abRepeatCycle,
-    abRepeatEnabled,
-    abRepeatEndSeconds,
-    abRepeatStartSeconds,
-    audioRef,
-    audioCurrentTime,
-    isPlaying,
-  ]);
 
   useEffect(() => {
     if (!audioSrc) {
@@ -1410,148 +1112,6 @@ export default function QuranReaderPage({
       />
     );
   }
-
-  const handleAbStartAyahChange = (value: number) => {
-    if (totalAyahCount <= 0) {
-      return;
-    }
-
-    const nextStart = Math.round(clampRange(value, 1, totalAyahCount));
-    setAbStartAyah(nextStart);
-    setAbEndAyah((currentEnd) => Math.max(currentEnd, nextStart));
-    setAbRepeatError(null);
-  };
-
-  const handleAbEndAyahChange = (value: number) => {
-    if (totalAyahCount <= 0) {
-      return;
-    }
-
-    const nextEnd = Math.round(clampRange(value, 1, totalAyahCount));
-    setAbEndAyah(nextEnd);
-    setAbStartAyah((currentStart) => Math.min(currentStart, nextEnd));
-    setAbRepeatError(null);
-  };
-
-  const handleAbRepeatCountChange = (value: number) => {
-    const nextCount = Math.round(clampRange(value, 1, 10));
-    setAbRepeatCount(nextCount);
-    setAbRepeatError(null);
-  };
-
-  const toggleAbRepeat = async () => {
-    if (abRepeatEnabled) {
-      setAbRepeatEnabled(false);
-      setAbRepeatCycle(1);
-      setAbRepeatError(null);
-      abRepeatJumpLockRef.current = false;
-      return;
-    }
-
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) {
-      setAbRepeatError('Audio source must be ready before using A-B repeat.');
-      return;
-    }
-
-    if (abRepeatStartSeconds === null || abRepeatEndSeconds === null) {
-      setAbRepeatError('Play the audio once before starting A-B repeat.');
-      return;
-    }
-
-    setAbRepeatEnabled(true);
-    setAbRepeatCycle(1);
-    setAbRepeatError(null);
-    abRepeatJumpLockRef.current = false;
-
-    try {
-      audio.currentTime = abRepeatStartSeconds;
-      setAudioCurrentTime(abRepeatStartSeconds);
-    } catch {
-      setAbRepeatEnabled(false);
-      setAbRepeatError('Could not seek to A-B repeat start point.');
-      return;
-    }
-
-    if (audio.paused || audio.ended) {
-      setIsPlayPending(true);
-
-      try {
-        await audio.play();
-      } catch {
-        setIsPlaying(false);
-        setIsPlayPending(false);
-        setAbRepeatEnabled(false);
-        setAbRepeatError('Audio could not start. Check browser permissions.');
-      }
-    }
-  };
-
-  const downloadSurahAudio = async (variant: 'ar' | 'tr') => {
-    if (!isAuthenticated) {
-      window.dispatchEvent(
-        new CustomEvent(OPEN_AUTH_MODAL_EVENT, {
-          detail: { tab: 'signin', reason: 'download audio' },
-        })
-      );
-      return;
-    }
-
-    if (!surahDetail) {
-      return;
-    }
-    if (downloadingAudioVariant) {
-      return;
-    }
-
-    setDownloadError(null);
-    setDownloadingAudioVariant(variant);
-
-    const surahNumber = String(surahDetail.number).padStart(3, '0');
-    const surahSlug = slugifyForFileName(surahDetail.englishName || `surah-${surahNumber}`);
-
-    try {
-      if (variant === 'ar') {
-        if (!hasArabicAudioSource) {
-          throw new globalThis.Error('Arabic audio source is unavailable for this surah.');
-        }
-
-        const reciterIndex = clampRange(
-          selectedReciter,
-          0,
-          Math.max(arabicAudioSources.length - 1, 0)
-        );
-        const source =
-          arabicAudioSources[reciterIndex]?.originalUrl ??
-          arabicAudioSources[reciterIndex]?.url ??
-          arabicAudioSources[0]?.originalUrl ??
-          arabicAudioSources[0]?.url ??
-          '';
-        if (!source) {
-          throw new globalThis.Error('Arabic audio source is unavailable for this surah.');
-        }
-
-        await downloadAudioFromUrl(
-          `surah-${surahNumber}-${surahSlug}-arabic-audio`,
-          source
-        );
-        return;
-      }
-
-      await downloadAudioFromUrl(
-        `surah-${surahNumber}-${surahSlug}-urdu-translation-audio`,
-        getTranslationAudioUrl(surahId)
-      );
-    } catch (downloadAudioError) {
-      const message =
-        downloadAudioError instanceof globalThis.Error && downloadAudioError.message
-          ? downloadAudioError.message
-          : 'Unable to download audio right now.';
-      setDownloadError(message);
-    } finally {
-      setDownloadingAudioVariant(null);
-    }
-  };
 
   const openTafseer = async (ayahNumber: number, ayahText: string) => {
     setTafseerOpen(true);
@@ -1631,9 +1191,9 @@ export default function QuranReaderPage({
     <div id="interactive-reader" className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
       <div className="mx-auto w-full max-w-4xl">
         <div className="min-w-0 space-y-5">
-          <Card className="animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] shadow-[var(--shadow-glow)]">
-            <CardHeader>
-              <div className="flex flex-wrap items-start justify-between gap-4">
+          <Card className="animate-fade-up overflow-hidden rounded-3xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%))] shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-card)]">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                 <div className="flex items-start gap-3">
                   <Button
                     ref={navigatorMenuButtonRef}
@@ -1645,15 +1205,15 @@ export default function QuranReaderPage({
                       setIsNavigatorOpen(true);
                     }}
                     aria-label="Open Surah navigator"
-                    className="mt-0.5 animate-pulse-border"
+                    className="mt-0.5 size-9 shrink-0 rounded-full animate-pulse-border"
                   >
                     <Menu className="size-4" />
                   </Button>
 
                   <div>
-                    <Badge className="mb-2">Surah {surahDetail.number}</Badge>
+                    <Badge className="mb-2 px-2.5 py-0.5 tracking-[0.12em]">Surah {surahDetail.number}</Badge>
                     
-                    <CardTitle className="font-display text-4xl text-[var(--color-heading)]">
+                    <CardTitle className="font-display text-3xl leading-none text-[var(--color-heading)] sm:text-4xl">
                       {surahDetail.englishName}
                     </CardTitle>
                     <CardDescription className="mt-1 text-sm">
@@ -1662,38 +1222,33 @@ export default function QuranReaderPage({
                     </CardDescription>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="arabic-font text-3xl text-[var(--color-heading)]">
+                <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
+                  <p className="arabic-font text-2xl text-[var(--color-heading)] sm:text-3xl">
                     {surahDetail.name}
                   </p>
-                  <div className="mt-3 flex flex-wrap justify-end gap-2">
+                  <div className="sm:mt-3 sm:flex sm:justify-end">
                     <Button
                       variant={favorite ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => toggleFavoriteSurah(surahId)}
+                      className="rounded-full"
                     >
                       <Heart className={`size-4 ${favorite ? 'fill-current' : ''}`} />
-                      {favorite ? 'Favorited' : 'Favorite Surah'}
+                      {favorite ? 'Favorited' : 'Favorite'}
+                      <span className="text-[10px] opacity-75">{likesCount}</span>
                     </Button>
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className="mt-2 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_48%)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),white_75%),color-mix(in_oklab,var(--color-accent-soft),white_80%))] px-2.5 py-1 text-[color-mix(in_oklab,var(--color-heading),var(--color-accent)_34%)] tracking-normal dark:bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),black_24%),color-mix(in_oklab,var(--color-accent-soft),black_18%))] dark:text-[var(--color-accent-foreground)]"
-                  >
-                    <Heart className={`mr-1 size-3.5 ${favorite ? 'fill-current' : ''}`} />
-                    {likesCount}
-                  </Badge>
                 </div>
               </div>
 
               {currentLastRead ? (
-                <div className="mt-4 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_55%)] bg-[linear-gradient(125deg,color-mix(in_oklab,var(--color-surface-2),white_12%),color-mix(in_oklab,var(--color-accent),var(--color-surface-2)_90%))] p-3 text-sm text-[var(--color-muted-text)] shadow-[var(--shadow-soft)]">
-                  Last read: Ayah {currentLastRead.ayahNumber}
+                <div className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-muted-text)]">
+                  <span>Last read · Ayah {currentLastRead.ayahNumber}</span>
                   <Button
                     ref={resumeTargetRef}
                     variant="ghost"
                     size="sm"
-                    className="ml-2"
+                    className="h-7 rounded-lg px-2.5"
                     onClick={() => {
                       const target = document.getElementById(`ayah-${currentLastRead.ayahNumber}`);
                       target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1704,20 +1259,20 @@ export default function QuranReaderPage({
                 </div>
               ) : null}
 
-              <div className="mt-4 space-y-3 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_55%)] bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_16%),color-mix(in_oklab,var(--color-highlight),var(--color-surface)_95%))] p-3 shadow-[var(--shadow-soft)]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_18%)] p-4">
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted-text)]">
-                      Audio Control
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                      Recitation
                     </p>
-                    <p className="mt-1 font-display text-xl text-[var(--color-heading)]">
+                    <p className="mt-1 text-sm font-semibold text-[var(--color-heading)]">
                       {activeReciterName}
                     </p>
                     {settings.audioPreference === 'ar' && audioReciters.length > 0 ? (
-                      <div className="relative mt-2 w-full min-w-[13rem] sm:w-64">
+                      <div className="relative mt-2 w-full md:max-w-sm">
                         <select
                           id="reader-reciter"
-                          className="app-select h-9 w-full appearance-none rounded-xl px-3 pr-9 text-xs font-medium"
+                          className="app-select h-10 w-full appearance-none rounded-xl px-3 pr-9 text-sm font-medium"
                           value={selectedReciter}
                           onChange={(event) => setSelectedReciter(Number(event.target.value))}
                           aria-label="Reciter voice"
@@ -1739,11 +1294,12 @@ export default function QuranReaderPage({
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="inline-flex w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 md:w-auto">
                     <Button
                       size="sm"
                       variant={settings.audioPreference === 'ar' ? 'default' : 'outline'}
                       onClick={() => setAudioPreference('ar')}
+                      className="flex-1 border-0 shadow-none md:flex-none"
                     >
                       Arabic + English
                     </Button>
@@ -1751,181 +1307,11 @@ export default function QuranReaderPage({
                       size="sm"
                       variant={settings.audioPreference === 'tr' ? 'default' : 'outline'}
                       onClick={() => setAudioPreference('tr')}
+                      className="flex-1 border-0 shadow-none md:flex-none"
                     >
                       Arabic + Urdu
                     </Button>
                   </div>
-                </div>
-
-                <div className="rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface-2),white_12%),color-mix(in_oklab,var(--color-accent),var(--color-surface-2)_96%))] p-2.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant={isDownloadAudioSelectorOpen ? 'default' : 'outline'}
-                      onClick={() => setIsDownloadAudioSelectorOpen((currentOpen) => !currentOpen)}
-                      aria-label="Toggle audio download selector"
-                      className="size-8"
-                    >
-                      <Download className="size-3.5" />
-                    </Button>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-text)]">
-                      Download Audio
-                    </p>
-                  </div>
-
-                  {isDownloadAudioSelectorOpen ? (
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <div className="relative w-full sm:w-auto sm:min-w-[13rem]">
-                        <select
-                          className="app-select h-9 w-full appearance-none rounded-xl px-2.5 pr-8 text-sm"
-                          value={downloadAudioSelection}
-                          onChange={(event) =>
-                            setDownloadAudioSelection(event.target.value as 'ar' | 'tr')
-                          }
-                          aria-label="Select audio download type"
-                        >
-                          <option value="ar">Arabic Audio</option>
-                          <option value="tr">Arabic + Urdu Audio</option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-muted-text)]" />
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void downloadSurahAudio(downloadAudioSelection)}
-                        disabled={isSelectedDownloadDisabled}
-                        className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_16%)]"
-                      >
-                        <Download className="size-4" />
-                        {isSelectedDownloadBusy
-                          ? 'Downloading...'
-                          : `Download ${selectedDownloadLabel}`}
-                      </Button>
-                    </div>
-                  ) : null}
-
-                  {downloadError ? (
-                    <p className="mt-2 text-xs text-[var(--color-danger)]">{downloadError}</p>
-                  ) : null}
-                </div>
-
-                
-
-                <div className="rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface-2),white_10%),color-mix(in_oklab,var(--color-highlight),var(--color-surface-2)_96%))] p-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant={isAbRepeatPanelOpen ? 'default' : 'outline'}
-                        onClick={() => setIsAbRepeatPanelOpen((currentOpen) => !currentOpen)}
-                        aria-label="Toggle A-B repeat controls"
-                        className="size-8"
-                      >
-                        <Repeat className={`size-3.5 ${abRepeatEnabled ? 'animate-spin' : ''}`} />
-                      </Button>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-text)]">
-                        A-B Repeat
-                      </p>
-                    </div>
-                    {abRepeatEnabled ? (
-                      <Badge variant="secondary" className="px-2 py-0.5 tracking-normal">
-                        {abRepeatCycle}/{abRepeatCount}
-                      </Badge>
-                    ) : null}
-                  </div>
-
-                  {isAbRepeatPanelOpen ? (
-                    <>
-                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_60%)] bg-[color-mix(in_oklab,var(--color-surface),white_16%)] p-2">
-                        <p className="text-xs text-[var(--color-muted-text)]">
-                          {`Ayah ${abRepeatStartAyah ?? abStartAyah} to Ayah ${abRepeatEndAyah ?? abEndAyah}${abRepeatSource === 'approx' ? ' (approx timing)' : ''}`}
-                        </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={abRepeatEnabled ? 'default' : 'outline'}
-                          onClick={() => void toggleAbRepeat()}
-                          className={abRepeatEnabled ? 'shadow-[var(--shadow-soft)]' : ''}
-                        >
-                          <Repeat className={`size-4 ${abRepeatEnabled ? 'animate-spin' : ''}`} />
-                          {abRepeatEnabled ? 'Stop Loop' : 'Start Loop'}
-                        </Button>
-                      </div>
-
-                      <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                        <div>
-                          <label htmlFor="ab-start-ayah" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted-text)]">
-                            A Ayah
-                          </label>
-                          <select
-                            id="ab-start-ayah"
-                            className="app-select h-9 w-full appearance-none rounded-xl px-2.5 text-sm"
-                            value={abStartAyah}
-                            onChange={(event) =>
-                              handleAbStartAyahChange(Number(event.target.value))
-                            }
-                          >
-                            {ayahOptionValues.map((ayahNo) => (
-                              <option key={`ab-start-${ayahNo}`} value={ayahNo}>
-                                Ayah {ayahNo}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label htmlFor="ab-end-ayah" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted-text)]">
-                            B Ayah
-                          </label>
-                          <select
-                            id="ab-end-ayah"
-                            className="app-select h-9 w-full appearance-none rounded-xl px-2.5 text-sm"
-                            value={abEndAyah}
-                            onChange={(event) =>
-                              handleAbEndAyahChange(Number(event.target.value))
-                            }
-                          >
-                            {ayahOptionValues.map((ayahNo) => (
-                              <option key={`ab-end-${ayahNo}`} value={ayahNo}>
-                                Ayah {ayahNo}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label htmlFor="ab-repeat-count" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted-text)]">
-                            Repeat Count
-                          </label>
-                          <select
-                            id="ab-repeat-count"
-                            className="app-select h-9 w-full appearance-none rounded-xl px-2.5 text-sm"
-                            value={abRepeatCount}
-                            onChange={(event) =>
-                              handleAbRepeatCountChange(Number(event.target.value))
-                            }
-                          >
-                            {repeatCountOptions.map((count) => (
-                              <option key={`ab-repeat-${count}`} value={count}>
-                                {count}x
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-xs text-[var(--color-muted-text)]">
-                      Click the Repeat icon to open the controls.
-                    </p>
-                  )}
-
-                  {abRepeatError ? (
-                    <p className="mt-1 text-xs text-[var(--color-danger)]">{abRepeatError}</p>
-                  ) : null}
                 </div>
 
               </div>
