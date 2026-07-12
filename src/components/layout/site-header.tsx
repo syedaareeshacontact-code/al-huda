@@ -248,13 +248,63 @@ export default function SiteHeader() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState<AuthTab>('signin');
   const [authReason, setAuthReason] = useState<string | null>(null);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const headerRef = useRef<HTMLElement>(null);
+  const lastScrollYRef = useRef(0);
+  const scrollFrameRef = useRef<number | null>(null);
+
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const isSurahReaderPage =
+    pathSegments.length === 2 && pathSegments[0] === 'surah';
+  const keepHeaderOpen = mobileOpen || Boolean(openMegaId) || authModalOpen;
 
   useEffect(() => {
     setMobileOpen(false);
     setOpenMegaId(null);
     setOpenMobileSectionId(null);
+    setHeaderVisible(true);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isSurahReaderPage || keepHeaderOpen) {
+      setHeaderVisible(true);
+      return;
+    }
+
+    lastScrollYRef.current = Math.max(window.scrollY, 0);
+
+    const syncVisibility = () => {
+      const currentScrollY = Math.max(window.scrollY, 0);
+      const scrollDelta = currentScrollY - lastScrollYRef.current;
+
+      if (currentScrollY <= 16) {
+        setHeaderVisible(true);
+        lastScrollYRef.current = currentScrollY;
+      } else if (scrollDelta >= 8) {
+        setHeaderVisible(false);
+        lastScrollYRef.current = currentScrollY;
+      } else if (scrollDelta <= -8) {
+        setHeaderVisible(true);
+        lastScrollYRef.current = currentScrollY;
+      }
+
+      scrollFrameRef.current = null;
+    };
+
+    const onScroll = () => {
+      if (scrollFrameRef.current !== null) return;
+      scrollFrameRef.current = window.requestAnimationFrame(syncVisibility);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+    };
+  }, [isSurahReaderPage, keepHeaderOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -367,8 +417,18 @@ export default function SiteHeader() {
 
   return (
     <>
-      <header ref={headerRef} data-site-header className="sticky top-0 z-[100]">
-        <IslamicTopBanner />
+      <header
+        ref={headerRef}
+        data-site-header
+        onFocusCapture={() => {
+          if (isSurahReaderPage) setHeaderVisible(true);
+        }}
+        className={cn(
+          'sticky top-0 z-[100] transform-gpu transition-transform duration-300 ease-out will-change-transform',
+          isSurahReaderPage && !headerVisible && '-translate-y-full pointer-events-none'
+        )}
+      >
+        {!isSurahReaderPage ? <IslamicTopBanner /> : null}
 
         <div className="relative border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-bg),transparent_6%)] backdrop-blur-xl">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent),transparent)] opacity-45" />

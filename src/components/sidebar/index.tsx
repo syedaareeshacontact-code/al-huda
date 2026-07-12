@@ -436,7 +436,6 @@ export default function QuranReaderPage({
     toggleFavoriteSurah,
     isFavoriteSurah,
     getSurahLikesCount,
-    bookmarks,
     toggleBookmark,
     isBookmarked,
     lastRead,
@@ -593,11 +592,6 @@ export default function QuranReaderPage({
       );
     });
   }, [ayahs, debouncedSearch]);
-
-  const surahBookmarks = useMemo(
-    () => bookmarks.filter((item) => item.surahId === surahId),
-    [bookmarks, surahId]
-  );
 
   const currentLastRead =
     lastRead?.surahId === surahId ? lastRead : null;
@@ -1439,7 +1433,6 @@ export default function QuranReaderPage({
     );
   }
 
-  const showWordByWord = false;
   const handleAbStartAyahChange = (value: number) => {
     if (totalAyahCount <= 0) {
       return;
@@ -1773,7 +1766,7 @@ export default function QuranReaderPage({
 
   return (
     <div id="interactive-reader" className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className="mx-auto w-full max-w-4xl">
         <div className="min-w-0 space-y-5">
           <Card className="animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] shadow-[var(--shadow-glow)]">
             <CardHeader>
@@ -2085,11 +2078,6 @@ export default function QuranReaderPage({
                 </div>
               </div>
             </CardContent>
-            {!showWordByWord ? (
-              <p className="px-4 pb-3 pt-2 text-xs text-[var(--color-muted-text)]">
-                Word-by-word mode will be enabled when tokenized ayah data is available.
-              </p>
-            ) : null}
           </Card>
 
           {false ? (
@@ -2248,43 +2236,6 @@ export default function QuranReaderPage({
           )}
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-[5rem] xl:self-start">
-          <Card className="animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_52%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%))]">
-            <CardHeader>
-              <CardTitle className="text-xl">Bookmarks</CardTitle>
-              <CardDescription>
-                {surahBookmarks.length} saved ayah{surahBookmarks.length === 1 ? '' : 's'} in this surah
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {surahBookmarks.length > 0 ? (
-                surahBookmarks.map((bookmark) => (
-                  <Link
-                    key={bookmark.id}
-                    href={`#ayah-${bookmark.ayahNumber}`}
-                    className="block rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_65%)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-surface-2),white_8%),color-mix(in_oklab,var(--color-accent),var(--color-surface-2)_94%))] px-3 py-2 text-sm text-[var(--color-text)] transition hover:border-[var(--color-accent-soft)]"
-                  >
-                    Ayah {bookmark.ayahNumber}
-                  </Link>
-                ))
-              ) : (
-                <p className="text-sm text-[var(--color-muted-text)]">
-                  No bookmarks yet. Save ayahs for quick revisit.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-up-delay-1 border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_52%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_12%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_93%))]">
-            <CardHeader>
-              <CardTitle className="text-xl">Word-by-word</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-[var(--color-muted-text)]">
-              Structured placeholder is ready. Once token-level data is available, each
-              word can show translation and transliteration here.
-            </CardContent>
-          </Card>
-        </aside>
       </div>
 
       <div className="fixed bottom-2 left-1/2 z-[70] w-[min(46rem,calc(100vw-0.75rem))] -translate-x-1/2">
