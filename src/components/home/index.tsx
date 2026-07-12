@@ -111,9 +111,9 @@ export default function HomeRoot() {
       <HomeFeatureTour />
 
       <section data-slot="page-shell" aria-labelledby="home-heading">
-        <div className="relative overflow-visible rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-9 lg:px-12 lg:py-11">
-          <div className="pointer-events-none absolute -right-14 -top-20 size-64 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_82%)] opacity-60" />
-          <div className="pointer-events-none absolute -right-4 -top-10 size-40 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_78%)] opacity-40" />
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:overflow-visible sm:px-8 sm:py-9 lg:px-12 lg:py-11">
+          <div className="pointer-events-none absolute -right-14 -top-20 hidden size-64 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_82%)] opacity-60 sm:block" />
+          <div className="pointer-events-none absolute -right-4 -top-10 hidden size-40 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_78%)] opacity-40 sm:block" />
 
           <div className="relative max-w-3xl">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">
@@ -138,7 +138,7 @@ export default function HomeRoot() {
               value={surahSearch}
               onValueChange={setSurahSearch}
               placeholder="Search a Surah..."
-              inputClassName="h-14 w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-12 pr-28 text-sm text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-accent),transparent_75%)] sm:text-base"
+              inputClassName="h-14 w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-12 pr-24 text-sm text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-accent),transparent_75%)] sm:pr-28 sm:text-base"
               showSubmitButton
               onSubmit={(query) => router.push(`/surah?search=${encodeURIComponent(query)}`)}
             />
