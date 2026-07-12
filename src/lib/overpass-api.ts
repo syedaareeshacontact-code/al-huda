@@ -50,6 +50,7 @@ export async function findNearbyMosques(
     },
     body: `data=${encodeURIComponent(query)}`,
     next: { revalidate: 3600 },
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!res.ok) {

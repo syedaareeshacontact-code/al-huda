@@ -30,6 +30,7 @@ async function ummahFetch<T>(path: string, revalidate = 86400): Promise<T> {
   const res = await fetch(`${UMMAH_BASE}${path}`, {
     next: { revalidate },
     headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`UmmahAPI error: ${res.status}`);
   const json = await res.json();

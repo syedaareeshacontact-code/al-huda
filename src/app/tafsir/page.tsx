@@ -12,49 +12,32 @@ import {
 } from '@/lib/seo-keywords';
 import TafsirIndexClient from '@/components/tafsir/TafsirIndexClient';
 
-interface TafsirIndexPageProps {
-  searchParams: Promise<{
-    search?: string;
-  }>;
-}
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Tafseer Index – Complete Urdu Tafseer of All Surahs',
+  description:
+    'Browse complete Urdu tafseer (Islamic interpretation) for all Quranic surahs. Find detailed explanations, Islamic knowledge, and spiritual insights for each chapter with Arabic text and translations.',
+  path: '/tafsir',
+  ogType: 'website',
+  imageUrl: '/og?kind=tafsir-index',
+  keywords: Array.from(
+    new Set([
+      ...GENERATED_TAFSEER_KEYWORDS.slice(0, 32),
+      ...MASTER_SEO_KEYWORDS.slice(0, 18),
+    ])
+  ),
+});
 
-export async function generateMetadata({
-  searchParams,
-}: TafsirIndexPageProps): Promise<Metadata> {
-  const query = String((await searchParams).search ?? '').trim();
-
-  if (!query) {
-    return buildPageMetadata({
-      title: 'Tafseer Index – Complete Urdu Tafseer of All Surahs',
-      description:
-        'Browse complete Urdu tafseer (Islamic interpretation) for all Quranic surahs. Find detailed explanations, Islamic knowledge, and spiritual insights for each chapter with Arabic text and translations.',
-      path: '/tafsir',
-      ogType: 'website',
-      imageUrl: '/og?kind=tafsir-index',
-      keywords: [...GENERATED_TAFSEER_KEYWORDS, ...MASTER_SEO_KEYWORDS.slice(0, 200)],
-    });
-  }
-
-  return buildPageMetadata({
-    title: `Search Tafseer: ${query} – al Quran Online`,
-    description: `Search results for "${query}" in Quran tafseer with direct links to detailed explanations and Islamic knowledge.`,
-    path: '/tafsir',
-    index: false,
-    ogType: 'website',
-    imageUrl: '/og?kind=tafsir-index',
-  });
-}
-
-export default async function TafsirIndexPage({
-  searchParams,
-}: TafsirIndexPageProps) {
-  const query = String((await searchParams).search ?? '').trim();
+export default function TafsirIndexPage() {
   const allSurahs = getAllSurahs();
 
-  const surahsWithTafseer = allSurahs.map((surah) => ({
-    ...surah,
-    tafseerAyahs: getTafsirAyahNumbersBySurah(surah.id),
-  }));
+  const surahsWithTafseer = allSurahs.map((surah) => {
+    const tafseerAyahs = getTafsirAyahNumbersBySurah(surah.id);
+    return {
+      ...surah,
+      tafseerAyahs: tafseerAyahs.slice(0, 10),
+      tafseerAyahCount: tafseerAyahs.length,
+    };
+  });
 
   const breadcrumbs = buildBreadcrumbJsonLd([
     { name: 'Home', item: '/' },
@@ -99,7 +82,6 @@ export default async function TafsirIndexPage({
         {/* Dynamic client-side search and filters */}
         <TafsirIndexClient
           initialSurahs={surahsWithTafseer}
-          initialSearchQuery={query}
         />
       </section>
 

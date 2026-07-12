@@ -242,6 +242,35 @@ export async function fetchSurahDetail(
   return request;
 }
 
+export async function fetchCompleteSurahContent(
+  surahId: number,
+  signal?: AbortSignal
+): Promise<{ detail: SurahDetail; meta: SurahMeta }> {
+  if (!isValidSurahId(surahId)) {
+    throw new Error('Invalid surah number');
+  }
+
+  const response = await fetch(`/api/surah/${surahId}/content`, {
+    signal,
+    cache: 'force-cache',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Unable to load remaining ayahs (${response.status})`);
+  }
+
+  const payload = (await response.json()) as {
+    detail?: SurahDetail;
+    meta?: SurahMeta;
+  };
+
+  if (!payload.detail || !payload.meta) {
+    throw new Error('Invalid surah content payload');
+  }
+
+  return { detail: payload.detail, meta: payload.meta };
+}
+
 export async function fetchUrduTafsirByAyah(
   surahId: number,
   ayahNumber: number,

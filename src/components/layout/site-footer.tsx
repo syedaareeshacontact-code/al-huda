@@ -47,6 +47,7 @@ export default function SiteFooter() {
               <Link
                 key={item.id}
                 href={item.link}
+                prefetch={false}
                 className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]"
               >
                 {item.name}
@@ -64,6 +65,7 @@ export default function SiteFooter() {
               <Link
                 key={item.link}
                 href={item.link}
+                prefetch={false}
                 className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]"
               >
                 {item.name}

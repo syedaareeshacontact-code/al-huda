@@ -7,44 +7,24 @@ import { getAllSurahs } from '@/lib/quran-index';
 import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 import { GENERATED_SURAH_KEYWORDS, MASTER_SEO_KEYWORDS } from '@/lib/seo-keywords';
 import SurahIndexClient from '@/components/quran/SurahIndexClient';
+import { SurhasListProvider } from '@/context/SurhasListProvider';
 
-interface SurahIndexPageProps {
-  searchParams: Promise<{
-    search?: string;
-  }>;
-}
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Surah Index – Read All 114 Surahs with Arabic Text & Urdu Translation',
+  description:
+    'Browse all 114 surahs of the Quran with Arabic text, Urdu and English translation, ayah links, tafseer access, recitation audio, bookmarks, and likes. Find popular surahs like Yaseen, Rahman, Kahf, Mulk, Waqiah, and more.',
+  path: '/surah',
+  ogType: 'website',
+  imageUrl: '/og?kind=surah-index',
+  keywords: Array.from(
+    new Set([
+      ...GENERATED_SURAH_KEYWORDS.slice(0, 32),
+      ...MASTER_SEO_KEYWORDS.slice(0, 18),
+    ])
+  ),
+});
 
-export async function generateMetadata({
-  searchParams,
-}: SurahIndexPageProps): Promise<Metadata> {
-  const query = String((await searchParams).search ?? '').trim();
-
-  if (!query) {
-    return buildPageMetadata({
-      title: 'Surah Index – Read All 114 Surahs with Arabic Text & Urdu Translation',
-      description:
-        'Browse all 114 surahs of the Quran with Arabic text, Urdu and English translation, ayah links, tafseer access, recitation audio, bookmarks, and likes. Find popular surahs like Yaseen, Rahman, Kahf, Mulk, Waqiah, and more.',
-      path: '/surah',
-      ogType: 'website',
-      imageUrl: '/og?kind=surah-index',
-      keywords: [...GENERATED_SURAH_KEYWORDS, ...MASTER_SEO_KEYWORDS.slice(0, 200)],
-    });
-  }
-
-  return buildPageMetadata({
-    title: `Search Surah: ${query} – Read al Quran`,
-    description: `Search results for "${query}" with direct links to Surah, Ayah, and Tafseer pages. Find all matching Surahs with Arabic text and Urdu translation.`,
-    path: '/surah',
-    index: false,
-    ogType: 'website',
-    imageUrl: '/og?kind=surah-index',
-  });
-}
-
-export default async function SurahIndexPage({
-  searchParams,
-}: SurahIndexPageProps) {
-  const query = String((await searchParams).search ?? '').trim();
+export default function SurahIndexPage() {
   const allSurahs = getAllSurahs();
 
   const breadcrumbs = buildBreadcrumbJsonLd([
@@ -88,7 +68,9 @@ export default async function SurahIndexPage({
         </div>
 
         {/* Dynamic client-side search and filters */}
-        <SurahIndexClient initialSurahs={allSurahs} initialSearchQuery={query} />
+        <SurhasListProvider>
+          <SurahIndexClient initialSurahs={allSurahs} />
+        </SurhasListProvider>
       </section>
 
       <StickyScrollNav />

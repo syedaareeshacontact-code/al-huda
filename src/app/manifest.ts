@@ -18,13 +18,13 @@ export default function manifest(): MetadataRoute.Manifest {
     id: siteUrl,
     icons: [
       {
-        src: '/logos/logo1.png',
+        src: '/logos/pwa-192.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: '/logos/logo1.png',
-        sizes: '513x490',
+        src: '/logos/pwa-512.png',
+        sizes: '512x512',
         type: 'image/png',
       },
     ],

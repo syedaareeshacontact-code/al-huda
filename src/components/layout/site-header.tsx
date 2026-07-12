@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import {
   ChevronDown,
@@ -17,14 +18,12 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import AuthModal, {
-  OPEN_AUTH_MODAL_EVENT,
-  type AuthTab,
-  type OpenAuthModalDetail,
-  type SessionUser,
+import type {
+  AuthTab,
+  OpenAuthModalDetail,
+  SessionUser,
 } from '@/components/layout/auth-modal';
 import IslamicTopBanner from '@/components/layout/islamic-top-banner';
-import NotificationCenter from '@/components/notifications/notification-center';
 import {
   flattenMegaNavLinks,
   getMobileMegaNavColumns,
@@ -36,6 +35,16 @@ import {
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/components/providers/app-settings-provider';
+import { getClientSession, invalidateClientSession } from '@/lib/client-session';
+
+const AuthModal = dynamic(() => import('@/components/layout/auth-modal'), {
+  ssr: false,
+});
+
+const NotificationCenter = dynamic(
+  () => import('@/components/notifications/notification-center'),
+  { ssr: false }
+);
 
 const NAV_LINK_BASE =
   'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]';
@@ -45,6 +54,8 @@ const NAV_LINK_INACTIVE =
 
 const NAV_LINK_ACTIVE =
   'border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent-soft)] shadow-[var(--shadow-soft)]';
+
+const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
 
 function ThemeBtn() {
   const { themeMode, setThemeMode, isLoaded } = useAppSettings();
@@ -107,6 +118,7 @@ function NavLinkCard({
   return (
     <Link
       href={item.href}
+      prefetch={false}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={cn(
@@ -328,12 +340,7 @@ export default function SiteHeader() {
     const load = async () => {
       try {
         setAuthLoading(true);
-        const res = await fetch('/api/auth/session', { cache: 'no-store' });
-        if (!res.ok) {
-          if (!ignore) setSessionUser(null);
-          return;
-        }
-        const data = (await res.json()) as { user: SessionUser | null };
+        const data = (await getClientSession()) as { user: SessionUser | null };
         if (!ignore) setSessionUser(data.user ?? null);
       } catch {
         if (!ignore) setSessionUser(null);
@@ -397,6 +404,7 @@ export default function SiteHeader() {
     try {
       await fetch('/api/auth/signout', { method: 'POST' });
     } finally {
+      invalidateClientSession();
       setSessionUser(null);
       setMobileOpen(false);
       setAuthModalOpen(false);
@@ -434,7 +442,7 @@ export default function SiteHeader() {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent),transparent)] opacity-45" />
 
           <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
-            <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline sm:gap-3">
+            <Link href="/" prefetch={false} className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline sm:gap-3">
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(140deg,var(--color-accent-soft),var(--color-accent))] text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]">
                 <Star className="h-4 w-4" />
               </span>
@@ -451,6 +459,7 @@ export default function SiteHeader() {
             <nav className="relative hidden items-center gap-0.5 lg:flex" aria-label="Primary navigation">
               <Link
                 href={HOME_NAV.href}
+                prefetch={false}
                 aria-current={isActive(HOME_NAV.href, HOME_NAV.exact) ? 'page' : undefined}
                 className={cn(NAV_LINK_BASE, isActive(HOME_NAV.href, HOME_NAV.exact) ? NAV_LINK_ACTIVE : NAV_LINK_INACTIVE)}
               >
@@ -525,7 +534,7 @@ export default function SiteHeader() {
                 )}
               </div>
 
-              <NotificationCenter isAuthenticated={Boolean(sessionUser)} />
+              {sessionUser ? <NotificationCenter isAuthenticated /> : null}
               <ThemeBtn />
 
               <button
@@ -561,7 +570,7 @@ export default function SiteHeader() {
 
           <aside className="absolute inset-y-0 right-0 flex w-full max-w-[min(100%,22rem)] flex-col border-l border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_50%)] bg-[var(--color-bg)] shadow-[0_0_60px_rgba(0,0,0,0.4)] animate-slide-in-right">
             <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3.5">
-              <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 no-underline">
+              <Link href="/" prefetch={false} onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 no-underline">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(140deg,var(--color-accent-soft),var(--color-accent))] text-[var(--color-accent-foreground)]">
                   <Star className="h-3.5 w-3.5" />
                 </span>
@@ -688,6 +697,7 @@ export default function SiteHeader() {
                   {sessionUser.isAdmin ? (
                     <Link
                       href="/admin"
+                      prefetch={false}
                       onClick={() => setMobileOpen(false)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] px-4 py-2.5 text-sm font-semibold text-[var(--color-accent)]"
                     >
@@ -709,6 +719,7 @@ export default function SiteHeader() {
                   {showAdminLink ? (
                     <Link
                       href="/admin"
+                      prefetch={false}
                       onClick={() => setMobileOpen(false)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] px-4 py-2.5 text-sm font-semibold text-[var(--color-accent)]"
                     >
@@ -741,13 +752,15 @@ export default function SiteHeader() {
         </div>
       )}
 
-      <AuthModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onAuthenticated={setSessionUser}
-        initialTab={authTab}
-        reason={authReason}
-      />
+      {authModalOpen ? (
+        <AuthModal
+          open
+          onClose={() => setAuthModalOpen(false)}
+          onAuthenticated={setSessionUser}
+          initialTab={authTab}
+          reason={authReason}
+        />
+      ) : null}
     </>
   );
 }

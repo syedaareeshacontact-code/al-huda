@@ -288,6 +288,13 @@ select {
   text-rendering: optimizeLegibility;
 }
 
+@supports (content-visibility: auto) {
+  .ayah-card-optimized {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 20rem;
+  }
+}
+
 .arabic-reading[data-size='sm'] {
   font-size: calc(clamp(1.05rem, 0.99rem + 0.3vw, 1.2rem) * var(--arabic-font-scale));
   line-height: 1.85;
@@ -347,7 +354,6 @@ select {
   font-family:
     var(--font-urdu-nastaliq),
     'Noto Nastaliq Urdu',
-    var(--font-arabic-naskh),
     'Noto Naskh Arabic',
     'Amiri',
     serif;
@@ -364,7 +370,6 @@ select {
   font-family:
     var(--font-urdu-nastaliq),
     'Noto Nastaliq Urdu',
-    var(--font-arabic-naskh),
     'Noto Naskh Arabic',
     serif;
   font-size: clamp(1.12rem, calc(0.96rem + 0.72vw), 1.42rem);

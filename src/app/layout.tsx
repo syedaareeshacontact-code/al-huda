@@ -1,14 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { GoogleAnalytics } from '@next/third-parties/google';
 import dynamic from 'next/dynamic';
 import {
 	Manrope,
 	Cormorant_Garamond,
-	Amiri,
 	Amiri_Quran,
-	Noto_Naskh_Arabic,
 	Noto_Nastaliq_Urdu,
-	Scheherazade_New,
 } from 'next/font/google';
 
 import './globals.css';
@@ -20,7 +16,7 @@ import { AppSettingsProvider } from '@/components/providers/app-settings-provide
 import { GlobalQuranAudioProvider } from '@/components/providers/global-quran-audio-provider';
 import FloatingMiniPlayer from '@/components/ui/floating-mini-player';
 import { SuspenseBoundary } from '@/components/ui/suspense-boundary';
-import { PerformanceMonitor } from '@/components/performance-monitor';
+import DeferredAnalytics from '@/components/providers/deferred-analytics';
 import { HOMEPAGE_KEYWORDS } from '@/lib/seo-keywords';
 import { buildOrganizationJsonLd, buildWebsiteJsonLd } from '@/lib/seo';
 
@@ -48,7 +44,7 @@ const bodyFont = Manrope({
 	subsets: ['latin'],
 	variable: '--font-body',
 	weight: ['400', '500', '600', '700'],
-	display: 'swap',
+	display: 'optional',
 	preload: true,
 });
 
@@ -56,38 +52,14 @@ const displayFont = Cormorant_Garamond({
 	subsets: ['latin'],
 	variable: '--font-display',
 	weight: ['500', '600', '700'],
-	display: 'swap',
+	display: 'optional',
 	preload: true,
-});
-
-const arabicAmiri = Amiri({
-	subsets: ['arabic'],
-	variable: '--font-arabic-amiri',
-	weight: ['400', '700'],
-	display: 'swap',
-	preload: false,
 });
 
 const arabicQuran = Amiri_Quran({
 	subsets: ['arabic'],
 	variable: '--font-arabic-quran',
 	weight: '400',
-	display: 'swap',
-	preload: true,
-});
-
-const arabicNaskh = Noto_Naskh_Arabic({
-	subsets: ['arabic'],
-	variable: '--font-arabic-naskh',
-	weight: ['400', '700'],
-	display: 'swap',
-	preload: false,
-});
-
-const arabicScheherazade = Scheherazade_New({
-	subsets: ['arabic'],
-	variable: '--font-arabic-scheherazade',
-	weight: ['400', '700'],
 	display: 'swap',
 	preload: false,
 });
@@ -118,11 +90,10 @@ export const metadata: Metadata = {
 	},
 	icons: {
 		icon: [
-			{ url: '/logos/logo1.png', type: 'image/png' },
-			{ url: '/logos/logo1.png', type: 'image/png', sizes: '192x192' },
+			{ url: '/logos/favicon-48.png', type: 'image/png', sizes: '48x48' },
 		],
 		apple: [
-			{ url: '/logos/logo1.png', sizes: '180x180', type: 'image/png' },
+			{ url: '/logos/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
 		],
 	},
 	manifest: '/manifest.webmanifest',
@@ -204,30 +175,14 @@ export default function RootLayout({
 		>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-				{/* DNS prefetch for external API services */}
-			<link rel="dns-prefetch" href="//api.quran.com" />
-			<link rel="preconnect" href="https://verses.quran.foundation" crossOrigin="anonymous" />
-			<link rel="dns-prefetch" href="//hadithapi.com" />
-			<link rel="dns-prefetch" href="//ia801503.us.archive.org" />
-
-				<link
-					rel="preconnect"
-					href="https://api.quran.com"
-					crossOrigin=""
-				/>
-				<link
-					rel="preconnect"
-					href="https://hadithapi.com"
-					crossOrigin=""
-				/>
-				<link
-					rel="preconnect"
-					href="https://ia801503.us.archive.org"
-					crossOrigin=""
-				/>
+				{/* Resolve optional APIs cheaply; only the visible Quran font is preconnected. */}
+				<link rel="dns-prefetch" href="//api.quran.com" />
+				<link rel="preconnect" href="https://verses.quran.foundation" crossOrigin="anonymous" />
+				<link rel="dns-prefetch" href="//hadithapi.com" />
+				<link rel="dns-prefetch" href="//ia801503.us.archive.org" />
 			</head>
 			<body
-				className={`${bodyFont.variable} ${displayFont.variable} ${arabicQuran.variable} ${arabicAmiri.variable} ${arabicNaskh.variable} ${arabicScheherazade.variable} ${urduNastaliq.variable} font-body`}
+				className={`${bodyFont.variable} ${displayFont.variable} ${arabicQuran.variable} ${urduNastaliq.variable} font-body`}
 			>
 				{/* Structured data - critical for SEO */}
 				<script
@@ -281,15 +236,12 @@ export default function RootLayout({
 							<ActivityTrackerProvider />
 						</SuspenseBoundary>
 
-						{/* Performance monitoring */}
-						<PerformanceMonitor />
 						<FloatingMiniPlayer />
 						</GlobalQuranAudioProvider>
 					</AppSettingsProvider>
 				</ThemeProvider>
 
-				{/* Load Google Analytics asynchronously */}
-				<GoogleAnalytics gaId="G-HZJ0Z0MFBP" />
+				<DeferredAnalytics gaId="G-HZJ0Z0MFBP" />
 			</body>
 		</html>
 	);

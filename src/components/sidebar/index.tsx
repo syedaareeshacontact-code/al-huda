@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   BookCheck,
@@ -11,6 +11,7 @@ import {
   Hash,
   Heart,
   Menu,
+  Play,
   Search,
   Sparkles,
   X,
@@ -30,6 +31,7 @@ import { useGlobalQuranAudio } from '@/components/providers/global-quran-audio-p
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSurahContext } from '@/hooks/useSurahContext';
 import {
+  fetchCompleteSurahContent,
   fetchSurahDetail,
   fetchSurahMeta,
   fetchUrduTafsirByAyah,
@@ -73,6 +75,16 @@ interface WordTimingRange {
 interface ActiveAudioWord {
   ayahNumber: number;
   wordIndex: number;
+}
+
+const INITIAL_VISIBLE_AYAHS = 20;
+const AYAH_RENDER_BATCH = 40;
+
+function getVisibleCountForAyah(ayahNumber: number) {
+  return Math.max(
+    INITIAL_VISIBLE_AYAHS,
+    Math.ceil(ayahNumber / AYAH_RENDER_BATCH) * AYAH_RENDER_BATCH
+  );
 }
 
 interface ChapterRecitationPayload {
@@ -367,12 +379,24 @@ export default function QuranReaderPage({
     hasInitialSurahContent ? initialSurahMeta : null
   );
   const [searchInput, setSearchInput] = useState('');
+  const [visibleAyahCount, setVisibleAyahCount] = useState(INITIAL_VISIBLE_AYAHS);
+  const [pendingAyahScroll, setPendingAyahScroll] = useState<{
+    ayahNumber: number;
+    behavior: ScrollBehavior;
+  } | null>(null);
+  const [loadingRemainingAyahs, setLoadingRemainingAyahs] = useState(false);
+  const [remainingAyahsError, setRemainingAyahsError] = useState<string | null>(null);
   const [didAutoResume, setDidAutoResume] = useState(false);
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
   const [navigatorSearch, setNavigatorSearch] = useState('');
   const [expandedSurahId, setExpandedSurahId] = useState<number>(surahId);
   const navigatorListRef = useRef<HTMLDivElement | null>(null);
   const navigatorMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const completeContentPromiseRef = useRef<
+    Promise<{ detail: SurahDetail; meta: SurahMeta }> | null
+  >(null);
+  const activeSurahIdRef = useRef(surahId);
+  activeSurahIdRef.current = surahId;
 
   const debouncedSearch = useDebouncedValue(searchInput, 280);
   const resumeTargetRef = useRef<HTMLButtonElement | null>(null);
@@ -380,6 +404,7 @@ export default function QuranReaderPage({
   const audioUsageLastTimeRef = useRef(0);
 
   const [audioSrc, setAudioSrc] = useState('');
+  const [audioRequested, setAudioRequested] = useState(false);
   const [audioReciters, setAudioReciters] = useState<SurahAudioOption[]>([]);
   const [selectedReciter, setSelectedReciter] = useState(0);
   const [loadingAudioSource, setLoadingAudioSource] = useState(false);
@@ -468,6 +493,55 @@ export default function QuranReaderPage({
     }));
   }, [settings.audioPreference, surahDetail, surahMeta?.english, surahMeta?.urdu]);
 
+  const hasUnloadedAyahs = Boolean(
+    surahDetail && surahDetail.ayahs.length < surahDetail.numberOfAyahs
+  );
+
+  const loadCompleteSurahContent = useCallback(async () => {
+    if (!hasUnloadedAyahs) {
+      return true;
+    }
+
+    setLoadingRemainingAyahs(true);
+    setRemainingAyahsError(null);
+
+    const requestedSurahId = surahId;
+    const request =
+      completeContentPromiseRef.current ?? fetchCompleteSurahContent(requestedSurahId);
+    completeContentPromiseRef.current = request;
+
+    try {
+      const payload = await request;
+      if (
+        activeSurahIdRef.current !== requestedSurahId ||
+        payload.detail.number !== requestedSurahId
+      ) {
+        return false;
+      }
+
+      setSurahDetail(payload.detail);
+      setSurahMeta((current) => ({
+        ...payload.meta,
+        audio: current?.audio ?? payload.meta.audio,
+      }));
+      return true;
+    } catch (loadError) {
+      const errorObject = loadError as { message?: string };
+      const message = errorObject.message ?? 'Unable to load the remaining ayahs.';
+      if (activeSurahIdRef.current === requestedSurahId) {
+        setRemainingAyahsError(message);
+      }
+      return false;
+    } finally {
+      if (completeContentPromiseRef.current === request) {
+        completeContentPromiseRef.current = null;
+      }
+      if (activeSurahIdRef.current === requestedSurahId) {
+        setLoadingRemainingAyahs(false);
+      }
+    }
+  }, [hasUnloadedAyahs, surahId]);
+
   const filteredAyahs = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
     if (!query) {
@@ -483,8 +557,95 @@ export default function QuranReaderPage({
     });
   }, [ayahs, debouncedSearch]);
 
+  useEffect(() => {
+    if (debouncedSearch.trim() && hasUnloadedAyahs) {
+      void loadCompleteSurahContent();
+    }
+  }, [debouncedSearch, hasUnloadedAyahs, loadCompleteSurahContent]);
+
+  useEffect(() => {
+    if (audioRequested && hasUnloadedAyahs) {
+      void loadCompleteSurahContent();
+    }
+  }, [audioRequested, hasUnloadedAyahs, loadCompleteSurahContent]);
+
+  useEffect(() => {
+    setVisibleAyahCount(INITIAL_VISIBLE_AYAHS);
+  }, [debouncedSearch, surahId]);
+
+  useEffect(() => {
+    completeContentPromiseRef.current = null;
+    setRemainingAyahsError(null);
+    setLoadingRemainingAyahs(false);
+  }, [surahId]);
+
+  const visibleAyahs = useMemo(
+    () => filteredAyahs.slice(0, visibleAyahCount),
+    [filteredAyahs, visibleAyahCount]
+  );
+
+  useEffect(() => {
+    if (!pendingAyahScroll) {
+      return;
+    }
+
+    const target = document.getElementById(`ayah-${pendingAyahScroll.ayahNumber}`);
+    if (!target) {
+      return;
+    }
+
+    let settleTimer = 0;
+    let cancelled = false;
+    const frameId = window.requestAnimationFrame(() => {
+      target.scrollIntoView({
+        behavior: pendingAyahScroll.behavior,
+        block: 'center',
+      });
+
+      // content-visibility can refine off-screen card sizes after the first
+      // jump, and Quran font metrics can change once the font has loaded.
+      void document.fonts.ready.then(() => {
+        if (cancelled) return;
+
+        settleTimer = window.setTimeout(() => {
+          document
+            .getElementById(`ayah-${pendingAyahScroll.ayahNumber}`)
+            ?.scrollIntoView({ behavior: 'auto', block: 'center' });
+          setPendingAyahScroll(null);
+        }, 50);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(settleTimer);
+    };
+  }, [pendingAyahScroll, visibleAyahs]);
+
   const currentLastRead =
     lastRead?.surahId === surahId ? lastRead : null;
+
+  const revealAndScrollToAyah = useCallback(
+    (ayahNumber: number, behavior: ScrollBehavior = 'smooth') => {
+      const reveal = () => {
+        setVisibleAyahCount((current) =>
+          Math.max(current, getVisibleCountForAyah(ayahNumber))
+        );
+        setPendingAyahScroll({ ayahNumber, behavior });
+      };
+
+      if (hasUnloadedAyahs && ayahNumber > ayahs.length) {
+        void loadCompleteSurahContent().then((loaded) => {
+          if (loaded) reveal();
+        });
+        return;
+      }
+
+      reveal();
+    },
+    [ayahs.length, hasUnloadedAyahs, loadCompleteSurahContent]
+  );
 
   const filteredNavigatorSurahs = useMemo(() => {
     const normalizedQuery = navigatorSearch.trim().toLowerCase();
@@ -505,18 +666,26 @@ export default function QuranReaderPage({
   }, [navigatorSearch, surahs]);
 
   useEffect(() => {
-    if (!currentLastRead || didAutoResume) {
+    if (
+      !currentLastRead ||
+      didAutoResume ||
+      window.location.hash.startsWith('#ayah-')
+    ) {
       return;
     }
 
-    const element = document.getElementById(`ayah-${currentLastRead.ayahNumber}`);
-    if (!element) {
-      return;
-    }
-
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    revealAndScrollToAyah(currentLastRead.ayahNumber);
     setDidAutoResume(true);
-  }, [currentLastRead, didAutoResume]);
+  }, [currentLastRead, didAutoResume, revealAndScrollToAyah]);
+
+  useEffect(() => {
+    setDidAutoResume(false);
+    const match = window.location.hash.match(/^#ayah-(\d+)$/);
+    const ayahNumber = Number(match?.[1]);
+    if (Number.isInteger(ayahNumber) && ayahNumber > 0) {
+      revealAndScrollToAyah(ayahNumber, 'auto');
+    }
+  }, [revealAndScrollToAyah, surahId]);
 
   useEffect(() => {
     setExpandedSurahId(surahId);
@@ -576,9 +745,22 @@ export default function QuranReaderPage({
   }, [filteredNavigatorSurahs, isNavigatorOpen, surahId, surahListLoading]);
 
   useEffect(() => {
+    setAudioRequested(false);
+    setAudioSrc('');
+    setAudioReciters([]);
+    setSelectedReciter(0);
+    setAudioSourceError(null);
+  }, [settings.audioPreference, surahId]);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     const loadAudioSource = async () => {
+      if (!audioRequested) {
+        setLoadingAudioSource(false);
+        return;
+      }
+
       setLoadingAudioSource(true);
       setAudioSourceError(null);
 
@@ -636,7 +818,7 @@ export default function QuranReaderPage({
     return () => {
       controller.abort();
     };
-  }, [selectedReciter, settings.audioPreference, surahId]);
+  }, [audioRequested, selectedReciter, settings.audioPreference, surahId]);
 
   const selectedAudioReciterName = audioReciters[selectedReciter]?.reciter ?? '';
 
@@ -765,25 +947,26 @@ export default function QuranReaderPage({
       return;
     }
 
-    audio.src = audioSrc;
+    audio.pause();
+    audio.removeAttribute('src');
     audio.load();
     lastCommittedAudioTimeRef.current = 0;
     setAudioCurrentTime(0);
     setAudioDuration(0);
 
-    if (settings.autoPlayAudio) {
-      setIsPlayPending(true);
-      audio
-        .play()
-        .catch(() => {
-          setIsPlaying(false);
-          setIsPlayPending(false);
-        });
+    if (!settings.autoPlayAudio) {
+      setIsPlaying(false);
+      setIsPlayPending(false);
       return;
     }
 
-    setIsPlaying(false);
-    setIsPlayPending(false);
+    audio.src = audioSrc;
+    audio.load();
+    setIsPlayPending(true);
+    audio.play().catch(() => {
+      setIsPlaying(false);
+      setIsPlayPending(false);
+    });
   }, [audioRef, audioSrc, settings.autoPlayAudio]);
 
   useEffect(() => {
@@ -814,7 +997,7 @@ export default function QuranReaderPage({
     const onTime = () => {
       const nextTime = audio.currentTime || 0;
       if (
-        Math.abs(nextTime - lastCommittedAudioTimeRef.current) >= 0.12 ||
+        Math.abs(nextTime - lastCommittedAudioTimeRef.current) >= 0.25 ||
         audio.paused ||
         audio.ended
       ) {
@@ -901,7 +1084,7 @@ export default function QuranReaderPage({
           audioSeconds: Math.min(deltaSeconds, 120),
         });
       }
-    }, 10000);
+    }, 60000);
 
     const onBeforeUnload = () => {
       const currentTime = audioNode.currentTime || 0;
@@ -1015,14 +1198,14 @@ export default function QuranReaderPage({
       return;
     }
 
-    const target = document.getElementById(`ayah-${activeAudioAyahNumber}`);
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    revealAndScrollToAyah(activeAudioAyahNumber);
   }, [
     activeAudioAyahNumber,
     isNavigatorOpen,
     isPlaying,
     settings.readingMode,
     tafseerOpen,
+    revealAndScrollToAyah,
   ]);
 
   useEffect(() => {
@@ -1064,8 +1247,8 @@ export default function QuranReaderPage({
     [tafseerData?.textHtml]
   );
   const filteredAyahNumbers = useMemo(
-    () => filteredAyahs.map(({ ayah }) => ayah.numberInSurah),
-    [filteredAyahs]
+    () => visibleAyahs.map(({ ayah }) => ayah.numberInSurah),
+    [visibleAyahs]
   );
 
   useEffect(() => {
@@ -1081,17 +1264,16 @@ export default function QuranReaderPage({
       audioSrc,
       isPlaying,
       isPlayPending,
-      currentTime: audioCurrentTime,
-      duration: audioDuration,
+      currentTime: audioRef.current?.currentTime ?? 0,
+      duration: audioRef.current ? getAudioDuration(audioRef.current) : 0,
       reciterName: activeReciterName,
       activeAyahNumber: activeAudioAyahNumber,
     });
   }, [
     activeAudioAyahNumber,
     activeReciterName,
-    audioCurrentTime,
-    audioDuration,
     audioSrc,
+    audioRef,
     currentSurahPath,
     isPlayPending,
     isPlaying,
@@ -1183,8 +1365,7 @@ export default function QuranReaderPage({
     }
 
     window.location.hash = anchor;
-    const target = document.getElementById(anchor);
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    revealAndScrollToAyah(ayahNumber);
   };
 
   return (
@@ -1250,8 +1431,7 @@ export default function QuranReaderPage({
                     size="sm"
                     className="h-7 rounded-lg px-2.5"
                     onClick={() => {
-                      const target = document.getElementById(`ayah-${currentLastRead.ayahNumber}`);
-                      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      revealAndScrollToAyah(currentLastRead.ayahNumber);
                     }}
                   >
                     Resume
@@ -1292,6 +1472,18 @@ export default function QuranReaderPage({
                       >
                         {audioSourceError || 'Loading audio source...'}
                       </p>
+                    ) : null}
+                    {!audioRequested ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAudioRequested(true)}
+                        className="mt-3"
+                      >
+                        <Play className="size-4" />
+                        Prepare audio player
+                      </Button>
                     ) : null}
                   </div>
                   <div className="inline-flex w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 md:w-auto">
@@ -1371,7 +1563,7 @@ export default function QuranReaderPage({
                   lang="ar"
                   className="arabic-font quran-script arabic-mushaf text-[var(--color-heading)]"
                 >
-                  {filteredAyahs.map(({ ayah }, index) => {
+                  {visibleAyahs.map(({ ayah }, index) => {
                     const isActive =
                       isPlaying && activeAudioAyahNumber === ayah.numberInSurah;
 
@@ -1384,7 +1576,7 @@ export default function QuranReaderPage({
                           {ayah.text}
                         </span>
                         <AyahEndMarker number={ayah.numberInSurah} />
-                        {index === filteredAyahs.length - 1 ? '' : ' '}
+                        {index === visibleAyahs.length - 1 ? '' : ' '}
                       </span>
                     );
                   })}
@@ -1392,8 +1584,8 @@ export default function QuranReaderPage({
               </CardContent>
             </Card>
           ) : (
-            <section className="space-y-3" aria-label="Ayah list">
-              {filteredAyahs.map(({ ayah, translation }) => {
+            <section id="ayah-list" className="space-y-3" aria-label="Ayah list">
+              {visibleAyahs.map(({ ayah, translation }) => {
                 const bookmarked = isBookmarked(surahId, ayah.numberInSurah);
                 const isLastRead = currentLastRead?.ayahNumber === ayah.numberInSurah;
                 const isCurrentTafseerAyah =
@@ -1411,7 +1603,7 @@ export default function QuranReaderPage({
                   <Card
                     id={`ayah-${ayah.numberInSurah}`}
                     key={ayah.number}
-                    className={`border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_52%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_10%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%))] ${ayahHighlightClass}`}
+                    className={`ayah-card-optimized border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_52%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_10%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%))] ${ayahHighlightClass}`}
                   >
                     <CardContent className="p-4 sm:p-5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1499,7 +1691,46 @@ export default function QuranReaderPage({
                 );
               })}
 
-              {filteredAyahs.length === 0 ? (
+              {visibleAyahs.length < filteredAyahs.length || hasUnloadedAyahs ? (
+                <Card className="border-dashed border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <CardContent className="flex flex-col items-center gap-3 p-5 text-center">
+                    <p className="text-sm text-[var(--color-muted-text)]">
+                      Showing {visibleAyahs.length} of{' '}
+                      {debouncedSearch.trim()
+                        ? filteredAyahs.length
+                        : (surahDetail?.numberOfAyahs ?? filteredAyahs.length)} Ayahs
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      aria-controls="ayah-list"
+                      disabled={loadingRemainingAyahs}
+                      onClick={() => {
+                        const revealNextBatch = () =>
+                          setVisibleAyahCount((count) => count + AYAH_RENDER_BATCH);
+
+                        if (hasUnloadedAyahs) {
+                          void loadCompleteSurahContent().then((loaded) => {
+                            if (loaded) revealNextBatch();
+                          });
+                          return;
+                        }
+
+                        revealNextBatch();
+                      }}
+                    >
+                      {loadingRemainingAyahs ? 'Loading Ayahs...' : 'Load more Ayahs'}
+                    </Button>
+                    {remainingAyahsError ? (
+                      <p className="text-xs text-[var(--color-danger)]" role="alert">
+                        {remainingAyahsError}
+                      </p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {filteredAyahs.length === 0 && !loadingRemainingAyahs ? (
                 <Card>
                   <CardContent className="p-6 text-sm text-[var(--color-muted-text)]">
                     No ayah matched your search query.

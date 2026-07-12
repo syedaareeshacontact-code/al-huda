@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   BookOpen,
   BookOpenText,
@@ -38,6 +38,7 @@ type SortDirection = 'asc' | 'desc';
 
 // Popular surah list (commonly read)
 const POPULAR_SURAH_IDS = [1, 18, 36, 55, 56, 67];
+const PAGE_SIZE = 24;
 
 export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '' }: SurahIndexClientProps) {
   // State variables
@@ -49,6 +50,18 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
   const [sortBy, setSortBy] = useState<SortField>('id');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    const syncSearchFromUrl = () => {
+      const query = new URLSearchParams(window.location.search).get('search')?.trim() ?? '';
+      setSearchQuery(query);
+    };
+
+    syncSearchFromUrl();
+    window.addEventListener('popstate', syncSearchFromUrl);
+    return () => window.removeEventListener('popstate', syncSearchFromUrl);
+  }, []);
 
   // Computed and filtered surahs
   const filteredSurahs = useMemo(() => {
@@ -116,6 +129,12 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
 
     return result;
   }, [initialSurahs, searchQuery, revelationFilter, lengthPreset, minAyahs, maxAyahs, sortBy, sortDirection]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, revelationFilter, lengthPreset, minAyahs, maxAyahs, sortBy, sortDirection]);
+
+  const visibleSurahs = filteredSurahs.slice(0, visibleCount);
 
   // Reset all filters to default
   const handleResetFilters = () => {
@@ -420,7 +439,7 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredSurahs.map((surah, index) => {
+          {visibleSurahs.map((surah, index) => {
             const surahPath = buildSurahPath(surah.id, surah.surahName);
             const isMeccan = surah.revelationPlace.toLowerCase() === 'mecca';
 
@@ -428,6 +447,7 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
               <Link
                 key={surah.id}
                 href={surahPath}
+                prefetch={false}
                 className="group rounded-2xl outline-none transition-transform duration-200 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                 style={{ animationDelay: `${Math.min(index, 12) * 20}ms` }}
               >
@@ -499,6 +519,22 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
           })}
         </div>
       )}
+
+      {visibleSurahs.length < filteredSurahs.length ? (
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-xs text-[var(--color-muted-text)]">
+            Showing {visibleSurahs.length} of {filteredSurahs.length} Surahs
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+            className="min-w-40"
+          >
+            Load more Surahs
+          </Button>
+        </div>
+      ) : null}
 
       <QuranSettingsPanel variant="inline" />
     </div>

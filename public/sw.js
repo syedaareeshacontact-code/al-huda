@@ -1,172 +1,157 @@
-const CACHE_VERSION = 'alhuda-v2';
-const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const API_CACHE = `${CACHE_VERSION}-api`;
+const CACHE_PREFIX = 'alhuda-';
+const workerUrl = new URL(self.location.href);
+const buildVersion = workerUrl.searchParams.get('v') || 'v3';
+const STATIC_CACHE = `${CACHE_PREFIX}${buildVersion}-static`;
+const API_CACHE = `${CACHE_PREFIX}${buildVersion}-api`;
+const OFFLINE_URL = '/offline.html';
 
-const CORE_ASSETS = ['/'];
+const STATIC_PATH_PREFIXES = ['/logos/', '/banner/', '/basmalah/'];
+const CACHEABLE_EXTERNAL_HOSTS = new Set([
+  'api.quran.com',
+  'ia801503.us.archive.org',
+]);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(CORE_ASSETS)).catch(() => undefined)
+    caches.open(STATIC_CACHE).then((cache) => cache.add(OFFLINE_URL))
   );
+  // The replacement worker no longer serves cached Next.js module graphs.
+  // Activate it immediately so existing alhuda-v2 caches are removed.
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => ![STATIC_CACHE, API_CACHE].includes(key))
-          .map((key) => caches.delete(key))
-      )
-    )
+    (async () => {
+      const keys = await caches.keys();
+      const staleKeys = keys.filter(
+        (key) =>
+          key.startsWith(CACHE_PREFIX) &&
+          key !== STATIC_CACHE &&
+          key !== API_CACHE
+      );
+      const isLegacyV2Upgrade = staleKeys.some((key) => key.startsWith('alhuda-v2'));
+
+      await Promise.all(staleKeys.map((key) => caches.delete(key)));
+      await self.clients.claim();
+
+      // Existing production users can still be controlled by the unsafe v2
+      // worker. Refresh those tabs once after its caches have been removed.
+      if (isLegacyV2Upgrade) {
+        const clients = await self.clients.matchAll({ type: 'window' });
+        await Promise.all(
+          clients.map((client) => client.navigate(client.url).catch(() => undefined))
+        );
+      }
+    })()
   );
-  self.clients.claim();
 });
 
-function isApiRequest(requestUrl) {
+function isNextRuntimeRequest(request, url) {
   return (
-    requestUrl.includes('api.quran.com') ||
-    requestUrl.includes('ia801503.us.archive.org')
+    url.pathname.startsWith('/_next/') ||
+    url.searchParams.has('_rsc') ||
+    request.headers.get('RSC') === '1' ||
+    request.headers.has('Next-Router-State-Tree') ||
+    request.headers.has('Next-Router-Prefetch')
   );
 }
 
-function isInternalApiRequest(requestUrl) {
+function isCacheablePublicAsset(url) {
   return (
-    requestUrl.origin === self.location.origin &&
-    requestUrl.pathname.startsWith('/api/')
+    url.origin === self.location.origin &&
+    STATIC_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))
   );
 }
 
-function isCacheableInternalApiRequest(requestUrl) {
-  return requestUrl.pathname === '/api/tafsir/ur';
+function isCacheableExternalApi(url) {
+  return CACHEABLE_EXTERNAL_HOSTS.has(url.hostname);
 }
 
-function isNextAsset(requestUrl) {
-  return requestUrl.pathname.startsWith('/_next/');
+function isCacheableInternalApi(url) {
+  return (
+    url.origin === self.location.origin &&
+    url.pathname === '/api/tafsir/ur'
+  );
 }
 
-function cacheResponse(cacheName, request, response) {
+async function putIfCacheable(cacheName, request, response) {
   if (!response || !response.ok || response.type === 'opaque') {
     return;
   }
 
-  const copy = response.clone();
-  caches.open(cacheName).then((cache) => cache.put(request, copy));
+  const cacheControl = response.headers.get('Cache-Control') || '';
+  if (/private|no-store/i.test(cacheControl)) {
+    return;
+  }
+
+  const cache = await caches.open(cacheName);
+  await cache.put(request, response.clone());
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await fetch(request);
+  await putIfCacheable(STATIC_CACHE, request, response);
+  return response;
+}
+
+async function staleWhileRevalidate(event, request) {
+  const cache = await caches.open(API_CACHE);
+  const cached = await cache.match(request);
+  const network = fetch(request).then((response) => {
+    event.waitUntil(putIfCacheable(API_CACHE, request, response));
+    return response;
+  });
+
+  if (cached) {
+    event.waitUntil(network.catch(() => undefined));
+    return cached;
+  }
+
+  return network;
 }
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-
   if (request.method !== 'GET') {
     return;
   }
 
-  const requestUrl = new URL(request.url);
+  const url = new URL(request.url);
 
-  if (isApiRequest(requestUrl.href)) {
+  // Next.js documents, RSC payloads and hashed runtime assets must always use
+  // the browser/CDN cache. Caching them here can mix modules from two deploys.
+  if (isNextRuntimeRequest(request, url)) {
+    return;
+  }
+
+  if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
-      caches.open(API_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        const network = fetch(request)
-          .then((response) => {
-            cacheResponse(API_CACHE, request, response);
-            return response;
+      fetch(request).catch(async () => {
+        const fallback = await caches.match(OFFLINE_URL);
+        return (
+          fallback ||
+          new Response('Offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           })
-          .catch(() => cached);
-
-        if (cached) {
-          void network;
-          return cached;
-        }
-
-        return network;
+        );
       })
     );
     return;
   }
 
-  if (isInternalApiRequest(requestUrl)) {
-    if (isCacheableInternalApiRequest(requestUrl)) {
-      event.respondWith(
-        caches.open(API_CACHE).then(async (cache) => {
-          const cached = await cache.match(request);
-          const network = fetch(request)
-            .then((response) => {
-              cacheResponse(API_CACHE, request, response);
-              return response;
-            })
-            .catch(() => cached);
-
-          if (cached) {
-            void network;
-            return cached;
-          }
-
-          return network;
-        })
-      );
-      return;
-    }
-
-    event.respondWith(fetch(request));
+  if (isCacheablePublicAsset(url)) {
+    event.respondWith(cacheFirst(request));
     return;
   }
 
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          cacheResponse(STATIC_CACHE, request, response);
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) {
-            return cached;
-          }
-
-          const fallback = await caches.match('/');
-          if (fallback) {
-            return fallback;
-          }
-
-          return new Response('Offline', {
-            status: 503,
-            headers: { 'Content-Type': 'text/plain' },
-          });
-        })
-    );
-    return;
+  if (isCacheableExternalApi(url) || isCacheableInternalApi(url)) {
+    event.respondWith(staleWhileRevalidate(event, request));
   }
-
-  if (requestUrl.origin === self.location.origin && isNextAsset(requestUrl)) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          cacheResponse(STATIC_CACHE, request, response);
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request)
-        .then((response) => {
-          cacheResponse(STATIC_CACHE, request, response);
-          return response;
-        })
-        .catch(() => cached);
-
-      if (cached) {
-        void fetchPromise;
-        return cached;
-      }
-
-      return fetchPromise;
-    })
-  );
 });

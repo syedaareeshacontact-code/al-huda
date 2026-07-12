@@ -50,6 +50,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<GlobalAudioSession | null>(null);
   const [volume, setVolumeState] = useState(1);
   const sessionRef = useRef<GlobalAudioSession | null>(null);
+  const lastProgressSyncRef = useRef(0);
 
   const patchSession = useCallback((patch: Partial<GlobalAudioSession>) => {
     setSession((current) => {
@@ -157,12 +158,18 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const syncProgress = () => {
+    const syncProgress = (force = false) => {
+      const now = performance.now();
+      if (!force && now - lastProgressSyncRef.current < 500) return;
+      lastProgressSyncRef.current = now;
+
       const duration = Number.isFinite(audio.duration) && audio.duration > 0
         ? audio.duration
         : sessionRef.current?.duration ?? 0;
       patchSession({ currentTime: audio.currentTime || 0, duration });
     };
+    const onTimeUpdate = () => syncProgress(false);
+    const onMetadataChange = () => syncProgress(true);
     const onPlay = () => patchSession({ isPlayPending: true });
     const onPlaying = () => patchSession({ isPlaying: true, isPlayPending: false });
     const onPause = () => patchSession({ isPlaying: false, isPlayPending: false });
@@ -174,9 +181,9 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     });
     const onVolumeChange = () => setVolumeState(audio.volume);
 
-    audio.addEventListener('timeupdate', syncProgress);
-    audio.addEventListener('loadedmetadata', syncProgress);
-    audio.addEventListener('durationchange', syncProgress);
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('loadedmetadata', onMetadataChange);
+    audio.addEventListener('durationchange', onMetadataChange);
     audio.addEventListener('play', onPlay);
     audio.addEventListener('playing', onPlaying);
     audio.addEventListener('pause', onPause);
@@ -185,9 +192,9 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     audio.addEventListener('volumechange', onVolumeChange);
 
     return () => {
-      audio.removeEventListener('timeupdate', syncProgress);
-      audio.removeEventListener('loadedmetadata', syncProgress);
-      audio.removeEventListener('durationchange', syncProgress);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('loadedmetadata', onMetadataChange);
+      audio.removeEventListener('durationchange', onMetadataChange);
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('pause', onPause);
@@ -222,7 +229,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   return (
     <GlobalQuranAudioContext.Provider value={value}>
       {children}
-      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
+      <audio ref={audioRef} preload="none" crossOrigin="anonymous" />
     </GlobalQuranAudioContext.Provider>
   );
 }

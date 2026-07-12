@@ -124,6 +124,7 @@ async function aladhanFetch<T>(path: string, revalidate = 3600): Promise<T> {
     try {
       const res = await fetch(`${ALADHAN_BASE}${path}`, {
         next: { revalidate },
+        signal: AbortSignal.timeout(8_000),
       });
       if (res.status === 429) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));

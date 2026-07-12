@@ -22,6 +22,7 @@ import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplet
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { getAllSurahs, getSurahById } from '@/lib/quran-index';
 import { buildSurahPath } from '@/lib/quran-routing';
+import { getClientSession, invalidateClientSession } from '@/lib/client-session';
 import type { AyahBookmark, LastReadEntry } from '@/types/quran';
 
 function resolveSurahPath(surahId: number | null | undefined) {
@@ -54,10 +55,7 @@ export default function HomeRoot() {
 
     const loadQuranState = async () => {
       try {
-        const sessionResponse = await fetch('/api/auth/session', { cache: 'no-store' });
-        if (!sessionResponse.ok) throw new Error('Session unavailable');
-
-        const sessionPayload = (await sessionResponse.json()) as {
+        const sessionPayload = (await getClientSession()) as {
           user?: { id?: string | null } | null;
         };
         if (!sessionPayload.user?.id) throw new Error('Signed out');
@@ -88,7 +86,10 @@ export default function HomeRoot() {
     };
 
     void loadQuranState();
-    const onAuthChanged = () => void loadQuranState();
+    const onAuthChanged = () => {
+      invalidateClientSession();
+      void loadQuranState();
+    };
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
 
     return () => {
@@ -150,6 +151,7 @@ export default function HomeRoot() {
           <Link
             id="home-tour-primary-cta"
             href={lastReadPath}
+            prefetch={false}
             className="group relative flex min-h-40 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(135deg,#8c6a08,var(--color-accent-soft))] p-5 text-[var(--color-accent-foreground)] shadow-[0_22px_45px_-25px_color-mix(in_oklab,var(--color-accent),black_25%)] sm:min-h-48 sm:p-7"
           >
             <div className="flex min-w-0 flex-1 flex-col justify-between">
@@ -179,6 +181,7 @@ export default function HomeRoot() {
             <Link
               id="home-tour-read-online"
               href="/surah"
+              prefetch={false}
               className="group relative flex min-h-36 flex-col justify-between overflow-hidden rounded-[1.4rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_68%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface-elevated)_92%),var(--color-surface-elevated)_58%)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:p-5 lg:min-h-0 lg:flex-row lg:items-center"
             >
               <span className="relative z-10">
@@ -195,6 +198,7 @@ export default function HomeRoot() {
 
             <Link
               href="/tafsir"
+              prefetch={false}
               className="group relative flex min-h-36 flex-col justify-between overflow-hidden rounded-[1.4rem] border border-[color-mix(in_oklab,var(--color-highlight),var(--color-border)_72%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-highlight),var(--color-surface-elevated)_93%),var(--color-surface-elevated)_58%)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:p-5 lg:min-h-0 lg:flex-row lg:items-center"
             >
               <span className="relative z-10">
@@ -218,7 +222,7 @@ export default function HomeRoot() {
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Quick access</p>
             <h2 id="popular-surahs-heading" className="mt-1 font-display text-3xl font-semibold text-[var(--color-heading)]">Popular Surahs</h2>
           </div>
-          <Link href="/surah" className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[var(--color-accent-soft)] hover:underline">
+          <Link href="/surah" prefetch={false} className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[var(--color-accent-soft)] hover:underline">
             View all <ChevronRight className="size-4" />
           </Link>
         </div>
@@ -228,6 +232,7 @@ export default function HomeRoot() {
             <Link
               key={surah.id}
               href={resolveSurahPath(surah.id)}
+              prefetch={false}
               className="group min-w-[9.5rem] snap-start rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:min-w-0"
             >
               <span className="font-arabic block text-right text-2xl leading-relaxed text-[var(--color-accent)]" dir="rtl">{surah.arabic}</span>
@@ -250,6 +255,7 @@ export default function HomeRoot() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Link
             href={firstFavoriteId ? resolveSurahPath(firstFavoriteId) : '/surah'}
+            prefetch={false}
             className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)]"
           >
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_88%)] text-[var(--color-highlight)]"><Heart className="size-5" /></span>
@@ -262,6 +268,7 @@ export default function HomeRoot() {
 
           <Link
             href={latestBookmark ? `${resolveSurahPath(latestBookmark.surahId)}#ayah-${latestBookmark.ayahNumber}` : '/surah'}
+            prefetch={false}
             className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)]"
           >
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]"><BookMarked className="size-5" /></span>
@@ -282,7 +289,7 @@ export default function HomeRoot() {
               <h2 id="study-heading" className="mt-2 font-display text-3xl font-semibold text-[var(--color-heading)]">Study every Ayah with Tafseer</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--color-muted-text)]">Open Urdu tafseer alongside the Quran to explore meaning and context, ayah by ayah.</p>
             </div>
-            <Link href="/tafsir" className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-5 text-sm font-bold !text-[var(--color-accent-foreground)] shadow-[0_14px_30px_-18px_color-mix(in_oklab,var(--color-accent),transparent_25%)] hover:brightness-110">
+            <Link href="/tafsir" prefetch={false} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-5 text-sm font-bold !text-[var(--color-accent-foreground)] shadow-[0_14px_30px_-18px_color-mix(in_oklab,var(--color-accent),transparent_25%)] hover:brightness-110">
               Browse Tafseer <ArrowRight className="size-4" />
             </Link>
           </div>
@@ -290,7 +297,7 @@ export default function HomeRoot() {
           <div className="mt-6 grid gap-2 border-t border-[var(--color-border)] pt-5 sm:grid-cols-3">
             <span className="flex items-center gap-2 text-sm text-[var(--color-muted-text)]"><Languages className="size-4 text-[var(--color-accent)]" /> Urdu translation</span>
             <span className="flex items-center gap-2 text-sm text-[var(--color-muted-text)]"><Headphones className="size-4 text-[var(--color-accent)]" /> Recitation audio</span>
-            <Link id="home-tour-quran-settings" href="/surah#quran-settings" className="flex items-center gap-2 text-sm text-[var(--color-muted-text)] hover:text-[var(--color-heading)]"><Settings2 className="size-4 text-[var(--color-accent)]" /> Reading settings</Link>
+            <Link id="home-tour-quran-settings" href="/surah#quran-settings" prefetch={false} className="flex items-center gap-2 text-sm text-[var(--color-muted-text)] hover:text-[var(--color-heading)]"><Settings2 className="size-4 text-[var(--color-accent)]" /> Reading settings</Link>
           </div>
         </div>
       </section>

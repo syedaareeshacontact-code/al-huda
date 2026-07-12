@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   BookOpen,
   ChevronRight,
@@ -22,6 +22,7 @@ import type { SurahIndexEntry } from '@/lib/quran-index';
 
 interface SurahWithTafseer extends SurahIndexEntry {
   tafseerAyahs: number[];
+  tafseerAyahCount: number;
 }
 
 interface TafsirIndexClientProps {
@@ -32,6 +33,7 @@ interface TafsirIndexClientProps {
 type RevelationFilter = 'all' | 'mecca' | 'madina';
 type SortField = 'id' | 'name' | 'tafseer-ayahs';
 type SortDirection = 'asc' | 'desc';
+const PAGE_SIZE = 20;
 
 export default function TafsirIndexClient({
   initialSurahs,
@@ -43,10 +45,22 @@ export default function TafsirIndexClient({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [expandedSurah, setExpandedSurah] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    const syncSearchFromUrl = () => {
+      const query = new URLSearchParams(window.location.search).get('search')?.trim() ?? '';
+      setSearchQuery(query);
+    };
+
+    syncSearchFromUrl();
+    window.addEventListener('popstate', syncSearchFromUrl);
+    return () => window.removeEventListener('popstate', syncSearchFromUrl);
+  }, []);
 
   // Filtered and sorted surahs
   const filteredSurahs = useMemo(() => {
-    let result = [...initialSurahs].filter((surah) => surah.tafseerAyahs.length > 0);
+    let result = [...initialSurahs].filter((surah) => surah.tafseerAyahCount > 0);
 
     // Text Search Filter
     if (searchQuery.trim()) {
@@ -79,7 +93,7 @@ export default function TafsirIndexClient({
       } else if (sortBy === 'name') {
         comparison = a.surahName.localeCompare(b.surahName);
       } else if (sortBy === 'tafseer-ayahs') {
-        comparison = b.tafseerAyahs.length - a.tafseerAyahs.length;
+        comparison = b.tafseerAyahCount - a.tafseerAyahCount;
       }
 
       return sortDirection === 'asc' ? comparison : -comparison;
@@ -87,6 +101,12 @@ export default function TafsirIndexClient({
 
     return result;
   }, [initialSurahs, searchQuery, revelationFilter, sortBy, sortDirection]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, revelationFilter, sortBy, sortDirection]);
+
+  const visibleSurahs = filteredSurahs.slice(0, visibleCount);
 
   // Reset all filters to default
   const handleResetFilters = () => {
@@ -210,7 +230,7 @@ export default function TafsirIndexClient({
       {/* Surahs Grid */}
       {filteredSurahs.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-          {filteredSurahs.map((surah) => (
+          {visibleSurahs.map((surah) => (
             <Card
               key={surah.id}
               className="border border-[var(--color-border)] hover:border-[var(--color-accent-soft)] transition-colors"
@@ -237,7 +257,7 @@ export default function TafsirIndexClient({
                       <p className="text-sm text-[var(--color-muted-text)]">
                         {surah.surahNameTranslation} • {surah.totalAyah} Ayahs •{' '}
                         <span className="font-semibold text-[var(--color-accent)]">
-                          {surah.tafseerAyahs.length} Tafseer
+                          {surah.tafseerAyahCount} Tafseer
                         </span>
                       </p>
                     </div>
@@ -273,15 +293,16 @@ export default function TafsirIndexClient({
                               surah.surahName,
                               ayahNum
                             )}
+                            prefetch={false}
                             className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-[var(--color-border)] text-xs font-medium text-[var(--color-accent)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-soft)]"
                           >
                             <FileText className="size-3" />
                             Ayah {ayahNum}
                           </Link>
                         ))}
-                        {surah.tafseerAyahs.length > 10 && (
+                        {surah.tafseerAyahCount > surah.tafseerAyahs.length && (
                           <span className="px-2 py-1 text-xs font-medium text-[var(--color-muted-text)]">
-                            +{surah.tafseerAyahs.length - 10} more
+                            +{surah.tafseerAyahCount - surah.tafseerAyahs.length} more
                           </span>
                         )}
                       </div>
@@ -292,6 +313,7 @@ export default function TafsirIndexClient({
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--color-border)]">
                     <Link
                       href={buildSurahPath(surah.id, surah.surahName)}
+                      prefetch={false}
                       className="flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm font-semibold text-[var(--color-accent)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-soft)]"
                     >
                       <BookOpen className="size-4" />
@@ -305,6 +327,7 @@ export default function TafsirIndexClient({
                           surah.surahName,
                           surah.tafseerAyahs[0]
                         )}
+                        prefetch={false}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[var(--color-accent)] text-sm font-semibold text-white hover:bg-[var(--color-accent-soft)]"
                       >
                         <FileText className="size-4" />
@@ -327,6 +350,21 @@ export default function TafsirIndexClient({
           </CardContent>
         </Card>
       )}
+
+      {visibleSurahs.length < filteredSurahs.length ? (
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-xs text-[var(--color-muted-text)]">
+            Showing {visibleSurahs.length} of {filteredSurahs.length} Surahs
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          >
+            Load more Tafseer
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

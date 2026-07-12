@@ -10,6 +10,8 @@ import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } 
 import type { SurahDownloadOption } from '@/lib/surah-download';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 
+const MAX_SCHEMA_LIST_ITEMS = 40;
+
 export function buildSurahPageSchemas(
   surah: SurahIndexEntry,
   intro: string,
@@ -51,27 +53,30 @@ export function buildSurahPageSchemas(
     '@type': 'ItemList',
     name: `Ayahs of Surah ${surah.surahName}`,
     numberOfItems: surah.totalAyah,
-    itemListElement: Array.from({ length: surah.totalAyah }, (_, i) => {
-      const ayahNum = i + 1;
-      const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNum);
-      const tafsirPath = hasTafsirForAyah(surah.id, ayahNum)
-        ? buildTafsirPath(surah.id, surah.surahName, ayahNum)
-        : null;
+    itemListElement: Array.from(
+      { length: Math.min(surah.totalAyah, MAX_SCHEMA_LIST_ITEMS) },
+      (_, i) => {
+        const ayahNum = i + 1;
+        const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNum);
+        const tafsirPath = hasTafsirForAyah(surah.id, ayahNum)
+          ? buildTafsirPath(surah.id, surah.surahName, ayahNum)
+          : null;
 
-      return {
-        '@type': 'ListItem',
-        position: ayahNum,
-        name: `Ayah ${surah.id}:${ayahNum}`,
-        url: toAbsoluteUrl(ayahPath),
-        ...(tafsirPath && {
-          additionalProperty: {
-            '@type': 'PropertyValue',
-            name: 'tafseer',
-            value: toAbsoluteUrl(tafsirPath),
-          },
-        }),
-      };
-    }),
+        return {
+          '@type': 'ListItem',
+          position: ayahNum,
+          name: `Ayah ${surah.id}:${ayahNum}`,
+          url: toAbsoluteUrl(ayahPath),
+          ...(tafsirPath && {
+            additionalProperty: {
+              '@type': 'PropertyValue',
+              name: 'tafseer',
+              value: toAbsoluteUrl(tafsirPath),
+            },
+          }),
+        };
+      }
+    ),
   };
 
   return { breadcrumb, webPage, book, itemList };
@@ -146,7 +151,7 @@ export function buildTafsirSurahPageSchemas(options: {
     '@type': 'ItemList',
     name: `Urdu Tafseer — Surah ${surah.surahName}`,
     numberOfItems: ayahNumbers.length,
-    itemListElement: ayahNumbers.map((ayahNumber, index) => ({
+    itemListElement: ayahNumbers.slice(0, MAX_SCHEMA_LIST_ITEMS).map((ayahNumber, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       name: `Tafseer Ayah ${surah.id}:${ayahNumber}`,

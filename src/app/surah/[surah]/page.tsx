@@ -13,12 +13,14 @@ import {
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import QuranReaderPage from '@/components/sidebar';
 import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
-import { getAyahRowsForSurah, getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
+import { getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
 import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
+import { POPULAR_SURAH_IDS } from '@/lib/ssg-config';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { buildSurahPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildSurahPageSchemas } from '@/lib/seo-schema';
+import { SurhasListProvider } from '@/context/SurhasListProvider';
 import {
   getSurahMetaTitle,
   getSurahMetaDescription,
@@ -32,11 +34,15 @@ interface SurahPageProps {
 }
 
 export const revalidate = 86400;
+export const dynamicParams = true;
+const INITIAL_SURAH_AYAH_LIMIT = 20;
 
 export function generateStaticParams() {
-  return getAllSurahs().map((surah) => ({
-    surah: buildSurahSlug(surah.id, surah.surahName),
-  }));
+  return getAllSurahs()
+    .filter((surah) => POPULAR_SURAH_IDS.some((id) => id === surah.id))
+    .map((surah) => ({
+      surah: buildSurahSlug(surah.id, surah.surahName),
+    }));
 }
 
 export async function generateMetadata({ params }: SurahPageProps): Promise<Metadata> {
@@ -83,26 +89,39 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
     permanentRedirect(buildSurahPath(surah.id, surah.surahName));
   }
 
-  let ayahRows: Awaited<ReturnType<typeof getAyahRowsForSurah>> = [];
   let initialSurahDetail: Awaited<ReturnType<typeof getSurahDetailById>> | null = null;
   let initialSurahMeta: Awaited<ReturnType<typeof getSurahMetaById>> | null = null;
   try {
-    const [rows, detail, meta] = await Promise.all([
-      getAyahRowsForSurah(surah.id),
+    const [detail, meta] = await Promise.all([
       getSurahDetailById(surah.id),
       getSurahMetaById(surah.id),
     ]);
-    ayahRows = rows;
-    initialSurahDetail = detail;
-    initialSurahMeta = meta;
+    initialSurahDetail = {
+      ...detail,
+      ayahs: detail.ayahs.slice(0, INITIAL_SURAH_AYAH_LIMIT),
+    };
+    // Keep the initial document useful while avoiding the full chapter in the
+    // hydration payload. Remaining ayahs are loaded after explicit reader intent.
+    initialSurahMeta = {
+      ...meta,
+      english: meta.english?.slice(0, INITIAL_SURAH_AYAH_LIMIT),
+      urdu: meta.urdu?.slice(0, INITIAL_SURAH_AYAH_LIMIT),
+      arabic1: [],
+      audio: {},
+    };
   } catch {
-    ayahRows = [];
+    initialSurahDetail = null;
+    initialSurahMeta = null;
   }
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
   const urduTitle = getSurahUrduTitle(surah);
-  const schemas = buildSurahPageSchemas(surah, getSurahMetaDescription(surah), ayahRows.length);
+  const schemas = buildSurahPageSchemas(
+    surah,
+    getSurahMetaDescription(surah),
+    initialSurahDetail?.numberOfAyahs ?? surah.totalAyah
+  );
   const featureItems = [
     {
       label: 'Read',
@@ -163,7 +182,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
               >
                 {surah.surahNameArabic}
               </p>
-              <p className="urdu-font mt-2 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
+              <p className="font-arabic mt-2 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
                 {urduTitle}
               </p>
               <div className="mt-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted-text)]">
@@ -187,6 +206,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
                 </a>
                 <Link
                   href={buildSurahDownloadPath(surah.id, surah.surahName)}
+                  prefetch={false}
                   className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
                 >
                   <Download className="size-4" />
@@ -221,11 +241,13 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       </section>
 
       {/* Interactive reader is the only visible ayah list to avoid duplicate ayahs. */}
-      <QuranReaderPage
-        initialSurahId={surah.id}
-        initialSurahDetail={initialSurahDetail}
-        initialSurahMeta={initialSurahMeta}
-      />
+      <SurhasListProvider>
+        <QuranReaderPage
+          initialSurahId={surah.id}
+          initialSurahDetail={initialSurahDetail}
+          initialSurahMeta={initialSurahMeta}
+        />
+      </SurhasListProvider>
     </>
   );
 }

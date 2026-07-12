@@ -5,6 +5,7 @@ import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import SurahDownloadHub from '@/components/quran/surah-download-hub';
 import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
 import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
+import { POPULAR_SURAH_IDS } from '@/lib/ssg-config';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildSurahDownloadSchemas } from '@/lib/seo-schema';
 import {
@@ -23,11 +24,14 @@ interface SurahDownloadPageProps {
 }
 
 export const revalidate = 86400;
+export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return getAllSurahs().map((surah) => ({
-    surah: buildSurahSlug(surah.id, surah.surahName),
-  }));
+  return getAllSurahs()
+    .filter((surah) => POPULAR_SURAH_IDS.some((id) => id === surah.id))
+    .map((surah) => ({
+      surah: buildSurahSlug(surah.id, surah.surahName),
+    }));
 }
 
 export async function generateMetadata({ params }: SurahDownloadPageProps): Promise<Metadata> {

@@ -5,16 +5,23 @@ import { isAdminEmail } from '@/lib/auth/users-store';
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ user: null });
+    return NextResponse.json(
+      { user: null },
+      { headers: { 'Cache-Control': 'private, no-store' } }
+    );
   }
 
-  return NextResponse.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      imageUrl: user.imageUrl,
-      isAdmin: isAdminEmail(user.email),
+  return NextResponse.json(
+    {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        imageUrl: user.imageUrl,
+        isAdmin: isAdminEmail(user.email),
+      },
+      settings: user.settings,
     },
-  });
+    { headers: { 'Cache-Control': 'private, no-store' } }
+  );
 }

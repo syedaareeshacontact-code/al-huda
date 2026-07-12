@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { getClientSession } from '@/lib/client-session';
+
 interface SessionResponse {
   user: {
     id: string;
@@ -36,18 +38,7 @@ export default function ActivityTrackerProvider() {
 
     const loadSession = async () => {
       try {
-        const response = await fetch('/api/auth/session', {
-          cache: 'no-store',
-        });
-
-        if (!response.ok) {
-          if (!ignore) {
-            setIsAuthenticated(false);
-          }
-          return;
-        }
-
-        const payload = (await response.json()) as SessionResponse;
+        const payload = (await getClientSession()) as SessionResponse;
         if (!ignore) {
           setIsAuthenticated(Boolean(payload.user?.id));
         }
@@ -84,7 +75,7 @@ export default function ActivityTrackerProvider() {
       sendTrackPayload({
         sessionSeconds: Math.min(elapsed, 120),
       });
-    }, 15000);
+    }, 60000);
 
     const onBeforeUnload = () => {
       if (document.hidden) {

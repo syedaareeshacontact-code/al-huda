@@ -1,11 +1,18 @@
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 const SIX_MONTHS_SECONDS = 60 * 60 * 24 * 180;
+const APP_VERSION =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.NEXT_PUBLIC_APP_VERSION ||
+  `build-${Date.now().toString(36)}`;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  env: {
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+  },
   // Optimize production builds
   productionBrowserSourceMaps: false,
   
@@ -163,15 +170,6 @@ const nextConfig = {
           {
             key: 'Content-Type',
             value: 'application/pdf',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

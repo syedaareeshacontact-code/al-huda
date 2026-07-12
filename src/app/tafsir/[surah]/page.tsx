@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { resolveSurahParam, getAllSurahs } from '@/lib/quran-index';
 import { buildSurahPath, buildSurahSlug, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import { POPULAR_SURAH_IDS } from '@/lib/ssg-config';
 import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirSurahPageSchemas } from '@/lib/seo-schema';
@@ -27,13 +28,17 @@ interface TafsirSurahPageProps {
 }
 
 export const revalidate = 86400;
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   const refs = getAllTafsirRefs();
   const surahIds = [...new Set(refs.map((r) => r.surahId))];
 
   return getAllSurahs()
-    .filter((s) => surahIds.includes(s.id))
+    .filter(
+      (surah) =>
+        POPULAR_SURAH_IDS.some((id) => id === surah.id) && surahIds.includes(surah.id)
+    )
     .map((surah) => ({
       surah: buildSurahSlug(surah.id, surah.surahName),
     }));

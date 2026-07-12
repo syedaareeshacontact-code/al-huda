@@ -31,6 +31,7 @@ import type {
   SurahSortBy,
 } from '@/types/quran';
 import { buildBookmarkId } from '@/lib/quran-utils';
+import { getClientSession, invalidateClientSession } from '@/lib/client-session';
 
 interface SurahListContext {
   pageNo: number;
@@ -214,18 +215,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
     sessionVersionRef.current = version;
 
     try {
-      const response = await fetch('/api/auth/session', {
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        if (sessionVersionRef.current === version) {
-          setIsAuthenticated(false);
-        }
-        return;
-      }
-
-      const payload = (await response.json()) as SessionPayload;
+      const payload = (await getClientSession()) as SessionPayload;
       if (sessionVersionRef.current === version) {
         setIsAuthenticated(Boolean(payload.user?.id));
       }
@@ -248,6 +238,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     const onAuthChanged = () => {
       clearGuestQuranState();
+      invalidateClientSession();
       void loadSession();
     };
 
@@ -317,7 +308,6 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
           clearGuestQuranState();
         }
         syncedQuranStateRef.current = serializeQuranState(remoteState);
-        await loadSurahLikes();
       } catch {
         syncedQuranStateRef.current = serializeQuranState({
           favoriteSurahIds: favoritesRef.current,

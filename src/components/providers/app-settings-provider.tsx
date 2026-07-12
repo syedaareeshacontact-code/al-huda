@@ -19,6 +19,10 @@ import type {
   ThemeMode,
   UserSettings,
 } from '@/types/settings';
+import {
+  getClientSession,
+  updateCachedSessionSettings,
+} from '@/lib/client-session';
 
 const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
 const THEME_MODE_STORAGE_KEY = 'alhuda:theme-mode';
@@ -125,8 +129,8 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       });
 
       try {
-        const response = await fetch('/api/auth/settings', { cache: 'no-store' });
-        if (!response.ok) {
+        const payload = await getClientSession();
+        if (!payload.user?.id) {
           if (!ignore) {
             setIsAuthenticated(false);
             setUserSettings(localFallbackSettings);
@@ -134,7 +138,6 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        const payload = (await response.json()) as { settings?: Partial<UserSettings> };
         const nextSettings = normalizeUserSettings(payload.settings ?? {});
         if (!ignore) {
           setIsAuthenticated(true);
@@ -208,6 +211,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
 
         const payload = (await response.json()) as { settings?: Partial<UserSettings> };
         const nextSettings = normalizeUserSettings(payload.settings ?? normalized);
+        updateCachedSessionSettings(nextSettings);
         syncedSettingsRef.current = JSON.stringify(nextSettings);
         setUserSettings(nextSettings);
       } catch {

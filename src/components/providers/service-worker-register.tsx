@@ -44,15 +44,62 @@ export default function ServiceWorkerRegister() {
       return;
     }
 
-    const register = async () => {
+    let cancelled = false;
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    const buildVersion = process.env.NEXT_PUBLIC_APP_VERSION || 'v3';
+
+    const reloadAfterUpgrade = () => {
+      if (!hadController || cancelled) return;
+
+      const reloadKey = `alhuda:sw-reload:${buildVersion}`;
       try {
-        await navigator.serviceWorker.register('/sw.js');
+        if (window.sessionStorage.getItem(reloadKey) === '1') return;
+        window.sessionStorage.setItem(reloadKey, '1');
+      } catch {
+        // A reload is still safe when session storage is unavailable.
+      }
+
+      window.location.reload();
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', reloadAfterUpgrade);
+
+    const register = async () => {
+      if (cancelled) return;
+
+      try {
+        const registration = await navigator.serviceWorker.register(
+          `/sw.js?v=${encodeURIComponent(buildVersion)}`,
+          { updateViaCache: 'none' }
+        );
+        await registration.update();
       } catch {
         // service worker is optional
       }
     };
 
-    void register();
+    const scheduleRegistration = () => {
+      if (cancelled) return;
+
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(() => void register(), { timeout: 5000 });
+        return;
+      }
+
+      globalThis.setTimeout(() => void register(), 1500);
+    };
+
+    if (document.readyState === 'complete') {
+      scheduleRegistration();
+    } else {
+      window.addEventListener('load', scheduleRegistration, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('load', scheduleRegistration);
+      navigator.serviceWorker.removeEventListener('controllerchange', reloadAfterUpgrade);
+    };
   }, []);
 
   return null;

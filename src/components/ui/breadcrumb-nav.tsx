@@ -45,8 +45,9 @@ export default function BreadcrumbNav({ items, includeSchema = true }: Breadcrum
                   {item.label}
                 </span>
               ) : (
-                <Link
-                  href={item.href}
+            <Link
+              href={item.href}
+              prefetch={false}
                   className="transition-colors hover:text-[var(--color-accent-soft)]"
                 >
                   {item.label}

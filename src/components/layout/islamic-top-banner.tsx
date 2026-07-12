@@ -53,12 +53,12 @@ export default function IslamicTopBanner() {
     }
   };
 
-  if (!mounted || dismissed) {
+  if (dismissed) {
     return null;
   }
 
   const item = ISLAMIC_BANNER_ITEMS[index];
-  const greeting = getTimeBasedGreeting();
+  const greeting = mounted ? getTimeBasedGreeting() : 'Daily inspiration';
 
   return (
     <div
@@ -120,6 +120,7 @@ export default function IslamicTopBanner() {
         {item.href && item.cta && (
           <Link
             href={item.href}
+            prefetch={false}
             className="hidden shrink-0 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20 sm:inline-flex"
           >
             {item.cta}
