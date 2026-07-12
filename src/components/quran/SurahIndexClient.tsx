@@ -7,13 +7,11 @@ import {
   BookOpenText,
   ChevronRight,
   Headphones,
-  Search,
   Sun,
   Moon,
   Sparkles,
   SlidersHorizontal,
   ArrowUpDown,
-  X,
   Check,
   ChevronDown,
   ChevronUp,
@@ -24,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SurahFeatureTour from '@/components/quran/surah-feature-tour';
 import QuranSettingsPanel from '@/components/quran/quran-settings-panel';
+import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
 import { buildSurahPath } from '@/lib/quran-routing';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 
@@ -155,23 +154,14 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
       {/* Search Bar & Advanced Toggle Row */}
       <div className="flex flex-col md:flex-row gap-3">
         <div id="surah-tour-search" className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-[var(--color-muted-text)] pointer-events-none" />
-          <input
+          <SurahSearchAutocomplete
+            surahs={initialSurahs}
             id="surah-search"
-            type="search"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onValueChange={setSearchQuery}
             placeholder="Search by name, translation, Arabic, or surah number..."
-            className="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-11 pr-10 py-3 text-sm md:text-base outline-none transition-all hover:border-[var(--color-accent)]/30 focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/20 text-[var(--color-text)]"
+            inputClassName="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-11 pr-10 py-3 text-sm md:text-base outline-none transition-all hover:border-[var(--color-accent)]/30 focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/20 text-[var(--color-text)]"
           />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-text)] hover:text-[var(--color-accent)] p-1 rounded-full hover:bg-[var(--color-border)]/50 transition-colors"
-            >
-              <X className="size-4" />
-            </button>
-          )}
         </div>
 
         <Button

@@ -7,7 +7,7 @@ import { ISLAMIC_LEARNING_KEYWORDS, MASTER_SEO_KEYWORDS, TRUST_KEYWORDS } from '
 export const metadata: Metadata = buildPageMetadata({
   title: 'About Read al Quran – Our Mission & Vision',
   description:
-    'Learn about Read al Quran platform. Our mission is to provide the most accessible, user-friendly Quran reading experience with Arabic text, Urdu & English translations, audio recitation, tafseer, and offline support for Islamic learning.',
+    'Learn about Read al Quran, its mission, and its content sources: Quran.com APIs for Quran and Tafseer, plus Hadith API for Hadith collections.',
   path: '/about',
   keywords: [
     ...TRUST_KEYWORDS,

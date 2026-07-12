@@ -1,4 +1,12 @@
-import { BookHeart, BookOpenText, HandHeart, ShieldCheck, Sparkles } from 'lucide-react';
+import {
+  BookHeart,
+  BookOpenText,
+  ExternalLink,
+  HandHeart,
+  ScrollText,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +35,27 @@ const values = [
     description: 'Building habits of remembrance, recitation, and reflection over time.',
     icon: BookHeart,
     color: 'text-[var(--color-accent)]',
+  },
+];
+
+const dataSources = [
+  {
+    title: 'Quran.com',
+    label: 'Quran & Tafseer data',
+    description:
+      'Quran text, chapter details, translations, recitation information, and tafseer content are powered by the Quran.com APIs.',
+    href: 'https://quran.com',
+    icon: BookOpenText,
+    color: 'text-[var(--color-accent)]',
+  },
+  {
+    title: 'Hadith API',
+    label: 'Hadith data',
+    description:
+      'Hadith collections and narration data displayed in the Hadith section are provided through the Hadith API.',
+    href: 'https://hadithapi.com/',
+    icon: ScrollText,
+    color: 'text-[var(--color-info)]',
   },
 ];
 
@@ -91,6 +120,66 @@ export default function AboutRoot() {
             );
           })}
         </div>
+      </section>
+
+      <section className="mt-10" aria-labelledby="data-sources-heading">
+        <div className="max-w-3xl">
+          <Badge className="mb-3">Content attribution</Badge>
+          <h2 id="data-sources-heading" className="font-display text-3xl text-[var(--color-heading)]">
+            Content &amp; Data Sources
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
+            We clearly credit the services that make Quran, Tafseer, and Hadith content available
+            in this app.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {dataSources.map((source, index) => {
+            const Icon = source.icon;
+
+            return (
+              <Card
+                key={source.title}
+                className="animate-fade-up overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%))]"
+                style={{ animationDelay: `${index * 70}ms` }}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="inline-flex items-center gap-2">
+                      <span className="grid size-10 place-items-center rounded-xl bg-[var(--color-surface-2)]">
+                        <Icon className={`size-5 ${source.color}`} />
+                      </span>
+                      <div>
+                        <CardTitle className="text-xl">{source.title}</CardTitle>
+                        <p className="mt-0.5 text-xs font-medium text-[var(--color-accent)]">
+                          {source.label}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={source.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Visit ${source.title}`}
+                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-text)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-sm leading-relaxed text-[var(--color-muted-text)]">
+                  {source.description}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-xs leading-relaxed text-[var(--color-muted-text)] sm:text-sm">
+          Read al Quran is an independent reading and learning platform. For further study and
+          religious guidance, please consult qualified scholars and the original source providers.
+        </p>
       </section>
     </div>
   );

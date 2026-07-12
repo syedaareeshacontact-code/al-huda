@@ -12,6 +12,9 @@ const urduTafsirInFlight = new Map<string, Promise<UrduTafsirEntry>>();
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
 const URDU_TRANSLATION_ID = 234; // Fatah Muhammad Jalandhari (Urdu)
+// The longest Surah has 286 ayahs. Quran.com's verse endpoint defaults to 10,
+// so request enough rows to keep Arabic and every translation in sync.
+const CHAPTER_VERSES_PER_PAGE = 300;
 
 const QURAN_COM_RECITATION_IDS = [
   { id: 7, name: 'Mishari al Afasy' },
@@ -78,7 +81,7 @@ export async function fetchSurahMeta(surahId: number, signal?: AbortSignal): Pro
       cache: 'force-cache',
     }),
     fetch(
-      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}`,
+      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
       {
         signal,
         cache: 'force-cache',

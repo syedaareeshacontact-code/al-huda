@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   ArrowRight,
@@ -11,15 +12,15 @@ import {
   Headphones,
   Heart,
   Languages,
-  Search,
   Settings2,
   Sparkles,
   ScrollText,
 } from 'lucide-react';
 
 import HomeFeatureTour from '@/components/home/home-feature-tour';
+import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
-import { getSurahById } from '@/lib/quran-index';
+import { getAllSurahs, getSurahById } from '@/lib/quran-index';
 import { buildSurahPath } from '@/lib/quran-routing';
 import type { AyahBookmark, LastReadEntry } from '@/types/quran';
 
@@ -38,12 +39,15 @@ const POPULAR_SURAHS = [
   { label: 'Al-Mulk', arabic: 'الملك', id: 67 },
   { label: 'Al-Waqiah', arabic: 'الواقعة', id: 56 },
 ];
+const ALL_SURAHS = getAllSurahs();
 
 export default function HomeRoot() {
+  const router = useRouter();
   const [favorites, setFavorites] = useState<number[]>([]);
   const [bookmarks, setBookmarks] = useState<AyahBookmark[]>([]);
   const [lastRead, setLastRead] = useState<LastReadEntry | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [surahSearch, setSurahSearch] = useState('');
 
   useEffect(() => {
     let ignore = false;
@@ -106,7 +110,7 @@ export default function HomeRoot() {
       <HomeFeatureTour />
 
       <section data-slot="page-shell" aria-labelledby="home-heading">
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-9 lg:px-12 lg:py-11">
+        <div className="relative overflow-visible rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-9 lg:px-12 lg:py-11">
           <div className="pointer-events-none absolute -right-14 -top-20 size-64 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_82%)] opacity-60" />
           <div className="pointer-events-none absolute -right-4 -top-10 size-40 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_78%)] opacity-40" />
 
@@ -125,20 +129,19 @@ export default function HomeRoot() {
             </p>
           </div>
 
-          <form action="/surah" method="get" className="relative mt-6 max-w-2xl" role="search" id="home-tour-search">
+          <div className="relative z-30 mt-6 max-w-2xl" role="search" id="home-tour-search">
             <label htmlFor="home-quran-search" className="sr-only">Search the Quran by Surah name or number</label>
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--color-muted-text)]" />
-            <input
+            <SurahSearchAutocomplete
+              surahs={ALL_SURAHS}
               id="home-quran-search"
-              name="search"
-              type="search"
+              value={surahSearch}
+              onValueChange={setSurahSearch}
               placeholder="Search a Surah..."
-              className="h-14 w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-12 pr-28 text-sm text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-accent),transparent_75%)] sm:text-base"
+              inputClassName="h-14 w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-12 pr-28 text-sm text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-accent),transparent_75%)] sm:text-base"
+              showSubmitButton
+              onSubmit={(query) => router.push(`/surah?search=${encodeURIComponent(query)}`)}
             />
-            <button type="submit" className="absolute right-2 top-2 h-10 rounded-xl bg-[var(--color-heading)] px-4 text-sm font-semibold text-[var(--color-bg)] hover:opacity-85">
-              Search
-            </button>
-          </form>
+          </div>
         </div>
       </section>
 

@@ -7,6 +7,8 @@ import type { SurahDetail, SurahMeta, UrduTafsirEntry } from '@/types/quran';
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
 const URDU_TRANSLATION_ID = 234; // Fatah Muhammad Jalandhari (Urdu)
+// Quran.com's default page size is 10; 300 covers every ayah in a chapter.
+const CHAPTER_VERSES_PER_PAGE = 300;
 const QURAN_COM_TAFSIR_IDS = [160, 159, 818, 157] as const;
 
 export interface AyahContentEntry {
@@ -29,7 +31,7 @@ export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta
       next: { revalidate: 60 * 60 * 24 },
     }),
     fetch(
-      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}`,
+      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
       {
         next: { revalidate: 60 * 60 * 24 },
       }
