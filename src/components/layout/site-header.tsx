@@ -268,9 +268,7 @@ export default function SiteHeader() {
   const pathSegments = pathname.split('/').filter(Boolean);
   const isSurahReaderPage =
     pathSegments.length === 2 && pathSegments[0] === 'surah';
-  const isHadithScrollAwarePage =
-    pathSegments[0] === 'hadith' &&
-    (pathSegments.length === 1 || pathSegments[1] === 'search');
+  const isHadithScrollAwarePage = pathSegments[0] === 'hadith';
   const isScrollAwareHeaderPage =
     isSurahReaderPage ||
     (pathSegments.length === 1 && pathSegments[0] === 'surah') ||

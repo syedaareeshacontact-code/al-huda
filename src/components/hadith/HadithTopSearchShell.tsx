@@ -12,9 +12,7 @@ export default function HadithTopSearchShell({ children }: PropsWithChildren) {
   const lastScrollYRef = useRef(0);
   const scrollFrameRef = useRef<number | null>(null);
   const pathSegments = pathname.split('/').filter(Boolean);
-  const shouldStick =
-    pathSegments[0] === 'hadith' &&
-    (pathSegments.length === 1 || pathSegments[1] === 'search');
+  const shouldStick = pathSegments[0] === 'hadith';
 
   useEffect(() => {
     setVisible(true);

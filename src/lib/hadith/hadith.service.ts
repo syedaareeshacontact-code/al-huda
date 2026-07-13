@@ -46,10 +46,10 @@ export async function getHadithByNumber(
   }
 }
 
-function resolveHadithSearchParams(query: string): URLSearchParams {
+function resolveHadithSearchParams(query: string, perPage = 20): URLSearchParams {
   const trimmed = query.trim();
   const params = new URLSearchParams({
-    paginate: '20',
+    paginate: String(perPage),
   });
 
   if (!trimmed) {
@@ -163,11 +163,12 @@ function gradeScore(status: string): number {
 
 export async function searchHadiths(
   query: string,
-  page = 1
+  page = 1,
+  perPage = 20
 ): Promise<HadithApiHadithsResponse> {
-  const params = resolveHadithSearchParams(query);
+  const params = resolveHadithSearchParams(query, perPage);
   params.set('page', String(page));
-  const perPage = Number(params.get('paginate') ?? 20);
+  const resolvedPerPage = Number(params.get('paginate') ?? 20);
 
   try {
     return await hadithFetch<HadithApiHadithsResponse>(`/hadiths/?${params.toString()}`, {
@@ -175,7 +176,7 @@ export async function searchHadiths(
     });
   } catch (error) {
     if (error instanceof HadithApiError && error.status === 404) {
-      return createEmptyHadithSearchResponse(page, perPage);
+      return createEmptyHadithSearchResponse(page, resolvedPerPage);
     }
 
     throw error;
