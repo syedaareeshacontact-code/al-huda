@@ -177,7 +177,7 @@ export default function HomeRoot() {
             <BookOpen className="absolute -bottom-6 -right-5 size-36 rotate-[-8deg] opacity-15 sm:size-44" strokeWidth={1.2} />
           </Link>
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+          <div className="grid grid-cols-2 gap-3 pt-2 lg:grid-cols-1 lg:pt-0">
             <Link
               id="home-tour-read-online"
               href="/surah"
@@ -227,7 +227,7 @@ export default function HomeRoot() {
           </Link>
         </div>
 
-        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
+        <div className="flex snap-x gap-3 overflow-x-auto pb-3 pl-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6 [&::-webkit-scrollbar]:hidden">
           {POPULAR_SURAHS.map((surah) => (
             <Link
               key={surah.id}
