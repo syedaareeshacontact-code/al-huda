@@ -10,7 +10,7 @@ interface CollectionHeroProps {
 
 export default function CollectionHero({ book, chapterCount }: CollectionHeroProps) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface-elevated))]">
+    <section className="lux-light-card overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface-elevated))]">
       <div className="p-6 md:p-8">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-soft)] text-white">

@@ -16,7 +16,7 @@ export default function HadithPageHeader({
   meta,
 }: HadithPageHeaderProps) {
   return (
-    <header className="mb-8">
+    <header className="lux-light-card mb-8 rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-surface),var(--color-accent)_5%),var(--color-surface))] p-6 shadow-[var(--shadow-soft)] md:p-8">
       <div className="mb-3 inline-flex flex-wrap items-center gap-2">
         <Badge className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-soft)] text-white">
           {badge}

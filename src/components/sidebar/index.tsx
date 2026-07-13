@@ -1414,7 +1414,7 @@ export default function QuranReaderPage({
     <div id="interactive-reader" className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
       <div className="mx-auto w-full max-w-4xl">
         <div className="min-w-0 space-y-5">
-          <Card className="animate-fade-up overflow-hidden rounded-3xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%))] shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-card)]">
+          <Card className="lux-light-card animate-fade-up overflow-hidden rounded-3xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%))] shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-card)]">
             <CardHeader className="p-4 sm:p-6">
               <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                 <div className="flex items-start gap-3">
@@ -1552,7 +1552,7 @@ export default function QuranReaderPage({
             </CardHeader>
           </Card>
 
-          <Card className="z-20 animate-fade-up-delay-1 overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_55%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%))] shadow-[var(--shadow-card)] backdrop-blur">
+          <Card className="lux-light-card lux-light-card-soft z-20 animate-fade-up-delay-1 overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_55%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%))] shadow-[var(--shadow-card)] backdrop-blur">
             <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-text)]">

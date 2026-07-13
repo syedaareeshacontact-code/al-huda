@@ -208,6 +208,57 @@ body {
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
+/* Subtle gold lighting for selected hero cards and primary surfaces. */
+.lux-light-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.lux-light-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(340px 210px at 4% 0%, color-mix(in oklab, var(--color-accent-soft), transparent 76%), transparent 68%),
+    linear-gradient(116deg, color-mix(in oklab, var(--color-accent), transparent 92%) 0%, transparent 34%);
+  opacity: 0.88;
+}
+
+.lux-light-card::after {
+  content: '';
+  position: absolute;
+  right: -5rem;
+  top: -5.5rem;
+  z-index: 0;
+  width: 15rem;
+  height: 15rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--color-accent-soft), transparent 84%);
+  box-shadow: inset 0 0 0 3.5rem color-mix(in oklab, var(--color-accent-soft), transparent 96%);
+  pointer-events: none;
+  opacity: 0.42;
+}
+
+.lux-light-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lux-light-card-soft::before {
+  opacity: 0.54;
+}
+
+.lux-light-card-soft::after {
+  opacity: 0.18;
+}
+
+.lux-light-card-allow-overflow {
+  overflow: visible;
+}
+
 /* Smooth transitions */
 button,
 a,

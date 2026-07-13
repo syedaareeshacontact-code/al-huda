@@ -72,7 +72,7 @@ export default async function PrayerTimesPage() {
       </section>
 
       <section className="mb-12 grid gap-8 md:grid-cols-2">
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+        <div className="lux-light-card lux-light-card-soft rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
           <h2 className="mb-4 font-display text-xl font-semibold text-[var(--color-heading)]">
             Qibla Direction — Lahore
           </h2>
@@ -83,7 +83,7 @@ export default async function PrayerTimesPage() {
             cityName="Lahore"
           />
         </div>
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+        <div className="lux-light-card lux-light-card-soft rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
           <h2 className="mb-4 font-display text-xl font-semibold text-[var(--color-heading)]">
             Hijri Calendar
           </h2>
