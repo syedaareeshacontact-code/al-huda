@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, type PropsWithChildren } from 'react';
+import { useEffect, useState, type PropsWithChildren } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,12 @@ export default function FilterDrawer({
   onClose,
   children,
 }: FilterDrawerProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
 
@@ -36,11 +43,11 @@ export default function FilterDrawer({
     };
   }, [onClose, open]);
 
-  if (!open) {
+  if (!open || !mounted) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[150]">
       <button
         type="button"
@@ -69,6 +76,7 @@ export default function FilterDrawer({
           {children}
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }

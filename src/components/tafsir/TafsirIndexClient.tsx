@@ -221,154 +221,187 @@ export default function TafsirIndexClient({
         title="Tafseer Filters"
         summary={`${filteredSurahs.length} of ${initialSurahs.filter((surah) => surah.tafseerAyahCount > 0).length} surahs`}
       >
-        <div className="space-y-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                      Filters
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--color-muted-text)]">
-                      {filteredSurahs.length} of {initialSurahs.filter((surah) => surah.tafseerAyahCount > 0).length} surahs
-                    </p>
-                  </div>
-                  {isFiltered ? (
-                    <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters}>
-                      Reset
-                    </Button>
-                  ) : null}
-                </div>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                Chapter Type
+              </h4>
+              <div className="flex flex-col gap-2">
+                {[
+                  { label: 'All Chapters', value: 'all', icon: BookOpen },
+                  { label: 'Meccan (Makki)', value: 'mecca', icon: Sun },
+                  { label: 'Medinan (Madani)', value: 'madina', icon: Moon },
+                  { label: 'Popular Chapters', value: 'popular', icon: Sparkles },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const active = revelationFilter === item.value;
 
-                <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
-                    Chapter Type
-                  </p>
-                  {[
-                    { label: 'All Chapters', value: 'all', icon: BookOpen },
-                    { label: 'Meccan (Makki)', value: 'mecca', icon: Sun },
-                    { label: 'Medinan (Madani)', value: 'madina', icon: Moon },
-                    { label: 'Popular Chapters', value: 'popular', icon: Sparkles },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    const active = revelationFilter === item.value;
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setRevelationFilter(item.value as RevelationFilter)}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-all cursor-pointer ${
+                        active
+                          ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5 text-[var(--color-accent)] font-bold'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/50'
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <Icon className="size-4" />
+                        {item.label}
+                      </span>
+                      {active && <Check className="size-3 text-[var(--color-accent)]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                    return (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => setRevelationFilter(item.value as RevelationFilter)}
-                        className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
-                          active
-                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/40'
-                        }`}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <Icon className="size-4" />
-                          {item.label}
-                        </span>
-                        {active ? <Check className="size-3.5" /> : null}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
-                    Surah Length
-                  </p>
-                  {[
-                    { label: 'All Lengths', value: 'all' },
-                    { label: 'Short (< 20 Ayahs)', value: 'short' },
-                    { label: 'Medium (20 - 75 Ayahs)', value: 'medium' },
-                    { label: 'Long (75 - 150 Ayahs)', value: 'long' },
-                    { label: 'Very Long (> 150 Ayahs)', value: 'very-long' },
-                  ].map((preset) => {
-                    const active = lengthPreset === preset.value;
-
-                    return (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        onClick={() => setLengthPreset(preset.value as LengthPreset)}
-                        className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
-                          active
-                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/40'
-                        }`}
-                      >
-                        <span>{preset.label}</span>
-                        {active ? <Check className="size-3.5" /> : null}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
-                    Ayah Range
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="space-y-1 text-xs text-[var(--color-muted-text)]">
-                      Min
-                      <input
-                        type="number"
-                        min="1"
-                        max="286"
-                        value={minAyahs}
-                        onChange={(event) => setMinAyahs(event.target.value)}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
-                      />
-                    </label>
-                    <label className="space-y-1 text-xs text-[var(--color-muted-text)]">
-                      Max
-                      <input
-                        type="number"
-                        min="1"
-                        max="286"
-                        value={maxAyahs}
-                        onChange={(event) => setMaxAyahs(event.target.value)}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
-                    Sort
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { label: 'Number', value: 'id' },
-                      { label: 'Name', value: 'name' },
-                      { label: 'Ayahs', value: 'ayahs' },
-                      { label: 'Tafseer', value: 'tafseer-ayahs' },
-                    ].map((field) => (
-                      <button
-                        key={field.value}
-                        type="button"
-                        onClick={() => setSortBy(field.value as SortField)}
-                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                          sortBy === field.value
-                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/40'
-                        }`}
-                      >
-                        {field.label}
-                      </button>
-                    ))}
-                  </div>
-                  <Button
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                Surah Length (Presets)
+              </h4>
+              <div className="flex flex-col gap-2">
+                {[
+                  { label: 'All Lengths', value: 'all' },
+                  { label: 'Short (< 20 Ayahs)', value: 'short' },
+                  { label: 'Medium (20 - 75 Ayahs)', value: 'medium' },
+                  { label: 'Long (75 - 150 Ayahs)', value: 'long' },
+                  { label: 'Very Long (> 150 Ayahs)', value: 'very-long' },
+                ].map((preset) => (
+                  <button
+                    key={preset.value}
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                    className="w-full"
+                    onClick={() => setLengthPreset(preset.value as LengthPreset)}
+                    className={`flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg border text-left transition-all cursor-pointer ${
+                      lengthPreset === preset.value
+                        ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5 text-[var(--color-accent)] font-bold'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/50'
+                    }`}
                   >
-                    <ArrowUpDown className="size-3.5" />
-                    {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-                  </Button>
+                    <span>{preset.label}</span>
+                    {lengthPreset === preset.value && <Check className="size-3 text-[var(--color-accent)]" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                Filter by Ayah Range
+              </h4>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-1">
+                  <label htmlFor="tafsir-min-ayah" className="text-xs text-[var(--color-muted-text)]">
+                    Min Ayahs
+                  </label>
+                  <input
+                    id="tafsir-min-ayah"
+                    type="number"
+                    min="1"
+                    max="286"
+                    value={minAyahs}
+                    onChange={(event) => setMinAyahs(event.target.value)}
+                    placeholder="e.g. 7"
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] text-[var(--color-text)]"
+                  />
                 </div>
+                <span className="text-[var(--color-muted-text)] self-end mb-2">-</span>
+                <div className="flex-1 space-y-1">
+                  <label htmlFor="tafsir-max-ayah" className="text-xs text-[var(--color-muted-text)]">
+                    Max Ayahs
+                  </label>
+                  <input
+                    id="tafsir-max-ayah"
+                    type="number"
+                    min="1"
+                    max="286"
+                    value={maxAyahs}
+                    onChange={(event) => setMaxAyahs(event.target.value)}
+                    placeholder="e.g. 286"
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] text-[var(--color-text)]"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-[var(--color-muted-text)]">
+                Enter number of verses to filter tafseer surahs.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)] mb-3">
+                  Sort By
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Surah Number', value: 'id' },
+                    { label: 'Alphabetical', value: 'name' },
+                    { label: 'Ayah Count', value: 'ayahs' },
+                    { label: 'Tafseer Count', value: 'tafseer-ayahs' },
+                  ].map((field) => (
+                    <button
+                      key={field.value}
+                      type="button"
+                      onClick={() => setSortBy(field.value as SortField)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                        sortBy === field.value
+                          ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-bold'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/30'
+                      }`}
+                    >
+                      {field.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)] mb-3">
+                  Sort Order
+                </h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                  className="flex items-center gap-2 border-[var(--color-border)] text-xs h-9 cursor-pointer"
+                >
+                  <ArrowUpDown className="size-3 text-[var(--color-accent)]" />
+                  {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end pt-4 border-t border-[var(--color-border)] gap-3">
+            <span className="text-xs text-[var(--color-muted-text)] mr-auto">
+              Selected:{' '}
+              <strong className="text-[var(--color-text)]">{filteredSurahs.length}</strong> /{' '}
+              {initialSurahs.filter((surah) => surah.tafseerAyahCount > 0).length} Surahs
+            </span>
+            {isFiltered ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleResetFilters}
+                className="text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer"
+              >
+                Clear All Filters
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsFiltersOpen(false)}
+              className="text-xs font-semibold cursor-pointer"
+            >
+              Close
+            </Button>
+          </div>
         </div>
       </FilterDrawer>
 
