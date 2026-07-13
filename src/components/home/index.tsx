@@ -110,8 +110,8 @@ export default function HomeRoot() {
     <main className="pb-20 pt-5 sm:pt-9">
       <HomeFeatureTour />
 
-      <section data-slot="page-shell" aria-labelledby="home-heading">
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:overflow-visible sm:px-8 sm:py-9 lg:px-12 lg:py-11">
+      <section className="relative z-20" data-slot="page-shell" aria-labelledby="home-heading">
+        <div className="relative overflow-visible rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-9 lg:px-12 lg:py-11">
           <div className="pointer-events-none absolute -right-14 -top-20 hidden size-64 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_82%)] opacity-60 sm:block" />
           <div className="pointer-events-none absolute -right-4 -top-10 hidden size-40 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_78%)] opacity-40 sm:block" />
 
@@ -130,7 +130,7 @@ export default function HomeRoot() {
             </p>
           </div>
 
-          <div className="relative z-30 mt-6 max-w-2xl" role="search" id="home-tour-search">
+          <div className="relative z-[90] mt-6 max-w-2xl" role="search" id="home-tour-search">
             <label htmlFor="home-quran-search" className="sr-only">Search the Quran by Surah name or number</label>
             <SurahSearchAutocomplete
               surahs={ALL_SURAHS}
