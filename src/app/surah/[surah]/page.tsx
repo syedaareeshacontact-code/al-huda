@@ -222,13 +222,13 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="-mx-3 flex snap-x items-stretch gap-2 overflow-x-auto px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-1 [&::-webkit-scrollbar]:hidden">
               {featureItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.label}
-                    className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] px-2.5 py-2"
+                    className="flex w-[min(18rem,82vw)] shrink-0 snap-start items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] px-2.5 py-2 sm:w-auto sm:min-w-0"
                   >
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]">
                       <Icon className="size-3.5" />

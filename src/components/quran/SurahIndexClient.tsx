@@ -214,10 +214,13 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
       </StickySearchShell>
 
       {/* Quick Tabs with Icons */}
-      <div id="surah-tour-quick-tabs" className="flex flex-wrap gap-2 border-b border-[var(--color-border)] pb-4">
+      <div
+        id="surah-tour-quick-tabs"
+        className="-mx-4 flex items-center gap-2 overflow-x-auto border-b border-[var(--color-border)] px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+      >
         <button
           onClick={() => setRevelationFilter('all')}
-          className={`flex items-center   gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
             revelationFilter === 'all'
               ? 'bg-[var(--color-accent)]  shadow-sm font-bold'
               : 'bg-[var(--color-surface-elevated)]  border border-[var(--color-border)]'
@@ -229,7 +232,7 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
 
         <button
           onClick={() => setRevelationFilter('mecca')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
             revelationFilter === 'mecca'
               ? 'bg-[var(--color-accent)]  shadow-sm font-bold'
               : 'bg-[var(--color-surface-elevated)]  border border-[var(--color-border)]'
@@ -241,7 +244,7 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
 
         <button
           onClick={() => setRevelationFilter('madina')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
             revelationFilter === 'madina'
               ? 'bg-[var(--color-accent)]  shadow-sm font-bold'
               : 'bg-[var(--color-surface-elevated)]  border border-[var(--color-border)]'
@@ -253,7 +256,7 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
 
         <button
           onClick={() => setRevelationFilter('popular')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+          className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
             revelationFilter === 'popular'
               ? 'bg-[var(--color-accent)]  shadow-sm font-bold'
               : 'bg-[var(--color-surface-elevated)]  border border-[var(--color-border)]'
