@@ -727,7 +727,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
                     Quran push reminders
                   </p>
                   <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
-                    Sends a Surah reminder every 2 minutes when server cron is running.
+                    Sends Surah reminders from server cron or your external scheduler.
                   </p>
                 </div>
                 <Button

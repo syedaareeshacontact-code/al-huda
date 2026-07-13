@@ -1127,6 +1127,54 @@ export async function listQuranReminderPushSubscriptions(): Promise<PushSubscrip
   return subscriptions;
 }
 
+export async function listEnabledPushSubscriptions(): Promise<PushSubscriptionForDelivery[]> {
+  const User = await ensureUsersModel();
+  const rawUsers = await User.find(
+    {
+      pushSubscriptions: {
+        $elemMatch: {
+          enabled: true,
+        },
+      },
+    },
+    {
+      _id: 0,
+      id: 1,
+      name: 1,
+      pushSubscriptions: 1,
+    }
+  )
+    .lean()
+    .exec();
+
+  const subscriptions: PushSubscriptionForDelivery[] = [];
+  for (const rawUser of rawUsers) {
+    const user = normalizeStoredUser({
+      ...rawUser,
+      email: 'placeholder@example.com',
+      passwordHash: 'placeholder',
+      passwordSalt: 'placeholder',
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!user) {
+      continue;
+    }
+
+    for (const subscription of user.pushSubscriptions) {
+      if (subscription.enabled) {
+        subscriptions.push({
+          ...subscription,
+          userId: user.id,
+          userName: user.name,
+        });
+      }
+    }
+  }
+
+  return subscriptions;
+}
+
 export async function markPushReminderSent(userId: string, endpoint: string, sentAt: string) {
   const User = await ensureUsersModel();
   await User.findOneAndUpdate(
