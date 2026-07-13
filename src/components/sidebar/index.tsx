@@ -402,6 +402,7 @@ export default function QuranReaderPage({
   const resumeTargetRef = useRef<HTMLButtonElement | null>(null);
   const { audioRef, updateSession } = useGlobalQuranAudio();
   const audioUsageLastTimeRef = useRef(0);
+  const pendingStickyAudioPlayRef = useRef(false);
 
   const [audioSrc, setAudioSrc] = useState('');
   const [audioRequested, setAudioRequested] = useState(false);
@@ -1060,6 +1061,47 @@ export default function QuranReaderPage({
     const audio = audioRef.current;
     audioUsageLastTimeRef.current = audio?.currentTime ?? 0;
   }, [audioRef, audioSrc]);
+
+  const startCurrentAudio = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioSrc) {
+      return;
+    }
+
+    if (!audio.src) {
+      audio.src = audioSrc;
+      audio.load();
+    }
+
+    if (audio.ended) {
+      audio.currentTime = 0;
+    }
+
+    setIsPlayPending(true);
+    audio.play().catch(() => {
+      setIsPlaying(false);
+      setIsPlayPending(false);
+    });
+  }, [audioRef, audioSrc]);
+
+  const handleStickyAudioShortcut = useCallback(() => {
+    pendingStickyAudioPlayRef.current = true;
+    setAudioRequested(true);
+
+    if (audioSrc) {
+      startCurrentAudio();
+      pendingStickyAudioPlayRef.current = false;
+    }
+  }, [audioSrc, startCurrentAudio]);
+
+  useEffect(() => {
+    if (!audioSrc || !pendingStickyAudioPlayRef.current) {
+      return;
+    }
+
+    pendingStickyAudioPlayRef.current = false;
+    startCurrentAudio();
+  }, [audioSrc, startCurrentAudio]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -1753,6 +1795,13 @@ export default function QuranReaderPage({
       <StickyNavigatorMenuButton
         targetRef={navigatorMenuButtonRef}
         isNavigatorOpen={isNavigatorOpen}
+        surahName={`Surah ${surahDetail.englishName}`}
+        surahArabicName={surahDetail.name}
+        surahMeta={`${surahDetail.numberOfAyahs} ayahs`}
+        showAudioShortcut={!audioSrc}
+        audioShortcutPending={loadingAudioSource || isPlayPending}
+        audioShortcutDisabled={loadingAudioSource}
+        onAudioShortcut={handleStickyAudioShortcut}
         onOpen={() => {
           setExpandedSurahId(surahId);
           setIsNavigatorOpen(true);

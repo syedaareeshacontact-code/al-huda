@@ -157,7 +157,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.book) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
 
-      <section className="border-b border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%))] px-4 py-6 sm:px-6 lg:py-8">
+      <section className="border-b border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%))] px-3 py-4 sm:px-5 lg:py-5">
         <div className="mx-auto max-w-7xl">
           <BreadcrumbNav
             items={[
@@ -167,25 +167,32 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
             ]}
             includeSchema={false}
           />
-          <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                Surah {surah.id}
-              </p>
-              <h1 className="mt-2 font-display text-4xl leading-tight text-[var(--color-heading)] sm:text-5xl">
-                Surah {surah.surahName}
-              </h1>
-              <p
-                className="arabic-font mt-3 text-4xl leading-relaxed text-[var(--color-heading)] sm:text-5xl"
-                dir="rtl"
-                lang="ar"
-              >
-                {surah.surahNameArabic}
-              </p>
-              <p className="font-arabic mt-2 text-2xl text-[var(--color-accent-soft)]" dir="rtl" lang="ur">
-                {urduTitle}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted-text)]">
+          <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-center">
+            <div className="min-w-0">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[var(--color-accent)]">
+                    Surah {surah.id}
+                  </p>
+                  <h1 className="mt-1 truncate font-display text-3xl leading-tight text-[var(--color-heading)] sm:text-4xl">
+                    Surah {surah.surahName}
+                  </h1>
+                </div>
+                <div className="shrink-0 sm:text-right">
+                  <p
+                    className="arabic-font text-3xl leading-tight text-[var(--color-heading)] sm:text-4xl"
+                    dir="rtl"
+                    lang="ar"
+                  >
+                    {surah.surahNameArabic}
+                  </p>
+                  <p className="font-arabic mt-1 text-lg text-[var(--color-accent-soft)] sm:text-xl" dir="rtl" lang="ur">
+                    {urduTitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--color-muted-text)] sm:text-sm">
                 <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1">
                   {surah.surahNameTranslation}
                 </span>
@@ -196,10 +203,10 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
                   {surah.revelationPlace}
                 </span>
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <a
                   href="#interactive-reader"
-                  className="inline-flex items-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_38%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-4 py-2.5 text-sm font-bold text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_38%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-3 text-sm font-bold text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]"
                 >
                   <BookOpenCheck className="size-4" />
                   Start Reading
@@ -207,7 +214,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
                 <Link
                   href={buildSurahDownloadPath(surah.id, surah.surahName)}
                   prefetch={false}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
                 >
                   <Download className="size-4" />
                   PDF & Audio
@@ -215,23 +222,23 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
               {featureItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.label}
-                    className="rounded-xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] p-3"
+                    className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] px-2.5 py-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]">
-                        <Icon className="size-4" />
-                      </span>
-                      <p className="font-semibold text-[var(--color-heading)]">{item.label}</p>
-                    </div>
-                    <p className="mt-1 text-xs leading-snug text-[var(--color-muted-text)]">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]">
+                      <Icon className="size-3.5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-[var(--color-heading)]">{item.label}</p>
+                      <p className="hidden truncate text-xs leading-snug text-[var(--color-muted-text)] sm:block">
                       {item.description}
-                    </p>
+                      </p>
+                    </div>
                   </div>
                 );
               })}
