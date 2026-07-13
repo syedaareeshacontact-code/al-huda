@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import StickyNavigatorMenuButton from '@/components/ui/StickyNavigatorMenuButton';
 import SmartAyahScrollNav from '@/components/ui/SmartAyahScrollNav';
-import QuranSettingsPanel from '@/components/quran/quran-settings-panel';
+import QuranSettingsPanel, { OPEN_QURAN_SETTINGS_EVENT } from '@/components/quran/quran-settings-panel';
 import { useGlobalQuranAudio } from '@/components/providers/global-quran-audio-provider';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSurahContext } from '@/hooks/useSurahContext';
@@ -1791,7 +1791,7 @@ export default function QuranReaderPage({
         isPlaying={isPlaying}
         hasAudioPlayer
       />
-      <QuranSettingsPanel variant="floating" />
+      <QuranSettingsPanel variant="floating" showTrigger={false} />
       <StickyNavigatorMenuButton
         targetRef={navigatorMenuButtonRef}
         isNavigatorOpen={isNavigatorOpen}
@@ -1802,6 +1802,9 @@ export default function QuranReaderPage({
         audioShortcutPending={loadingAudioSource || isPlayPending}
         audioShortcutDisabled={loadingAudioSource}
         onAudioShortcut={handleStickyAudioShortcut}
+        onOpenSettings={() => {
+          window.dispatchEvent(new Event(OPEN_QURAN_SETTINGS_EVENT));
+        }}
         onOpen={() => {
           setExpandedSurahId(surahId);
           setIsNavigatorOpen(true);

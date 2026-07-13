@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ChevronUp,
-  MapPin,
   Paintbrush,
-  Settings2,
+  Settings,
   SlidersHorizontal,
   Trash2,
   Volume2,
@@ -22,9 +20,15 @@ import { cn } from '@/lib/utils';
 
 interface QuranSettingsPanelProps {
   variant?: 'inline' | 'floating';
+  showTrigger?: boolean;
 }
 
-export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettingsPanelProps) {
+export const OPEN_QURAN_SETTINGS_EVENT = 'alhuda:open-quran-settings';
+
+export default function QuranSettingsPanel({
+  variant = 'inline',
+  showTrigger = true,
+}: QuranSettingsPanelProps) {
   const { theme, setTheme } = useTheme();
   const {
     settings,
@@ -46,9 +50,33 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
     }
   }, []);
 
+  useEffect(() => {
+    const onOpenSettings = () => setOpen(true);
+
+    window.addEventListener(OPEN_QURAN_SETTINGS_EVENT, onOpenSettings);
+    return () => window.removeEventListener(OPEN_QURAN_SETTINGS_EVENT, onOpenSettings);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
   const settingsContent = (
-    <CardContent className="max-h-[min(70vh,32rem)] space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
-      <div className="grid gap-4 xl:grid-cols-2">
+    <div className="space-y-5 p-4 sm:p-5">
+      <div className="grid gap-4">
         <Card className="bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_16%),color-mix(in_oklab,var(--color-highlight),var(--color-surface)_95%))]">
           <CardHeader>
             <CardTitle className="inline-flex items-center gap-2 text-base">
@@ -178,7 +206,7 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4">
         <Card className="bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_16%),color-mix(in_oklab,var(--color-highlight),var(--color-surface)_95%))]">
           <CardHeader>
             <CardTitle className="text-base">Saved Data</CardTitle>
@@ -223,70 +251,76 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
           </CardContent>
         </Card>
       </div>
-    </CardContent>
+    </div>
   );
+
+  const settingsDrawer = open ? (
+    <div className="fixed inset-0 z-[125]">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+        onClick={() => setOpen(false)}
+        aria-label="Close Quran settings overlay"
+      />
+      <aside
+        id="quran-settings"
+        className="absolute right-0 top-0 flex h-dvh w-[min(28rem,calc(100vw-1rem))] animate-fade-up flex-col border-l border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_56%)] bg-[var(--color-surface)] shadow-2xl"
+        aria-label="Quran settings"
+      >
+        <div className="sticky top-0 z-10 flex shrink-0 items-start justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))]">
+          <div>
+            <Badge className="mb-2">Quran</Badge>
+            <CardTitle>Quran Settings</CardTitle>
+            <CardDescription>
+              Theme, reading mode, typography, audio, and saved bookmarks.
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={() => setOpen(false)}
+            aria-label="Close settings panel"
+            className="rounded-full"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {settingsContent}
+        </div>
+      </aside>
+    </div>
+  ) : null;
 
   if (isFloating) {
     return (
       <>
-        <div
-          className={cn(
-            'fixed right-3 z-[68] sm:right-4',
-            'bottom-[calc(9.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-[8.5rem]'
-          )}
-          id="quran-settings-trigger"
-        >
-          <Button
-            type="button"
-            size="icon"
-            variant={open ? 'default' : 'outline'}
-            className="size-10 rounded-full bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] shadow-lg"
-            onClick={() => setOpen((prev) => !prev)}
-            aria-expanded={open}
-            aria-controls="quran-settings"
-            aria-label={open ? 'Close Quran settings' : 'Open Quran settings'}
-            title="Quran Settings"
+        {showTrigger ? (
+          <div
+            className={cn(
+              'fixed right-3 z-[68] sm:right-4',
+              'bottom-[calc(9.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-[8.5rem]'
+            )}
+            id="quran-settings-trigger"
           >
-            <Settings2 className="size-5" />
-          </Button>
-        </div>
-
-        {open ? (
-          <div className="fixed inset-0 z-[75]">
-            <button
+            <Button
               type="button"
-              className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
-              onClick={() => setOpen(false)}
-              aria-label="Close Quran settings overlay"
-            />
-            <Card
-              id="quran-settings"
-              className="absolute bottom-[calc(10.5rem+env(safe-area-inset-bottom,0px))] left-1/2 w-[min(42rem,calc(100vw-1rem))] -translate-x-1/2 animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_56%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-highlight),var(--color-surface)_95%))] shadow-2xl sm:bottom-[9.25rem]"
+              size="icon"
+              variant={open ? 'default' : 'outline'}
+              className="size-10 rounded-full bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] shadow-lg"
+              onClick={() => setOpen((prev) => !prev)}
+              aria-expanded={open}
+              aria-controls="quran-settings"
+              aria-label={open ? 'Close Quran settings' : 'Open Quran settings'}
+              title="Quran Settings"
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <Badge className="mb-2">Quran</Badge>
-                    <CardTitle>Quran Settings</CardTitle>
-                    <CardDescription>
-                      Font, theme, reading mode, audio, and saved bookmarks.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                    aria-label="Close settings panel"
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              {settingsContent}
-            </Card>
+              <Settings className="size-5" />
+            </Button>
           </div>
         ) : null}
+
+        {settingsDrawer}
       </>
     );
   }
@@ -298,45 +332,18 @@ export default function QuranSettingsPanel({ variant = 'inline' }: QuranSettings
           type="button"
           size="icon"
           variant={open ? 'default' : 'outline'}
-          className="animate-pulse-border"
-          onClick={() => setOpen((prev) => !prev)}
+          className="size-10 animate-pulse-border rounded-full"
+          onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls="quran-settings"
           aria-label={open ? 'Close Quran settings' : 'Open Quran settings'}
           title="Quran Settings"
         >
-          <Settings2 className="size-4" />
+          <Settings className="size-5" />
         </Button>
       </div>
 
-      {open ? (
-        <Card
-          id="quran-settings"
-          className="mt-3 animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_56%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-highlight),var(--color-surface)_95%))]"
-        >
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <Badge className="mb-2">Quran</Badge>
-                <CardTitle>Quran Settings</CardTitle>
-                <CardDescription>
-                  Theme, reading mode, typography, audio, and saved bookmarks.
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                aria-label="Close settings panel"
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          {settingsContent}
-        </Card>
-      ) : null}
+      {settingsDrawer}
     </div>
   );
 }

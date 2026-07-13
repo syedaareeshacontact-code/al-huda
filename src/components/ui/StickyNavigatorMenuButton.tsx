@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type RefObject } from 'react';
-import { Loader2, Menu, Play } from 'lucide-react';
+import { Loader2, Menu, Play, Settings } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -16,6 +16,7 @@ interface StickyNavigatorMenuButtonProps {
   audioShortcutPending?: boolean;
   audioShortcutDisabled?: boolean;
   onAudioShortcut?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export default function StickyNavigatorMenuButton({
@@ -29,6 +30,7 @@ export default function StickyNavigatorMenuButton({
   audioShortcutPending = false,
   audioShortcutDisabled = false,
   onAudioShortcut,
+  onOpenSettings,
 }: StickyNavigatorMenuButtonProps) {
   const [targetHidden, setTargetHidden] = useState(false);
   const [isScrollingDown, setIsScrollingDown] = useState(false);
@@ -134,6 +136,20 @@ export default function StickyNavigatorMenuButton({
             ) : null}
           </div>
         </div>
+
+        {onOpenSettings ? (
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={onOpenSettings}
+            aria-label="Open Quran settings"
+            title="Quran settings"
+            className="size-9 shrink-0 rounded-full border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)]"
+          >
+            <Settings className="size-4" />
+          </Button>
+        ) : null}
 
         <Button
           type="button"
