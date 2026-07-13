@@ -13,8 +13,6 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   Check,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +21,8 @@ import { Button } from '@/components/ui/button';
 import SurahFeatureTour from '@/components/quran/surah-feature-tour';
 import QuranSettingsPanel from '@/components/quran/quran-settings-panel';
 import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
+import FilterDrawer from '@/components/ui/filter-drawer';
+import StickySearchShell from '@/components/ui/sticky-search-shell';
 import { buildSurahPath } from '@/lib/quran-routing';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 
@@ -159,6 +159,16 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
     );
   }, [searchQuery, revelationFilter, lengthPreset, minAyahs, maxAyahs, sortBy, sortDirection]);
 
+  const activeFilterCount = [
+    searchQuery !== '',
+    revelationFilter !== 'all',
+    lengthPreset !== 'all',
+    minAyahs !== '',
+    maxAyahs !== '',
+    sortBy !== 'id',
+    sortDirection !== 'asc',
+  ].filter(Boolean).length;
+
   const handleTourStepChange = useCallback((stepId: string) => {
     setIsFiltersOpen(stepId === 'filters');
   }, []);
@@ -171,34 +181,37 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
     <div className="space-y-6">
       <SurahFeatureTour onStepChange={handleTourStepChange} onClose={handleTourClose} />
       {/* Search Bar & Advanced Toggle Row */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div id="surah-tour-search" className="relative flex-1">
-          <SurahSearchAutocomplete
-            surahs={initialSurahs}
-            id="surah-search"
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            placeholder="Search by name, translation, Arabic, or surah number..."
-            inputClassName="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-11 pr-10 py-3 text-sm md:text-base outline-none transition-all hover:border-[var(--color-accent)]/30 focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/20 text-[var(--color-text)]"
-          />
+      <StickySearchShell className="-mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
+        <div className="flex gap-2">
+          <Button
+            id="surah-tour-filters"
+            type="button"
+            size="icon"
+            variant={isFiltersOpen || isFiltered ? 'default' : 'outline'}
+            className="relative h-auto min-h-12 w-12 shrink-0 rounded-xl border-2"
+            onClick={() => setIsFiltersOpen(true)}
+            aria-label="Open filters"
+            title="Filters"
+          >
+            <SlidersHorizontal className="size-5" />
+            {activeFilterCount > 0 ? (
+              <span className="absolute -right-1.5 -top-1.5 grid min-w-5 place-items-center rounded-full border border-[var(--color-bg)] bg-[var(--color-accent)] px-1 text-[10px] font-bold leading-5 text-[var(--color-accent-foreground)]">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+          <div id="surah-tour-search" className="relative flex-1">
+            <SurahSearchAutocomplete
+              surahs={initialSurahs}
+              id="surah-search"
+              value={searchQuery}
+              onValueChange={setSearchQuery}
+              placeholder="Search by name, translation, Arabic, or surah number..."
+              inputClassName="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-11 pr-10 py-3 text-sm md:text-base outline-none transition-all hover:border-[var(--color-accent)]/30 focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/20 text-[var(--color-text)]"
+            />
+          </div>
         </div>
-
-        <Button
-          id="surah-tour-filters"
-          type="button"
-          variant={isFiltersOpen || isFiltered ? 'default' : 'outline'}
-          className={`h-auto py-3 px-5 rounded-xl border-2 font-medium flex items-center justify-center gap-2 text-sm md:text-base transition-all ${
-            isFiltered && !isFiltersOpen
-              ? 'border-[var(--color-accent)]  bg-[var(--color-accent)]/5'
-              : ''
-          }`}
-          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-        >
-          <SlidersHorizontal className="size-4" />
-          <span>Filters</span>
-          {isFiltersOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </Button>
-      </div>
+      </StickySearchShell>
 
       {/* Quick Tabs with Icons */}
       <div id="surah-tour-quick-tabs" className="flex flex-wrap gap-2 border-b border-[var(--color-border)] pb-4">
@@ -251,11 +264,50 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
         </button>
       </div>
 
-      {/* Collapsible Advanced Filters Panel */}
-      {isFiltersOpen && (
-        <Card className="animate-fade-in border-2 border-[var(--color-accent)]/20 bg-[var(--color-surface)] shadow-md">
-          <CardContent className="p-5 md:p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <FilterDrawer
+        open={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        title="Surah Filters"
+        summary={`${filteredSurahs.length} of ${initialSurahs.length} surahs`}
+      >
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                  Chapter Type
+                </h4>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: 'All Chapters', value: 'all', icon: BookOpen },
+                    { label: 'Meccan (Makki)', value: 'mecca', icon: Sun },
+                    { label: 'Medinan (Madani)', value: 'madina', icon: Moon },
+                    { label: 'Popular Chapters', value: 'popular', icon: Sparkles },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const active = revelationFilter === item.value;
+
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setRevelationFilter(item.value as RevelationFilter)}
+                        className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-all cursor-pointer ${
+                          active
+                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5 text-[var(--color-accent)] font-bold'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/50'
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="size-4" />
+                          {item.label}
+                        </span>
+                        {active && <Check className="size-3 text-[var(--color-accent)]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* 1. Filter by Ayah Count Presets */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
@@ -395,12 +447,11 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
                 onClick={() => setIsFiltersOpen(false)}
                 className="text-xs font-semibold cursor-pointer"
               >
-                Close Panel
+                Close
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+      </FilterDrawer>
 
       {/* Showing Results Info Box (when filtered) */}
       {isFiltered && (

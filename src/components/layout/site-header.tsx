@@ -271,7 +271,7 @@ export default function SiteHeader() {
   const isHadithScrollAwarePage = pathSegments[0] === 'hadith';
   const isScrollAwareHeaderPage =
     isSurahReaderPage ||
-    (pathSegments.length === 1 && pathSegments[0] === 'surah') ||
+    (pathSegments.length === 1 && (pathSegments[0] === 'surah' || pathSegments[0] === 'tafsir')) ||
     isHadithScrollAwarePage;
   const keepHeaderOpen = mobileOpen || Boolean(openMegaId) || authModalOpen;
 

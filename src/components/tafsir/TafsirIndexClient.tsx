@@ -5,18 +5,23 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   BookOpen,
   ChevronRight,
-  Search,
   SlidersHorizontal,
   ArrowUpDown,
-  X,
   ChevronDown,
   ChevronUp,
   FileText,
+  Sun,
+  Moon,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
+import FilterDrawer from '@/components/ui/filter-drawer';
+import StickySearchShell from '@/components/ui/sticky-search-shell';
 import { buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 
@@ -30,10 +35,12 @@ interface TafsirIndexClientProps {
   initialSearchQuery?: string;
 }
 
-type RevelationFilter = 'all' | 'mecca' | 'madina';
-type SortField = 'id' | 'name' | 'tafseer-ayahs';
+type RevelationFilter = 'all' | 'mecca' | 'madina' | 'popular';
+type LengthPreset = 'all' | 'short' | 'medium' | 'long' | 'very-long';
+type SortField = 'id' | 'name' | 'ayahs' | 'tafseer-ayahs';
 type SortDirection = 'asc' | 'desc';
 const PAGE_SIZE = 20;
+const POPULAR_SURAH_IDS = [1, 18, 36, 55, 56, 67];
 
 export default function TafsirIndexClient({
   initialSurahs,
@@ -41,6 +48,9 @@ export default function TafsirIndexClient({
 }: TafsirIndexClientProps) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [revelationFilter, setRevelationFilter] = useState<RevelationFilter>('all');
+  const [lengthPreset, setLengthPreset] = useState<LengthPreset>('all');
+  const [minAyahs, setMinAyahs] = useState<string>('');
+  const [maxAyahs, setMaxAyahs] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortField>('id');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -83,6 +93,33 @@ export default function TafsirIndexClient({
       result = result.filter(
         (surah) => surah.revelationPlace.toLowerCase() === 'madina'
       );
+    } else if (revelationFilter === 'popular') {
+      result = result.filter((surah) => POPULAR_SURAH_IDS.includes(surah.id));
+    }
+
+    // Length Preset Filter
+    if (lengthPreset === 'short') {
+      result = result.filter((surah) => surah.totalAyah < 20);
+    } else if (lengthPreset === 'medium') {
+      result = result.filter((surah) => surah.totalAyah >= 20 && surah.totalAyah <= 75);
+    } else if (lengthPreset === 'long') {
+      result = result.filter((surah) => surah.totalAyah > 75 && surah.totalAyah <= 150);
+    } else if (lengthPreset === 'very-long') {
+      result = result.filter((surah) => surah.totalAyah > 150);
+    }
+
+    if (minAyahs !== '') {
+      const min = parseInt(minAyahs, 10);
+      if (!isNaN(min)) {
+        result = result.filter((surah) => surah.totalAyah >= min);
+      }
+    }
+
+    if (maxAyahs !== '') {
+      const max = parseInt(maxAyahs, 10);
+      if (!isNaN(max)) {
+        result = result.filter((surah) => surah.totalAyah <= max);
+      }
     }
 
     // Sorting
@@ -92,19 +129,21 @@ export default function TafsirIndexClient({
         comparison = a.id - b.id;
       } else if (sortBy === 'name') {
         comparison = a.surahName.localeCompare(b.surahName);
+      } else if (sortBy === 'ayahs') {
+        comparison = a.totalAyah - b.totalAyah;
       } else if (sortBy === 'tafseer-ayahs') {
-        comparison = b.tafseerAyahCount - a.tafseerAyahCount;
+        comparison = a.tafseerAyahCount - b.tafseerAyahCount;
       }
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return result;
-  }, [initialSurahs, searchQuery, revelationFilter, sortBy, sortDirection]);
+  }, [initialSurahs, searchQuery, revelationFilter, lengthPreset, minAyahs, maxAyahs, sortBy, sortDirection]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [searchQuery, revelationFilter, sortBy, sortDirection]);
+  }, [searchQuery, revelationFilter, lengthPreset, minAyahs, maxAyahs, sortBy, sortDirection]);
 
   const visibleSurahs = filteredSurahs.slice(0, visibleCount);
 
@@ -112,6 +151,9 @@ export default function TafsirIndexClient({
   const handleResetFilters = () => {
     setSearchQuery('');
     setRevelationFilter('all');
+    setLengthPreset('all');
+    setMinAyahs('');
+    setMaxAyahs('');
     setSortBy('id');
     setSortDirection('asc');
   };
@@ -120,104 +162,217 @@ export default function TafsirIndexClient({
     return (
       searchQuery !== '' ||
       revelationFilter !== 'all' ||
+      lengthPreset !== 'all' ||
+      minAyahs !== '' ||
+      maxAyahs !== '' ||
       sortBy !== 'id' ||
       sortDirection !== 'asc'
     );
-  }, [searchQuery, revelationFilter, sortBy, sortDirection]);
+  }, [searchQuery, revelationFilter, lengthPreset, minAyahs, maxAyahs, sortBy, sortDirection]);
+
+  const activeFilterCount = [
+    searchQuery !== '',
+    revelationFilter !== 'all',
+    lengthPreset !== 'all',
+    minAyahs !== '',
+    maxAyahs !== '',
+    sortBy !== 'id',
+    sortDirection !== 'asc',
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
       {/* Search Bar & Advanced Toggle Row */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-[var(--color-muted-text)] pointer-events-none" />
-          <input
-            id="tafsir-search"
-            type="search"
-            placeholder="Search surahs... (e.g., Yaseen, Rahman, Kahf)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] placeholder:text-[var(--color-muted-text)] focus:outline-none focus:border-[var(--color-accent)]"
-          />
+      <StickySearchShell className="-mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="icon"
+            onClick={() => setIsFiltersOpen(true)}
+            variant={isFiltersOpen || isFiltered ? 'default' : 'outline'}
+            className="relative h-auto min-h-12 w-12 shrink-0 rounded-xl border-2"
+            aria-label="Open filters"
+            title="Filters"
+          >
+            <SlidersHorizontal className="size-5" />
+            {activeFilterCount > 0 ? (
+              <span className="absolute -right-1.5 -top-1.5 grid min-w-5 place-items-center rounded-full border border-[var(--color-bg)] bg-[var(--color-accent)] px-1 text-[10px] font-bold leading-5 text-[var(--color-accent-foreground)]">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+          <div className="relative flex-1">
+            <SurahSearchAutocomplete
+              surahs={initialSurahs}
+              id="tafsir-search"
+              value={searchQuery}
+              onValueChange={setSearchQuery}
+              placeholder="Search surahs... (e.g., Yaseen, Rahman, Kahf)"
+              inputClassName="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-elevated)] pl-11 pr-10 py-3 text-sm md:text-base outline-none transition-all hover:border-[var(--color-accent)]/30 focus-visible:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/20 text-[var(--color-text)]"
+              onSurahSelect={(surah) => setSearchQuery(surah.surahName)}
+            />
+          </div>
         </div>
+      </StickySearchShell>
 
-        <Button
-          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-          variant="outline"
-          className="md:w-auto"
-        >
-          <SlidersHorizontal className="size-4 mr-2" />
-          Filters
-          {isFiltered && <Badge className="ml-2 bg-[var(--color-accent)] text-white">✓</Badge>}
-        </Button>
-      </div>
-
-      {/* Advanced Filters */}
-      {isFiltersOpen && (
-        <Card className="border border-[var(--color-border)] bg-[var(--color-surface-soft)]">
-          <CardContent className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Revelation Place */}
-              <div>
-                <label className="block text-sm font-semibold text-[var(--color-heading)] mb-2">
-                  Revelation Place
-                </label>
-                <select
-                  value={revelationFilter}
-                  onChange={(e) =>
-                    setRevelationFilter(e.target.value as RevelationFilter)
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
-                >
-                  <option value="all">All Surahs</option>
-                  <option value="mecca">Mecca (Makki)</option>
-                  <option value="madina">Madina (Madani)</option>
-                </select>
-              </div>
-
-              {/* Sort By */}
-              <div>
-                <label className="block text-sm font-semibold text-[var(--color-heading)] mb-2">
-                  Sort By
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortField)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
-                  >
-                    <option value="id">Surah Order</option>
-                    <option value="name">Name (A-Z)</option>
-                    <option value="tafseer-ayahs">Tafseer Ayahs</option>
-                  </select>
-
-                  <button
-                    onClick={() =>
-                      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-                    }
-                    className="px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-soft)]"
-                    title={
-                      sortDirection === 'asc' ? 'Ascending' : 'Descending'
-                    }
-                  >
-                    <ArrowUpDown className="size-4" />
-                  </button>
+      <FilterDrawer
+        open={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        title="Tafseer Filters"
+        summary={`${filteredSurahs.length} of ${initialSurahs.filter((surah) => surah.tafseerAyahCount > 0).length} surahs`}
+      >
+        <div className="space-y-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                      Filters
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--color-muted-text)]">
+                      {filteredSurahs.length} of {initialSurahs.filter((surah) => surah.tafseerAyahCount > 0).length} surahs
+                    </p>
+                  </div>
+                  {isFiltered ? (
+                    <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters}>
+                      Reset
+                    </Button>
+                  ) : null}
                 </div>
-              </div>
-            </div>
 
-            {isFiltered && (
-              <button
-                onClick={handleResetFilters}
-                className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-semibold text-[var(--color-accent)] hover:border-[var(--color-accent-soft)]"
-              >
-                <X className="size-4 mr-2 inline-block" />
-                Reset All Filters
-              </button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                <div className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                    Chapter Type
+                  </p>
+                  {[
+                    { label: 'All Chapters', value: 'all', icon: BookOpen },
+                    { label: 'Meccan (Makki)', value: 'mecca', icon: Sun },
+                    { label: 'Medinan (Madani)', value: 'madina', icon: Moon },
+                    { label: 'Popular Chapters', value: 'popular', icon: Sparkles },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const active = revelationFilter === item.value;
+
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setRevelationFilter(item.value as RevelationFilter)}
+                        className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
+                          active
+                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/40'
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="size-4" />
+                          {item.label}
+                        </span>
+                        {active ? <Check className="size-3.5" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                    Surah Length
+                  </p>
+                  {[
+                    { label: 'All Lengths', value: 'all' },
+                    { label: 'Short (< 20 Ayahs)', value: 'short' },
+                    { label: 'Medium (20 - 75 Ayahs)', value: 'medium' },
+                    { label: 'Long (75 - 150 Ayahs)', value: 'long' },
+                    { label: 'Very Long (> 150 Ayahs)', value: 'very-long' },
+                  ].map((preset) => {
+                    const active = lengthPreset === preset.value;
+
+                    return (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => setLengthPreset(preset.value as LengthPreset)}
+                        className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
+                          active
+                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/40'
+                        }`}
+                      >
+                        <span>{preset.label}</span>
+                        {active ? <Check className="size-3.5" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                    Ayah Range
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="space-y-1 text-xs text-[var(--color-muted-text)]">
+                      Min
+                      <input
+                        type="number"
+                        min="1"
+                        max="286"
+                        value={minAyahs}
+                        onChange={(event) => setMinAyahs(event.target.value)}
+                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+                      />
+                    </label>
+                    <label className="space-y-1 text-xs text-[var(--color-muted-text)]">
+                      Max
+                      <input
+                        type="number"
+                        min="1"
+                        max="286"
+                        value={maxAyahs}
+                        onChange={(event) => setMaxAyahs(event.target.value)}
+                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                    Sort
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Number', value: 'id' },
+                      { label: 'Name', value: 'name' },
+                      { label: 'Ayahs', value: 'ayahs' },
+                      { label: 'Tafseer', value: 'tafseer-ayahs' },
+                    ].map((field) => (
+                      <button
+                        key={field.value}
+                        type="button"
+                        onClick={() => setSortBy(field.value as SortField)}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                          sortBy === field.value
+                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:border-[var(--color-accent)]/40'
+                        }`}
+                      >
+                        {field.label}
+                      </button>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                    className="w-full"
+                  >
+                    <ArrowUpDown className="size-3.5" />
+                    {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+                  </Button>
+                </div>
+        </div>
+      </FilterDrawer>
+
+      <div className="min-w-0 space-y-6">
 
       {/* Results Info */}
       <div className="text-sm text-[var(--color-muted-text)]">
@@ -365,6 +520,7 @@ export default function TafsirIndexClient({
           </Button>
         </div>
       ) : null}
+        </div>
     </div>
   );
 }
