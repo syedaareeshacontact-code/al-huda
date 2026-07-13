@@ -155,3 +155,56 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(staleWhileRevalidate(event, request));
   }
 });
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {
+      title: 'Read al Quran',
+      body: event.data?.text() || 'Open your Quran reminder.',
+    };
+  }
+
+  const title = payload.title || 'Read al Quran';
+  const options = {
+    body: payload.body || 'Open your Quran reminder.',
+    icon: payload.icon || '/logos/pwa-192.png',
+    badge: payload.badge || '/logos/favicon-48.png',
+    tag: payload.tag || 'read-al-quran-reminder',
+    renotify: Boolean(payload.renotify),
+    data: {
+      url: payload.url || payload.data?.url || '/',
+      ...(payload.data || {}),
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+  event.waitUntil(
+    (async () => {
+      const clientsList = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      for (const client of clientsList) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })()
+  );
+});

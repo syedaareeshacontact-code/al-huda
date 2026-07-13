@@ -45,6 +45,11 @@ interface PrayerTimingsPayload {
   };
 }
 
+interface WebPushPublicKeyResponse {
+  enabled?: boolean;
+  publicKey?: string;
+}
+
 interface NotificationSettings {
   soundEnabled: boolean;
   desktopEnabled: boolean;
@@ -66,6 +71,19 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   prayerCountry: 'Pakistan',
   reminderMinutes: 10,
 };
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    outputArray[index] = rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
 
 const typeConfig: Record<
   NotificationType,
@@ -184,6 +202,11 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [desktopPermission, setDesktopPermission] = useState<NotificationPermission>('default');
+  const [webPushPublicKey, setWebPushPublicKey] = useState('');
+  const [webPushConfigured, setWebPushConfigured] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState('');
   const panelRef = useRef<HTMLDivElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const didLoadInitialRef = useRef(false);
@@ -193,6 +216,12 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     () => notifications.filter((notification) => !notification.readAt).length,
     [notifications]
   );
+
+  const pushSupported =
+    typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window;
 
   const playNotificationSound = useCallback(() => {
     if (!settings.soundEnabled || typeof window === 'undefined') {
@@ -309,12 +338,123 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     [isAuthenticated, playNotificationSound, sendDesktopNotification]
   );
 
+  const refreshPushStatus = useCallback(async () => {
+    if (!pushSupported) {
+      setWebPushConfigured(false);
+      setPushEnabled(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/push/public-key', { cache: 'no-store' });
+      const payload = (await response.json()) as WebPushPublicKeyResponse;
+      const publicKey = payload.publicKey ?? '';
+      setWebPushPublicKey(publicKey);
+      setWebPushConfigured(Boolean(payload.enabled && publicKey));
+
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      setPushEnabled(Boolean(subscription));
+    } catch {
+      setWebPushConfigured(false);
+      setPushEnabled(false);
+    }
+  }, [pushSupported]);
+
+  const enableQuranPush = async () => {
+    if (!pushSupported || !webPushConfigured || !webPushPublicKey) {
+      setPushMessage('Push reminders need HTTPS, service worker, and VAPID keys.');
+      return;
+    }
+
+    try {
+      setPushBusy(true);
+      setPushMessage('');
+
+      const permission =
+        Notification.permission === 'granted'
+          ? 'granted'
+          : await Notification.requestPermission();
+      setDesktopPermission(permission);
+
+      if (permission !== 'granted') {
+        setPushMessage('Notification permission was not allowed.');
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const existingSubscription = await registration.pushManager.getSubscription();
+      const subscription =
+        existingSubscription ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(webPushPublicKey),
+        }));
+
+      const response = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...subscription.toJSON(),
+          quranReminderEnabled: true,
+          intervalMinutes: 2,
+        }),
+      });
+
+      if (!response.ok) {
+        setPushMessage('Unable to save this device for push reminders.');
+        return;
+      }
+
+      setPushEnabled(true);
+      updateSettings({ ...settings, desktopEnabled: true });
+      setPushMessage('Quran push reminders are enabled for this device.');
+    } catch {
+      setPushMessage('Push reminders could not be enabled on this browser.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const disableQuranPush = async () => {
+    if (!pushSupported) {
+      return;
+    }
+
+    try {
+      setPushBusy(true);
+      setPushMessage('');
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+
+      if (subscription) {
+        await fetch('/api/push/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+        await subscription.unsubscribe();
+      }
+
+      setPushEnabled(false);
+      setPushMessage('Quran push reminders are off for this device.');
+    } catch {
+      setPushMessage('Unable to disable push reminders right now.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   useEffect(() => {
     setSettings(readSettings());
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setDesktopPermission(Notification.permission);
     }
   }, []);
+
+  useEffect(() => {
+    void refreshPushStatus();
+  }, [refreshPushStatus]);
 
   useEffect(() => {
     void loadNotifications();
@@ -580,6 +720,46 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
                 className="h-4 w-4 accent-[var(--color-accent)]"
               />
             </label>
+            <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-[var(--color-heading)]">
+                    Quran push reminders
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                    Sends a Surah reminder every 2 minutes when server cron is running.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={pushEnabled ? 'default' : 'outline'}
+                  disabled={pushBusy || !pushSupported || !webPushConfigured}
+                  onClick={() => {
+                    if (pushEnabled) {
+                      void disableQuranPush();
+                    } else {
+                      void enableQuranPush();
+                    }
+                  }}
+                  className="shrink-0"
+                >
+                  {pushBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {pushEnabled ? 'Push on' : 'Enable'}
+                </Button>
+              </div>
+              {!pushSupported ? (
+                <p className="mt-2 text-[10px] text-[var(--color-danger)]">
+                  This browser does not support web push.
+                </p>
+              ) : !webPushConfigured ? (
+                <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">
+                  Add Web Push VAPID keys on the server to enable closed-app reminders.
+                </p>
+              ) : pushMessage ? (
+                <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">{pushMessage}</p>
+              ) : null}
+            </div>
           </div>
 
           <div className="max-h-[min(23rem,calc(100dvh-18rem))] overflow-y-auto p-2">

@@ -22,6 +22,27 @@ export interface StoredLastReadEntry {
   updatedAt: string;
 }
 
+export interface StoredPushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  userAgent: string | null;
+  enabled: boolean;
+  quranReminderEnabled: boolean;
+  intervalMinutes: number;
+  lastReminderAt: string | null;
+  failureCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PushSubscriptionForDelivery extends StoredPushSubscription {
+  userId: string;
+  userName: string;
+}
+
 export interface StoredUser {
   id: string;
   name: string;
@@ -40,6 +61,7 @@ export interface StoredUser {
   lastRead: StoredLastReadEntry | null;
   settings: UserSettings;
   notifications: UserNotification[];
+  pushSubscriptions: StoredPushSubscription[];
 }
 
 export interface AdminUserSummary {
@@ -64,6 +86,7 @@ const MIN_SURAH_ID = 1;
 const MAX_SURAH_ID = 114;
 const MAX_AYAH_NUMBER = 286;
 const MAX_NOTIFICATIONS_PER_USER = 80;
+const MAX_PUSH_SUBSCRIPTIONS_PER_USER = 8;
 const USERS_COLLECTION = 'users';
 const USER_MODEL_NAME = 'AuthUser';
 export const ADMIN_EMAIL = 'zainqlandar@gmail.com';
@@ -333,6 +356,65 @@ function normalizeUserNotifications(value: unknown) {
     .slice(0, MAX_NOTIFICATIONS_PER_USER);
 }
 
+function normalizePushSubscription(raw: unknown): StoredPushSubscription | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  const candidate = raw as Record<string, unknown>;
+  const endpoint = String(candidate.endpoint ?? '').trim();
+  const rawKeys =
+    candidate.keys && typeof candidate.keys === 'object'
+      ? (candidate.keys as Record<string, unknown>)
+      : {};
+  const p256dh = String(rawKeys.p256dh ?? '').trim();
+  const auth = String(rawKeys.auth ?? '').trim();
+
+  if (!endpoint || !p256dh || !auth) {
+    return null;
+  }
+
+  const intervalMinutes = Math.max(
+    2,
+    Math.min(1440, Math.floor(Number(candidate.intervalMinutes ?? 2) || 2))
+  );
+  const createdAt = String(candidate.createdAt ?? new Date().toISOString());
+
+  return {
+    endpoint,
+    keys: { p256dh, auth },
+    userAgent: candidate.userAgent ? String(candidate.userAgent).slice(0, 320) : null,
+    enabled: candidate.enabled !== false,
+    quranReminderEnabled: candidate.quranReminderEnabled !== false,
+    intervalMinutes,
+    lastReminderAt:
+      candidate.lastReminderAt === null || candidate.lastReminderAt === undefined
+        ? null
+        : String(candidate.lastReminderAt),
+    failureCount: Math.max(0, Math.floor(Number(candidate.failureCount ?? 0) || 0)),
+    createdAt,
+    updatedAt: String(candidate.updatedAt ?? createdAt),
+  };
+}
+
+function normalizePushSubscriptions(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const byEndpoint = new Map<string, StoredPushSubscription>();
+  for (const entry of value) {
+    const subscription = normalizePushSubscription(entry);
+    if (subscription) {
+      byEndpoint.set(subscription.endpoint, subscription);
+    }
+  }
+
+  return Array.from(byEndpoint.values())
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, MAX_PUSH_SUBSCRIPTIONS_PER_USER);
+}
+
 function createSystemNotification(input: {
   type?: NotificationType;
   priority?: NotificationPriority;
@@ -414,6 +496,7 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
     lastRead: normalizeLastRead(candidate.lastRead),
     settings: normalizeUserSettings(candidate.settings),
     notifications: normalizeUserNotifications(candidate.notifications),
+    pushSubscriptions: normalizePushSubscriptions(candidate.pushSubscriptions),
   };
 }
 
@@ -504,6 +587,27 @@ const notificationSchema = new Schema<UserNotification>(
   }
 );
 
+const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
+  {
+    endpoint: { type: String, required: true, trim: true },
+    keys: {
+      p256dh: { type: String, required: true, trim: true },
+      auth: { type: String, required: true, trim: true },
+    },
+    userAgent: { type: String, default: null },
+    enabled: { type: Boolean, default: true },
+    quranReminderEnabled: { type: Boolean, default: true },
+    intervalMinutes: { type: Number, min: 2, max: 1440, default: 2 },
+    lastReminderAt: { type: String, default: null },
+    failureCount: { type: Number, min: 0, default: 0 },
+    createdAt: { type: String, required: true },
+    updatedAt: { type: String, required: true },
+  },
+  {
+    _id: false,
+  }
+);
+
 const userSchema = new Schema<StoredUser>(
   {
     id: { type: String, required: true, unique: true, index: true },
@@ -523,6 +627,7 @@ const userSchema = new Schema<StoredUser>(
     lastRead: { type: lastReadSchema, default: null },
     settings: { type: settingsSchema, default: () => DEFAULT_USER_SETTINGS },
     notifications: { type: [notificationSchema], default: [] },
+    pushSubscriptions: { type: [pushSubscriptionSchema], default: [] },
   },
   {
     collection: USERS_COLLECTION,
@@ -607,6 +712,7 @@ export async function createUser(input: {
     lastRead: null,
     settings: DEFAULT_USER_SETTINGS,
     notifications: buildInitialNotifications(input.name.trim()),
+    pushSubscriptions: [],
   };
 
   try {
@@ -889,6 +995,182 @@ export async function markAllUserNotificationsRead(userId: string): Promise<User
     .exec();
 
   return normalizeStoredUser(raw)?.notifications ?? [];
+}
+
+export async function upsertUserPushSubscription(
+  userId: string,
+  input: Pick<StoredPushSubscription, 'endpoint' | 'keys'> &
+    Partial<Pick<StoredPushSubscription, 'userAgent' | 'quranReminderEnabled' | 'intervalMinutes'>>
+): Promise<StoredPushSubscription | null> {
+  const User = await ensureUsersModel();
+  const nowIso = new Date().toISOString();
+  const normalized = normalizePushSubscription({
+    endpoint: input.endpoint,
+    keys: input.keys,
+    userAgent: input.userAgent ?? null,
+    enabled: true,
+    quranReminderEnabled: input.quranReminderEnabled !== false,
+    intervalMinutes: input.intervalMinutes ?? 2,
+    failureCount: 0,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  });
+
+  if (!normalized) {
+    return null;
+  }
+
+  await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $pull: {
+        pushSubscriptions: {
+          endpoint: normalized.endpoint,
+        },
+      },
+    }
+  )
+    .lean()
+    .exec();
+
+  const raw = await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $push: {
+        pushSubscriptions: {
+          $each: [normalized],
+          $position: 0,
+          $slice: MAX_PUSH_SUBSCRIPTIONS_PER_USER,
+        },
+      },
+      $set: {
+        updatedAt: nowIso,
+      },
+    },
+    { new: true }
+  )
+    .lean()
+    .exec();
+
+  return (
+    normalizeStoredUser(raw)?.pushSubscriptions.find(
+      (subscription) => subscription.endpoint === normalized.endpoint
+    ) ?? null
+  );
+}
+
+export async function removeUserPushSubscription(userId: string, endpoint: string) {
+  const User = await ensureUsersModel();
+  await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $pull: {
+        pushSubscriptions: {
+          endpoint,
+        },
+      },
+      $set: {
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  )
+    .lean()
+    .exec();
+}
+
+export async function listQuranReminderPushSubscriptions(): Promise<PushSubscriptionForDelivery[]> {
+  const User = await ensureUsersModel();
+  const rawUsers = await User.find(
+    {
+      pushSubscriptions: {
+        $elemMatch: {
+          enabled: true,
+          quranReminderEnabled: true,
+        },
+      },
+    },
+    {
+      _id: 0,
+      id: 1,
+      name: 1,
+      pushSubscriptions: 1,
+    }
+  )
+    .lean()
+    .exec();
+
+  const subscriptions: PushSubscriptionForDelivery[] = [];
+  for (const rawUser of rawUsers) {
+    const user = normalizeStoredUser({
+      ...rawUser,
+      email: 'placeholder@example.com',
+      passwordHash: 'placeholder',
+      passwordSalt: 'placeholder',
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!user) {
+      continue;
+    }
+
+    for (const subscription of user.pushSubscriptions) {
+      if (subscription.enabled && subscription.quranReminderEnabled) {
+        subscriptions.push({
+          ...subscription,
+          userId: user.id,
+          userName: user.name,
+        });
+      }
+    }
+  }
+
+  return subscriptions;
+}
+
+export async function markPushReminderSent(userId: string, endpoint: string, sentAt: string) {
+  const User = await ensureUsersModel();
+  await User.findOneAndUpdate(
+    { id: userId, 'pushSubscriptions.endpoint': endpoint },
+    {
+      $set: {
+        'pushSubscriptions.$.lastReminderAt': sentAt,
+        'pushSubscriptions.$.updatedAt': sentAt,
+        'pushSubscriptions.$.failureCount': 0,
+        updatedAt: sentAt,
+      },
+    }
+  )
+    .lean()
+    .exec();
+}
+
+export async function markPushSubscriptionFailure(
+  userId: string,
+  endpoint: string,
+  disable = false
+) {
+  const User = await ensureUsersModel();
+  const nowIso = new Date().toISOString();
+  const update: Record<string, unknown> = {
+    'pushSubscriptions.$.updatedAt': nowIso,
+    updatedAt: nowIso,
+  };
+
+  if (disable) {
+    update['pushSubscriptions.$.enabled'] = false;
+  }
+
+  await User.findOneAndUpdate(
+    { id: userId, 'pushSubscriptions.endpoint': endpoint },
+    {
+      $inc: {
+        'pushSubscriptions.$.failureCount': 1,
+      },
+      $set: update,
+    }
+  )
+    .lean()
+    .exec();
 }
 
 export async function listSurahLikeCounts(): Promise<Record<number, number>> {

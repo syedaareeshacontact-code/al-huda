@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/quran-reminders",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}
