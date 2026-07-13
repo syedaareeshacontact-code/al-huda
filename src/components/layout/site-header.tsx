@@ -268,6 +268,13 @@ export default function SiteHeader() {
   const pathSegments = pathname.split('/').filter(Boolean);
   const isSurahReaderPage =
     pathSegments.length === 2 && pathSegments[0] === 'surah';
+  const isHadithScrollAwarePage =
+    pathSegments[0] === 'hadith' &&
+    (pathSegments.length === 1 || pathSegments[1] === 'search');
+  const isScrollAwareHeaderPage =
+    isSurahReaderPage ||
+    (pathSegments.length === 1 && pathSegments[0] === 'surah') ||
+    isHadithScrollAwarePage;
   const keepHeaderOpen = mobileOpen || Boolean(openMegaId) || authModalOpen;
 
   useEffect(() => {
@@ -278,7 +285,7 @@ export default function SiteHeader() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!isSurahReaderPage || keepHeaderOpen) {
+    if (!isScrollAwareHeaderPage || keepHeaderOpen) {
       setHeaderVisible(true);
       return;
     }
@@ -316,16 +323,21 @@ export default function SiteHeader() {
         scrollFrameRef.current = null;
       }
     };
-  }, [isSurahReaderPage, keepHeaderOpen]);
+  }, [isScrollAwareHeaderPage, keepHeaderOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
     if (!header) return;
 
     const syncHeaderHeight = () => {
+      const headerHeight = `${header.offsetHeight}px`;
       document.documentElement.style.setProperty(
         '--site-header-height',
-        `${header.offsetHeight}px`
+        headerHeight
+      );
+      document.documentElement.style.setProperty(
+        '--site-header-visible-offset',
+        headerVisible ? headerHeight : '0px'
       );
     };
 
@@ -333,7 +345,7 @@ export default function SiteHeader() {
     const observer = new ResizeObserver(syncHeaderHeight);
     observer.observe(header);
     return () => observer.disconnect();
-  }, []);
+  }, [headerVisible]);
 
   useEffect(() => {
     let ignore = false;
@@ -429,11 +441,11 @@ export default function SiteHeader() {
         ref={headerRef}
         data-site-header
         onFocusCapture={() => {
-          if (isSurahReaderPage) setHeaderVisible(true);
+          if (isScrollAwareHeaderPage) setHeaderVisible(true);
         }}
         className={cn(
           'sticky top-0 z-[100] transform-gpu transition-transform duration-300 ease-out will-change-transform',
-          isSurahReaderPage && !headerVisible && '-translate-y-full pointer-events-none'
+          isScrollAwareHeaderPage && !headerVisible && '-translate-y-full pointer-events-none'
         )}
       >
         {!isSurahReaderPage ? <IslamicTopBanner /> : null}

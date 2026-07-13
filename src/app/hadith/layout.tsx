@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import HadithSearch from '@/components/hadith/HadithSearch';
 import HadithSidebarNav from '@/components/hadith/HadithSidebarNav';
 import HadithMobileNav from '@/components/hadith/HadithMobileNav';
+import HadithTopSearchShell from '@/components/hadith/HadithTopSearchShell';
 import { getAllCollections } from '@/lib/hadith/collections.service';
 import { getSiteName } from '@/lib/seo';
 
@@ -25,8 +26,8 @@ export default async function HadithLayout({
   const totalHadiths = collections.reduce((sum, col) => sum + col.hadiths_count, 0);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[var(--color-bg)]">
-      <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md">
+    <div className="min-h-screen overflow-x-clip bg-[var(--color-bg)]">
+      <HadithTopSearchShell>
         <div className="mx-auto max-w-7xl space-y-3 px-4 py-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
@@ -41,11 +42,14 @@ export default async function HadithLayout({
           </Suspense>
           <HadithMobileNav collections={collections} />
         </div>
-      </div>
+      </HadithTopSearchShell>
 
-      <div className="mx-auto flex max-w-7xl gap-0 px-4 py-6 lg:gap-8 lg:py-8">
-        <aside className="hidden w-64 shrink-0 lg:block" aria-label="Hadith collections sidebar">
-          <div className="sticky top-24 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-soft)]">
+      <div className="mx-auto flex max-w-7xl items-start gap-0 px-4 py-6 lg:gap-8 lg:py-8">
+        <aside
+          className="sticky top-[calc(var(--site-header-height,4.25rem)_+_1rem)] hidden max-h-[calc(100dvh_-_var(--site-header-height,4.25rem)_-_2rem)] w-64 shrink-0 overflow-y-auto overscroll-contain lg:block"
+          aria-label="Hadith collections sidebar"
+        >
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-soft)]">
             <HadithSidebarNav collections={collections} />
           </div>
         </aside>
