@@ -123,7 +123,7 @@ export default function HomeRoot() {
               بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
             </p>
             <h1 id="home-heading" className="mt-1 font-display text-4xl font-semibold leading-[1.05] tracking-tight text-[var(--color-heading)] sm:text-5xl lg:text-6xl">
-              Read. Understand. Reflect.
+              Read. Understand. Reflect
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--color-muted-text)] sm:text-base">
               Read the Quran with translation and tafseer, and return to your last ayah without losing your place.
