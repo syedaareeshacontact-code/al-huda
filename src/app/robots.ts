@@ -57,13 +57,6 @@ export default function robots(): MetadataRoute.Robots {
     ],
     sitemap: [
       `${baseUrl}/sitemap.xml`,
-      `${baseUrl}/hadith/sitemap.xml`,
-      `${baseUrl}/sitemaps/hadith-collections.xml`,
-      `${baseUrl}/sitemaps/surah.xml`,
-      `${baseUrl}/sitemaps/tafsir-surah.xml`,
-      `${baseUrl}/sitemaps/download-surah.xml`,
-      `${baseUrl}/local-sitemap.xml`,
-      `${baseUrl}/islamic-tools-sitemap.xml`,
     ],
     host: baseUrl,
   };

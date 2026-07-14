@@ -17,7 +17,7 @@ import {
 } from '@/lib/quran-server';
 import { resolveSurahParam } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
-import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
+import { getAllTafsirAyahStaticParams } from '@/lib/quran-static-params';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
@@ -29,12 +29,12 @@ interface TafsirPageProps {
   }>;
 }
 
-export const revalidate = 86400;
-export const dynamicParams = true;
+export const dynamic = 'force-static';
+export const revalidate = false;
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  // Tafsir content comes from external APIs, so generate and cache these pages on demand via ISR.
-  return [];
+  return getAllTafsirAyahStaticParams();
 }
 
 function parseAyahNumber(value: string) {
@@ -44,6 +44,21 @@ function parseAyahNumber(value: string) {
   }
 
   return parsed;
+}
+
+function buildLightweightTafsirKeywords(surahId: number, surahName: string, ayahNumber: number) {
+  const normalizedSurahName = surahName.toLowerCase();
+
+  return [
+    `tafseer ${surahId}:${ayahNumber}`,
+    `tafsir ${surahId}:${ayahNumber}`,
+    `urdu tafseer ${surahId}:${ayahNumber}`,
+    `surah ${normalizedSurahName} ayah ${ayahNumber} tafseer`,
+    `tafseer surah ${normalizedSurahName} ayah ${ayahNumber}`,
+    `ayah ${surahId}:${ayahNumber} tafseer urdu`,
+    `quran ${surahId}:${ayahNumber} explanation`,
+    `surah ${normalizedSurahName} verse ${ayahNumber}`,
+  ];
 }
 
 export async function generateMetadata({
@@ -63,19 +78,9 @@ export async function generateMetadata({
   }
 
   const surah = resolved.surah;
-  const tafsir = await getUrduTafsirByAyah(surah.id, ayahNumber);
-  if (!tafsir) {
-    return buildPageMetadata({
-      title: `Tafseer ${surah.id}:${ayahNumber} Not Available`,
-      description: 'Requested tafseer content is unavailable.',
-      path: buildAyahPath(surah.id, surah.surahName, ayahNumber),
-      index: false,
-    });
-  }
-
   const canonicalPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
   const title = `Tafseer Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو تفسیر، Arabic & English`;
-  const description = stripHtml(tafsir.textHtml).slice(0, 155);
+  const description = `Read Urdu tafseer of Ayah ${surah.id}:${ayahNumber} from Surah ${surah.surahName}, with Arabic text, Urdu translation, English reference, and audio.`;
 
   return buildPageMetadata({
     title,
@@ -83,11 +88,7 @@ export async function generateMetadata({
     path: canonicalPath,
     ogType: 'article',
     imageUrl: `/og?kind=tafsir&surah=${surah.id}&ayah=${ayahNumber}`,
-    keywords: buildTafsirPageKeywords({
-      surahId: surah.id,
-      surahName: surah.surahName,
-      ayahNumber,
-    }),
+    keywords: buildLightweightTafsirKeywords(surah.id, surah.surahName, ayahNumber),
   });
 }
 

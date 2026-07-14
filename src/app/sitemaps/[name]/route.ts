@@ -1,12 +1,8 @@
-import { getAllSurahs } from '@/lib/quran-index';
+import { getAllSurahs, TOTAL_AYAHS } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { getAllCollections, getChaptersByCollection } from '@/lib/hadith/collections.service';
-import {
-  getAllHadithRefs,
-  getHadithChunkNumber,
-  HADITH_SITEMAP_CHUNK_SIZE,
-} from '@/lib/hadith/hadith-index';
+import { getCuratedHadithSitemapRefs } from '@/lib/hadith/hadith-index';
 import {
   buildHadithBookPath,
   buildHadithCollectionPath,
@@ -14,10 +10,11 @@ import {
   buildHadithIndexPath,
 } from '@/lib/hadith/hadith-routing';
 import { getSiteOrigin } from '@/lib/seo';
+import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
 import { getAllTafsirRefs } from '@/lib/tafsir-index';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 const AYAH_SITEMAP_CHUNK_SIZE = 1000;
 const TAFSIR_SITEMAP_CHUNK_SIZE = 800;
@@ -31,28 +28,83 @@ function escapeXml(input: string) {
     .replace(/'/g, '&apos;');
 }
 
-function buildAllAyahRefs() {
+const SITEMAP_HEADERS = {
+  'Content-Type': 'application/xml; charset=utf-8',
+  'Cache-Control': SITEMAP_CACHE_CONTROL,
+};
+
+function buildQuranSitemapNames() {
+  const ayahChunkCount = Math.max(1, Math.ceil(TOTAL_AYAHS / AYAH_SITEMAP_CHUNK_SIZE));
+  const tafsirRefs = getAllTafsirRefs();
+  const tafsirChunkCount = Math.max(
+    1,
+    Math.ceil(tafsirRefs.length / TAFSIR_SITEMAP_CHUNK_SIZE)
+  );
+
+  const names: string[] = ['surah', 'tafsir-surah', 'download-surah'];
+
+  for (let index = 1; index <= ayahChunkCount; index += 1) {
+    names.push(`ayah-${index}`);
+  }
+
+  for (let index = 1; index <= tafsirChunkCount; index += 1) {
+    names.push(`tafsir-${index}`);
+  }
+
+  return names;
+}
+
+async function buildSitemapNames() {
+  const names = ['hadith-collections', 'hadith-featured'];
+  return [...names, ...buildQuranSitemapNames()];
+}
+
+export async function generateStaticParams() {
+  const names = await buildSitemapNames();
+  return names.map((name) => ({ name: `${name}.xml` }));
+}
+
+function buildAyahChunkRefs(page: number) {
   const surahs = getAllSurahs();
   const refs: Array<{ surahId: number; surahName: string; ayahNumber: number }> = [];
+  const start = (page - 1) * AYAH_SITEMAP_CHUNK_SIZE;
+  const end = start + AYAH_SITEMAP_CHUNK_SIZE;
+  let offset = 0;
 
-  surahs.forEach((surah) => {
-    for (let ayahNumber = 1; ayahNumber <= surah.totalAyah; ayahNumber += 1) {
+  for (const surah of surahs) {
+    const surahStart = offset;
+    const surahEnd = surahStart + surah.totalAyah;
+
+    if (surahEnd <= start) {
+      offset = surahEnd;
+      continue;
+    }
+
+    if (surahStart >= end) {
+      break;
+    }
+
+    const firstAyah = Math.max(1, start - surahStart + 1);
+    const lastAyah = Math.min(surah.totalAyah, end - surahStart);
+
+    for (let ayahNumber = firstAyah; ayahNumber <= lastAyah; ayahNumber += 1) {
       refs.push({
         surahId: surah.id,
         surahName: surah.surahName,
         ayahNumber,
       });
     }
-  });
+
+    offset = surahEnd;
+  }
 
   return refs;
 }
 
 function renderUrlSet(urls: string[], changeFrequency: string, priority: string) {
-  const updatedAt = new Date().toISOString();
   const body = urls
     .map((url) => {
-      return `<url><loc>${escapeXml(url)}</loc><lastmod>${updatedAt}</lastmod><changefreq>${changeFrequency}</changefreq><priority>${priority}</priority></url>`;
+      return `<url><loc>${escapeXml(url)}</loc><lastmod>${SITEMAP_LASTMOD}</lastmod><changefreq>${changeFrequency}</changefreq><priority>${priority}</priority></url>`;
     })
     .join('');
 
@@ -114,10 +166,7 @@ export async function GET(
     ];
 
     return new Response(renderUrlSet(surahUrls, 'weekly', '0.8'), {
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      },
+      headers: SITEMAP_HEADERS,
     });
   }
 
@@ -142,20 +191,24 @@ export async function GET(
       }
 
       return new Response(renderUrlSet(hadithUrls, 'weekly', '0.85'), {
-        headers: {
-          'Content-Type': 'application/xml; charset=utf-8',
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-        },
+        headers: SITEMAP_HEADERS,
       });
     } catch (error) {
       console.warn('Hadith collections sitemap failed:', error);
       return new Response(renderUrlSet([`${origin}${buildHadithIndexPath()}`], 'weekly', '0.85'), {
-        headers: {
-          'Content-Type': 'application/xml; charset=utf-8',
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-        },
+        headers: SITEMAP_HEADERS,
       });
     }
+  }
+
+  if (normalizedName === 'hadith-featured') {
+    const urls = getCuratedHadithSitemapRefs().map((entry) => {
+      return `${origin}${buildHadithDetailPath(entry.collectionSlug, entry.hadithNumber)}`;
+    });
+
+    return new Response(renderUrlSet(urls, 'monthly', '0.55'), {
+      headers: SITEMAP_HEADERS,
+    });
   }
 
   if (normalizedName === 'download-surah') {
@@ -165,63 +218,32 @@ export async function GET(
     ];
 
     return new Response(renderUrlSet(downloadUrls, 'weekly', '0.8'), {
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      },
+      headers: SITEMAP_HEADERS,
     });
   }
 
   if (normalizedName === 'tafsir-surah') {
     const refs = getAllTafsirRefs();
-    const surahIds = [...new Set(refs.map((r) => r.surahId))];
+    const surahIds = new Set(refs.map((r) => r.surahId));
     const tafsirSurahUrls = [
       `${origin}/tafsir`,
       ...surahs
-        .filter((s) => surahIds.includes(s.id))
+        .filter((s) => surahIds.has(s.id))
         .map((surah) => `${origin}${buildTafsirSurahPath(surah.id, surah.surahName)}`),
     ];
 
     return new Response(renderUrlSet(tafsirSurahUrls, 'weekly', '0.75'), {
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      },
+      headers: SITEMAP_HEADERS,
     });
   }
 
-  const hadithChunk = getHadithChunkNumber(normalizedName);
-  if (hadithChunk) {
-    try {
-      const refs = await getAllHadithRefs();
-      const start = (hadithChunk - 1) * HADITH_SITEMAP_CHUNK_SIZE;
-      const chunk = refs.slice(start, start + HADITH_SITEMAP_CHUNK_SIZE);
-
-      if (chunk.length === 0) {
-        return new Response('Not found.', { status: 404 });
-      }
-
-      const urls = chunk.map((entry) => {
-        return `${origin}${buildHadithDetailPath(entry.collectionSlug, entry.hadithNumber)}`;
-      });
-
-      return new Response(renderUrlSet(urls, 'monthly', '0.75'), {
-        headers: {
-          'Content-Type': 'application/xml; charset=utf-8',
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-        },
-      });
-    } catch (error) {
-      console.warn('Hadith detail sitemap chunk failed:', error);
-      return new Response('Sitemap data unavailable.', { status: 500 });
-    }
+  if (/^hadith-\d+$/.test(normalizedName)) {
+    return new Response('Not found.', { status: 404 });
   }
 
   const ayahChunk = getAyahChunk(normalizedName);
   if (ayahChunk) {
-    const refs = buildAllAyahRefs();
-    const start = (ayahChunk - 1) * AYAH_SITEMAP_CHUNK_SIZE;
-    const chunk = refs.slice(start, start + AYAH_SITEMAP_CHUNK_SIZE);
+    const chunk = buildAyahChunkRefs(ayahChunk);
 
     if (chunk.length === 0) {
       return new Response('Not found.', { status: 404 });
@@ -232,10 +254,7 @@ export async function GET(
     });
 
     return new Response(renderUrlSet(urls, 'weekly', '0.7'), {
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      },
+      headers: SITEMAP_HEADERS,
     });
   }
 
@@ -254,10 +273,7 @@ export async function GET(
     });
 
     return new Response(renderUrlSet(urls, 'weekly', '0.65'), {
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      },
+      headers: SITEMAP_HEADERS,
     });
   }
 

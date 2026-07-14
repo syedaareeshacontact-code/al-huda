@@ -16,6 +16,9 @@ export const SURAH_RECITERS = [
 export type SurahReciterId = (typeof SURAH_RECITERS)[number]['id'];
 
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
+const PERMANENT_QURAN_AUDIO_FETCH = {
+  cache: 'force-cache',
+} as const;
 
 export function slugifyDownloadName(input: string): string {
   return input
@@ -31,22 +34,6 @@ export function buildSurahDownloadPath(surahId: number, surahName: string): stri
 
 export function buildSurahPdfPublicPath(surahId: number, variant: SurahPdfVariant): string {
   return `/surah-pdfs/${String(surahId).padStart(3, '0')}-${variant}.pdf`;
-}
-
-export function buildSurahPdfApiPath(surahId: number, variant: SurahPdfVariant): string {
-  return `/api/surah/${surahId}/pdf?variant=${variant}`;
-}
-
-export function buildSurahAudioApiPath(
-  surahId: number,
-  variant: SurahAudioVariant,
-  reciterId?: SurahReciterId
-): string {
-  if (variant === 'urdu') {
-    return `/api/surah/${surahId}/audio?variant=urdu`;
-  }
-  const reciter = reciterId ?? SURAH_RECITERS[0].id;
-  return `/api/surah/${surahId}/audio?variant=arabic&reciter=${reciter}`;
 }
 
 export function buildSurahPdfFileName(surah: SurahIndexEntry, variant: SurahPdfVariant): string {
@@ -75,7 +62,7 @@ export async function getSurahArabicAudioUrl(
   try {
     const response = await fetch(
       `${QURAN_COM_API}/chapter_recitations/${reciterId}/${surahId}`,
-      { next: { revalidate: 60 * 60 * 24 * 7 } }
+      PERMANENT_QURAN_AUDIO_FETCH
     );
 
     if (!response.ok) return null;
@@ -129,7 +116,7 @@ export function buildSurahDownloadOptions(
       label: 'Arabic PDF',
       labelUrdu: 'عربی PDF',
       description: `Complete Surah ${surah.surahName} in Arabic script (Uthmani) — printable PDF for offline reading and memorization.`,
-      href: buildSurahPdfApiPath(surah.id, 'arabic'),
+      href: buildSurahPdfPublicPath(surah.id, 'arabic'),
       fileName: buildSurahPdfFileName(surah, 'arabic'),
       format: 'PDF',
       type: 'pdf',
@@ -139,7 +126,7 @@ export function buildSurahDownloadOptions(
       label: 'Arabic + Urdu PDF',
       labelUrdu: 'عربی + اردو PDF',
       description: `Surah ${surah.surahName} with Arabic text and Urdu tarjuma (Fatah Muhammad Jalandhari) — ideal for Pakistani readers.`,
-      href: buildSurahPdfApiPath(surah.id, 'arabic-urdu'),
+      href: buildSurahPdfPublicPath(surah.id, 'arabic-urdu'),
       fileName: buildSurahPdfFileName(surah, 'arabic-urdu'),
       format: 'PDF',
       type: 'pdf',
@@ -152,7 +139,7 @@ export function buildSurahDownloadOptions(
       label: `Arabic Audio — ${source.name}`,
       labelUrdu: `عربی آڈیو — ${source.name}`,
       description: `Full surah tilawat by ${source.name}. Download MP3 for offline listening.`,
-      href: buildSurahAudioApiPath(surah.id, 'arabic', source.id),
+      href: source.url,
       fileName: buildSurahAudioFileName(surah, 'arabic', source.name),
       format: 'MP3',
       type: 'audio',
@@ -164,7 +151,7 @@ export function buildSurahDownloadOptions(
     label: 'Urdu Translation Audio',
     labelUrdu: 'اردو ترجمہ آڈیو',
     description: `Complete Urdu tarjuma audio of Surah ${surah.surahName} — listen and download for offline use.`,
-    href: buildSurahAudioApiPath(surah.id, 'urdu'),
+    href: audioSources.urduUrl,
     fileName: buildSurahAudioFileName(surah, 'urdu'),
     format: 'OGG',
     type: 'audio',

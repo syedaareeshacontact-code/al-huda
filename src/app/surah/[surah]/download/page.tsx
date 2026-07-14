@@ -3,9 +3,9 @@ import { notFound, permanentRedirect } from 'next/navigation';
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import SurahDownloadHub from '@/components/quran/surah-download-hub';
-import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
-import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
-import { POPULAR_SURAH_IDS } from '@/lib/ssg-config';
+import { resolveSurahParam } from '@/lib/quran-index';
+import { buildSurahPath } from '@/lib/quran-routing';
+import { getAllSurahStaticParams } from '@/lib/quran-static-params';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildSurahDownloadSchemas } from '@/lib/seo-schema';
 import {
@@ -23,15 +23,12 @@ interface SurahDownloadPageProps {
   params: Promise<{ surah: string }>;
 }
 
-export const revalidate = 86400;
-export const dynamicParams = true;
+export const dynamic = 'force-static';
+export const revalidate = false;
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return getAllSurahs()
-    .filter((surah) => POPULAR_SURAH_IDS.some((id) => id === surah.id))
-    .map((surah) => ({
-      surah: buildSurahSlug(surah.id, surah.surahName),
-    }));
+  return getAllSurahStaticParams();
 }
 
 export async function generateMetadata({ params }: SurahDownloadPageProps): Promise<Metadata> {

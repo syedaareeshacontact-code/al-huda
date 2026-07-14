@@ -79,6 +79,9 @@ interface ActiveAudioWord {
 
 const INITIAL_VISIBLE_AYAHS = 20;
 const AYAH_RENDER_BATCH = 40;
+const AUDIO_USAGE_TRACK_INTERVAL_MS = 5 * 60 * 1000;
+const AUDIO_USAGE_MIN_REPORT_SECONDS = 30;
+const AUDIO_USAGE_MAX_REPORT_SECONDS = 5 * 60;
 
 function getVisibleCountForAyah(ayahNumber: number) {
   return Math.max(
@@ -1121,21 +1124,21 @@ export default function QuranReaderPage({
       const deltaSeconds = Math.floor(currentTime - previousTime);
       audioUsageLastTimeRef.current = currentTime;
 
-      if (deltaSeconds > 0) {
+      if (deltaSeconds >= AUDIO_USAGE_MIN_REPORT_SECONDS) {
         reportUsageDelta({
-          audioSeconds: Math.min(deltaSeconds, 120),
+          audioSeconds: Math.min(deltaSeconds, AUDIO_USAGE_MAX_REPORT_SECONDS),
         });
       }
-    }, 60000);
+    }, AUDIO_USAGE_TRACK_INTERVAL_MS);
 
     const onBeforeUnload = () => {
       const currentTime = audioNode.currentTime || 0;
       const previousTime = audioUsageLastTimeRef.current || 0;
       const deltaSeconds = Math.floor(currentTime - previousTime);
-      if (deltaSeconds > 0) {
+      if (deltaSeconds >= AUDIO_USAGE_MIN_REPORT_SECONDS) {
         reportUsageDelta(
           {
-            audioSeconds: Math.min(deltaSeconds, 120),
+            audioSeconds: Math.min(deltaSeconds, AUDIO_USAGE_MAX_REPORT_SECONDS),
           },
           true
         );
@@ -1153,9 +1156,9 @@ export default function QuranReaderPage({
       const deltaSeconds = Math.floor(currentTime - previousTime);
       audioUsageLastTimeRef.current = currentTime;
 
-      if (deltaSeconds > 0) {
+      if (deltaSeconds >= AUDIO_USAGE_MIN_REPORT_SECONDS) {
         reportUsageDelta({
-          audioSeconds: Math.min(deltaSeconds, 120),
+          audioSeconds: Math.min(deltaSeconds, AUDIO_USAGE_MAX_REPORT_SECONDS),
         });
       }
     };

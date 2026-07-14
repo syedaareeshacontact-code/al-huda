@@ -12,10 +12,10 @@ import {
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import QuranReaderPage from '@/components/sidebar';
-import { getAllSurahs, resolveSurahParam } from '@/lib/quran-index';
+import { resolveSurahParam } from '@/lib/quran-index';
 import { getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
-import { buildSurahPath, buildSurahSlug } from '@/lib/quran-routing';
-import { POPULAR_SURAH_IDS } from '@/lib/ssg-config';
+import { buildSurahPath } from '@/lib/quran-routing';
+import { getAllSurahStaticParams } from '@/lib/quran-static-params';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { buildSurahPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
@@ -33,16 +33,13 @@ interface SurahPageProps {
   }>;
 }
 
-export const revalidate = 86400;
-export const dynamicParams = true;
+export const dynamic = 'force-static';
+export const revalidate = false;
+export const dynamicParams = false;
 const INITIAL_SURAH_AYAH_LIMIT = 20;
 
 export function generateStaticParams() {
-  return getAllSurahs()
-    .filter((surah) => POPULAR_SURAH_IDS.some((id) => id === surah.id))
-    .map((surah) => ({
-      surah: buildSurahSlug(surah.id, surah.surahName),
-    }));
+  return getAllSurahStaticParams();
 }
 
 export async function generateMetadata({ params }: SurahPageProps): Promise<Metadata> {

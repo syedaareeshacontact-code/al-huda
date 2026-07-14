@@ -16,7 +16,7 @@ import {
 } from '@/lib/quran-server';
 import { resolveSurahParam } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
-import { buildAyahPageKeywords } from '@/lib/seo-keywords';
+import { getAllAyahStaticParams } from '@/lib/quran-static-params';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildAyahPageSchemas } from '@/lib/seo-schema';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
@@ -28,12 +28,12 @@ interface AyahPageProps {
   }>;
 }
 
-export const revalidate = 86400;
-export const dynamicParams = true;
+export const dynamic = 'force-static';
+export const revalidate = false;
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  // Ayah content comes from external APIs, so generate and cache these pages on demand via ISR.
-  return [];
+  return getAllAyahStaticParams();
 }
 
 function parseAyahNumber(value: string) {
@@ -43,6 +43,21 @@ function parseAyahNumber(value: string) {
   }
 
   return parsed;
+}
+
+function buildLightweightAyahKeywords(surahId: number, surahName: string, ayahNumber: number) {
+  const normalizedSurahName = surahName.toLowerCase();
+
+  return [
+    `ayah ${surahId}:${ayahNumber}`,
+    `surah ${normalizedSurahName} ayah ${ayahNumber}`,
+    `quran ${surahId}:${ayahNumber}`,
+    `ayah ${surahId}:${ayahNumber} urdu translation`,
+    `ayah ${surahId}:${ayahNumber} english translation`,
+    `ayah ${surahId}:${ayahNumber} tafseer`,
+    `ayah ${surahId}:${ayahNumber} audio`,
+    `surah ${normalizedSurahName} verse ${ayahNumber}`,
+  ];
 }
 
 export async function generateMetadata({
@@ -62,40 +77,15 @@ export async function generateMetadata({
   }
 
   const surah = resolved.surah;
-  const ayah = await getAyahContent(surah.id, ayahNumber);
-  const tafsir = await getUrduTafsirByAyah(surah.id, ayahNumber);
-  const canOpenTafsir = Boolean(tafsir);
   const canonicalPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
 
-  const title = canOpenTafsir
-    ? `Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو ترجمہ، English Translation & Tafseer`
-    : `Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو ترجمہ & English Translation`;
-  const fallbackDescription = canOpenTafsir
-    ? `Ayah ${surah.id}:${ayahNumber} Arabic text, Urdu and English translation, Arabic + Urdu audio, and tafseer link.`
-    : `Ayah ${surah.id}:${ayahNumber} Arabic text, Urdu and English translation, and Arabic + Urdu audio.`;
-  const translationSnippet = [ayah?.urduTranslation, ayah?.englishTranslation]
-    .map((value) => String(value ?? '').trim())
-    .filter(Boolean)
-    .join(' ');
-  const normalizedTranslationSnippet =
-    translationSnippet.length > 170
-      ? `${translationSnippet.slice(0, 167).trim()}...`
-      : translationSnippet;
-  const description = tafsir
-    ? `${stripHtml(tafsir.textHtml).slice(0, 150)}...`
-    : normalizedTranslationSnippet || fallbackDescription;
-
   return buildPageMetadata({
-    title,
-    description,
+    title: `Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — Urdu & English Translation`,
+    description: `Read Ayah ${surah.id}:${ayahNumber} of Surah ${surah.surahName} with Arabic text, Urdu translation, English translation, audio, and tafseer link.`,
     path: canonicalPath,
     ogType: 'article',
     imageUrl: `/og?kind=ayah&surah=${surah.id}&ayah=${ayahNumber}`,
-    keywords: buildAyahPageKeywords({
-      surahId: surah.id,
-      surahName: surah.surahName,
-      ayahNumber,
-    }),
+    keywords: buildLightweightAyahKeywords(surah.id, surah.surahName, ayahNumber),
   });
 }
 
@@ -316,6 +306,7 @@ export default async function AyahDetailPage({
               </p>
               <Link
                 href={tafsirPath}
+                prefetch={false}
                 className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
               >
                 <FileText className="size-4" />
@@ -337,6 +328,7 @@ export default async function AyahDetailPage({
           {prevAyahPath ? (
             <Link
               href={prevAyahPath}
+              prefetch={false}
               className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
             >
               <ChevronLeft className="size-4" />
@@ -346,6 +338,7 @@ export default async function AyahDetailPage({
           {nextAyahPath ? (
             <Link
               href={nextAyahPath}
+              prefetch={false}
               className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
             >
               Next Ayah
@@ -364,6 +357,7 @@ export default async function AyahDetailPage({
           {canOpenTafsir ? (
             <Link
               href={tafsirPath}
+              prefetch={false}
               className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm hover:border-[var(--color-accent-soft)]"
             >
               Tafseer Page

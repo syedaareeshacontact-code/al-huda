@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { resolveSurahParam, getAllSurahs } from '@/lib/quran-index';
-import { buildSurahPath, buildSurahSlug, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
-import { POPULAR_SURAH_IDS } from '@/lib/ssg-config';
+import { buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import { getAllTafsirSurahStaticParams } from '@/lib/quran-static-params';
 import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirSurahPageSchemas } from '@/lib/seo-schema';
@@ -21,27 +21,18 @@ import {
   getTafsirSurahMetaDescription,
   getTafsirSurahMetaTitle,
 } from '@/lib/surah-seo-content';
-import { getTafsirAyahNumbersBySurah, getAllTafsirRefs } from '@/lib/tafsir-index';
+import { getTafsirAyahNumbersBySurah } from '@/lib/tafsir-index';
 
 interface TafsirSurahPageProps {
   params: Promise<{ surah: string }>;
 }
 
-export const revalidate = 86400;
-export const dynamicParams = true;
+export const dynamic = 'force-static';
+export const revalidate = false;
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  const refs = getAllTafsirRefs();
-  const surahIds = [...new Set(refs.map((r) => r.surahId))];
-
-  return getAllSurahs()
-    .filter(
-      (surah) =>
-        POPULAR_SURAH_IDS.some((id) => id === surah.id) && surahIds.includes(surah.id)
-    )
-    .map((surah) => ({
-      surah: buildSurahSlug(surah.id, surah.surahName),
-    }));
+  return getAllTafsirSurahStaticParams();
 }
 
 export async function generateMetadata({ params }: TafsirSurahPageProps): Promise<Metadata> {
@@ -160,6 +151,7 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
                 <Link
                   key={ayahNumber}
                   href={buildTafsirPath(surah.id, surah.surahName, ayahNumber)}
+                  prefetch={false}
                   className="inline-flex min-w-[4.5rem] items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
                 >
                   <FileText className="h-3.5 w-3.5" />
@@ -198,6 +190,7 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
         {prev ? (
           <Link
             href={buildTafsirSurahPath(prev.id, prev.surahName)}
+            prefetch={false}
             className="inline-flex items-center gap-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-semibold transition hover:border-[var(--color-accent-soft)]"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -209,6 +202,7 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
         {next ? (
           <Link
             href={buildTafsirSurahPath(next.id, next.surahName)}
+            prefetch={false}
             className="inline-flex items-center gap-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-semibold transition hover:border-[var(--color-accent-soft)]"
           >
             {next.surahName} Tafseer

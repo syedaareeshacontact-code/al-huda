@@ -4,11 +4,12 @@ import type { AyahContentEntry } from '@/lib/quran-server';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import {
-  buildSurahAudioApiPath,
   buildSurahDownloadPath,
-  buildSurahPdfApiPath,
+  buildSurahPdfPublicPath,
   buildSurahPdfFileName,
   buildSurahAudioFileName,
+  getSurahArabicAudioUrl,
+  getSurahUrduAudioUrl,
 } from '@/lib/surah-download';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 import {
@@ -26,7 +27,7 @@ interface SurahCrawlableContentProps {
   ayahs: AyahContentEntry[];
 }
 
-export default function SurahCrawlableContent({ surah, ayahs }: SurahCrawlableContentProps) {
+export default async function SurahCrawlableContent({ surah, ayahs }: SurahCrawlableContentProps) {
   const intro = getSurahSeoIntro(surah);
   const urduTitle = getSurahUrduTitle(surah);
   const relatedLinks = getRelatedLinks(surah);
@@ -34,6 +35,10 @@ export default function SurahCrawlableContent({ surah, ayahs }: SurahCrawlableCo
   const { prev, next } = getPrevNextSurah(surah.id, allSurahs);
   const fullTextLimit = getSsrAyahFullTextLimit(surah.totalAyah);
   const fullTextAyahs = ayahs.slice(0, fullTextLimit);
+  const [arabicAudioUrl, urduAudioUrl] = await Promise.all([
+    getSurahArabicAudioUrl(surah.id, 7),
+    getSurahUrduAudioUrl(surah.id),
+  ]);
 
   return (
     <section
@@ -113,28 +118,30 @@ export default function SurahCrawlableContent({ surah, ayahs }: SurahCrawlableCo
               All Download Options
             </Link>
             <AuthDownloadLink
-              href={buildSurahPdfApiPath(surah.id, 'arabic')}
+              href={buildSurahPdfPublicPath(surah.id, 'arabic')}
               fileName={buildSurahPdfFileName(surah, 'arabic')}
               className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
             >
               Arabic PDF
             </AuthDownloadLink>
             <AuthDownloadLink
-              href={buildSurahPdfApiPath(surah.id, 'arabic-urdu')}
+              href={buildSurahPdfPublicPath(surah.id, 'arabic-urdu')}
               fileName={buildSurahPdfFileName(surah, 'arabic-urdu')}
               className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
             >
               Arabic + Urdu PDF
             </AuthDownloadLink>
+            {arabicAudioUrl ? (
+              <AuthDownloadLink
+                href={arabicAudioUrl}
+                fileName={buildSurahAudioFileName(surah, 'arabic', 'Mishari al-Afasy')}
+                className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
+              >
+                Arabic Audio MP3
+              </AuthDownloadLink>
+            ) : null}
             <AuthDownloadLink
-              href={buildSurahAudioApiPath(surah.id, 'arabic', 7)}
-              fileName={buildSurahAudioFileName(surah, 'arabic', 'Mishari al-Afasy')}
-              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
-            >
-              Arabic Audio MP3
-            </AuthDownloadLink>
-            <AuthDownloadLink
-              href={buildSurahAudioApiPath(surah.id, 'urdu')}
+              href={urduAudioUrl}
               fileName={buildSurahAudioFileName(surah, 'urdu')}
               className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)]"
             >

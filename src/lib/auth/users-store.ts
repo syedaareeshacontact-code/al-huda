@@ -854,6 +854,34 @@ export async function incrementUserUsage(
   return normalizeStoredUser(raw);
 }
 
+export async function incrementUserUsageCounters(
+  userId: string,
+  input: { sessionSeconds?: number; audioSeconds?: number }
+): Promise<boolean> {
+  const safeSessionSeconds = Math.max(0, Math.floor(input.sessionSeconds ?? 0));
+  const safeAudioSeconds = Math.max(0, Math.floor(input.audioSeconds ?? 0));
+
+  if (safeSessionSeconds === 0 && safeAudioSeconds === 0) {
+    return true;
+  }
+
+  const User = await ensureUsersModel();
+  const result = await User.updateOne(
+    { id: userId },
+    {
+      $inc: {
+        totalSessionSeconds: safeSessionSeconds,
+        totalAudioSeconds: safeAudioSeconds,
+      },
+      $set: {
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  ).exec();
+
+  return result.matchedCount > 0;
+}
+
 export async function replaceUserQuranState(
   userId: string,
   input: {

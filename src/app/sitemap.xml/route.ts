@@ -1,10 +1,10 @@
-import { getHadithSitemapChunkCount } from '@/lib/hadith/hadith-index';
 import { getAllSurahs, TOTAL_AYAHS } from '@/lib/quran-index';
 import { getSiteOrigin } from '@/lib/seo';
+import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
 import { getAllTafsirRefs } from '@/lib/tafsir-index';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 const AYAH_SITEMAP_CHUNK_SIZE = 1000;
 const TAFSIR_SITEMAP_CHUNK_SIZE = 800;
@@ -30,25 +30,13 @@ function buildQuranSitemapNames() {
   return names;
 }
 
-async function buildHadithSitemapNames() {
-  const names = ['hadith-collections'];
-
-  try {
-    const chunkCount = await getHadithSitemapChunkCount();
-    for (let index = 1; index <= chunkCount; index += 1) {
-      names.push(`hadith-${index}`);
-    }
-  } catch (error) {
-    console.warn('Hadith sitemap chunk count unavailable:', error);
-  }
-
-  return names;
+function buildHadithSitemapNames() {
+  return ['hadith-collections', 'hadith-featured'];
 }
 
 async function renderSitemapIndexXml() {
   const origin = getSiteOrigin();
-  const updatedAt = new Date().toISOString();
-  const names = [...(await buildHadithSitemapNames()), ...buildQuranSitemapNames()];
+  const names = [...buildHadithSitemapNames(), ...buildQuranSitemapNames()];
 
   const extraSitemaps = [
     `${origin}/local-sitemap.xml`,
@@ -57,12 +45,12 @@ async function renderSitemapIndexXml() {
 
   const chunkItems = names
     .map((name) => {
-      return `<sitemap><loc>${origin}/sitemaps/${name}.xml</loc><lastmod>${updatedAt}</lastmod></sitemap>`;
+      return `<sitemap><loc>${origin}/sitemaps/${name}.xml</loc><lastmod>${SITEMAP_LASTMOD}</lastmod></sitemap>`;
     })
     .join('');
 
   const extraItems = extraSitemaps
-    .map((url) => `<sitemap><loc>${url}</loc><lastmod>${updatedAt}</lastmod></sitemap>`)
+    .map((url) => `<sitemap><loc>${url}</loc><lastmod>${SITEMAP_LASTMOD}</lastmod></sitemap>`)
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -78,7 +66,7 @@ export async function GET() {
   return new Response(await renderSitemapIndexXml(), {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': SITEMAP_CACHE_CONTROL,
     },
   });
 }

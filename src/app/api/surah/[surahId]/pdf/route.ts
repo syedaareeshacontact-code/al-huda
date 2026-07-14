@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import { getSurahById } from '@/lib/quran-index';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getAyahRowsForSurah } from '@/lib/quran-server';
-import {
-  buildSurahPdfFileName,
-  buildSurahPdfPublicPath,
-  type SurahPdfVariant,
-} from '@/lib/surah-download';
-import { readPrebuiltPdfBuffer, resolveSurahPdfBuffer } from '@/lib/surah-pdf-generator';
+import { buildSurahPdfPublicPath, type SurahPdfVariant } from '@/lib/surah-download';
 
 export const runtime = 'nodejs';
-export const revalidate = 86400;
 
 function parseSurahId(value: string): number | null {
   const parsed = Number(value);
@@ -28,7 +20,7 @@ function parseVariant(value: string | null): SurahPdfVariant | null {
   return null;
 }
 
-/** Legacy API fallback — prefer static /surah-pdfs/001-arabic.pdf links */
+/** Legacy API fallback — redirects to static /surah-pdfs/001-arabic.pdf files. */
 export async function GET(
   request: Request,
   context: { params: Promise<{ surahId: string }> }
@@ -55,48 +47,8 @@ export async function GET(
     );
   }
 
-  const surah = getSurahById(surahId);
-  if (!surah) {
-    return NextResponse.json({ error: 'Surah not found' }, { status: 404 });
-  }
-
   const staticPath = buildSurahPdfPublicPath(surahId, variant);
-  const prebuilt = await readPrebuiltPdfBuffer(surahId, variant);
-  if (prebuilt) {
-    return new NextResponse(new Uint8Array(prebuilt), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${buildSurahPdfFileName(surah, variant)}"`,
-        'Content-Length': String(prebuilt.length),
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        'X-PDF-Source': 'prebuilt',
-        'Link': `<${staticPath}>; rel="canonical"`,
-      },
-    });
-  }
-
-  try {
-    const ayahs = await getAyahRowsForSurah(surahId);
-    if (ayahs.length === 0) {
-      return NextResponse.json({ error: 'Surah content unavailable' }, { status: 503 });
-    }
-
-    const pdfBuffer = await resolveSurahPdfBuffer({ surah, ayahs, variant });
-    const fileName = buildSurahPdfFileName(surah, variant);
-
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': String(pdfBuffer.length),
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
-        'X-PDF-Source': 'generated',
-      },
-    });
-  } catch (error) {
-    console.error('[surah-pdf]', error);
-    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
-  }
+  const response = NextResponse.redirect(new URL(staticPath, request.url), 302);
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
 }

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { getSurahById } from '@/lib/quran-index';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import {
-  buildSurahAudioFileName,
   getSurahArabicAudioUrl,
   getSurahUrduAudioUrl,
   SURAH_RECITERS,
@@ -35,20 +33,6 @@ function parseReciterId(value: string | null): SurahReciterId {
   return valid?.id ?? SURAH_RECITERS[0].id;
 }
 
-function getExtensionFromUrl(url: string): string {
-  const pathname = new URL(url).pathname.toLowerCase();
-  if (pathname.endsWith('.mp3')) return 'mp3';
-  if (pathname.endsWith('.ogg')) return 'ogg';
-  if (pathname.endsWith('.mpeg')) return 'mpeg';
-  return 'mp3';
-}
-
-function getContentType(ext: string): string {
-  if (ext === 'ogg') return 'audio/ogg';
-  if (ext === 'mpeg') return 'audio/mpeg';
-  return 'audio/mpeg';
-}
-
 export async function GET(
   request: Request,
   context: { params: Promise<{ surahId: string }> }
@@ -75,18 +59,11 @@ export async function GET(
     );
   }
 
-  const surah = getSurahById(surahId);
-  if (!surah) {
-    return NextResponse.json({ error: 'Surah not found' }, { status: 404 });
-  }
-
   try {
     let sourceUrl: string | null = null;
-    let reciterName: string | undefined;
 
     if (variant === 'arabic') {
       const reciterId = parseReciterId(searchParams.get('reciter'));
-      reciterName = SURAH_RECITERS.find((r) => r.id === reciterId)?.name;
       sourceUrl = await getSurahArabicAudioUrl(surahId, reciterId);
     } else {
       sourceUrl = await getSurahUrduAudioUrl(surahId);
@@ -96,28 +73,9 @@ export async function GET(
       return NextResponse.json({ error: 'Audio source unavailable' }, { status: 404 });
     }
 
-    const audioResponse = await fetch(sourceUrl, {
-      next: { revalidate: 86400 },
-    });
-
-    if (!audioResponse.ok) {
-      return NextResponse.json({ error: 'Audio fetch failed' }, { status: 502 });
-    }
-
-    const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
-    const ext = getExtensionFromUrl(sourceUrl);
-    const baseName = buildSurahAudioFileName(surah, variant, reciterName);
-    const fileName = baseName.includes('.') ? baseName : `${baseName}.${ext}`;
-
-    return new NextResponse(new Uint8Array(audioBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': getContentType(ext),
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': String(audioBuffer.length),
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
-      },
-    });
+    const response = NextResponse.redirect(sourceUrl, 302);
+    response.headers.set('Cache-Control', 'private, no-store');
+    return response;
   } catch (error) {
     console.error('[surah-audio]', error);
     return NextResponse.json({ error: 'Audio download failed' }, { status: 500 });

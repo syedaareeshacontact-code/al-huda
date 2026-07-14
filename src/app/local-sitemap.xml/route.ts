@@ -1,6 +1,8 @@
 import { getSiteOrigin } from '@/lib/seo';
+import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
 
 export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 function escapeXml(input: string) {
   return input
@@ -13,78 +15,77 @@ function escapeXml(input: string) {
 
 function renderLocalSitemapXml() {
   const baseUrl = getSiteOrigin();
-  const updatedAt = new Date().toISOString();
 
   const entries = [
     {
       url: `${baseUrl}/about`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'monthly',
       priority: '0.85',
     },
     {
       url: `${baseUrl}/read-quran-online`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'weekly',
       priority: '0.9',
     },
     {
       url: `${baseUrl}/contact`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'monthly',
       priority: '0.8',
     },
     {
       url: `${baseUrl}/prayer-times`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'daily',
       priority: '0.95',
     },
     {
       url: `${baseUrl}/prayer-times/lahore`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'daily',
       priority: '0.9',
     },
     {
       url: `${baseUrl}/prayer-times/karachi`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'daily',
       priority: '0.9',
     },
     {
       url: `${baseUrl}/prayer-times/islamabad`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'daily',
       priority: '0.9',
     },
     {
       url: `${baseUrl}/duas`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'weekly',
       priority: '0.85',
     },
     {
       url: `${baseUrl}/azkar`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'weekly',
       priority: '0.85',
     },
     {
       url: `${baseUrl}/99-names-of-allah`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'monthly',
       priority: '0.85',
     },
     {
       url: `${baseUrl}/zakat-calculator`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'monthly',
       priority: '0.85',
     },
     {
       url: `${baseUrl}/mosque-finder`,
-      lastmod: updatedAt,
+      lastmod: SITEMAP_LASTMOD,
       changefreq: 'weekly',
       priority: '0.85',
     },
@@ -105,7 +106,7 @@ export async function GET() {
   return new Response(renderLocalSitemapXml(), {
     headers: {
       'Content-Type': 'application/xml',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': SITEMAP_CACHE_CONTROL,
     },
   });
 }

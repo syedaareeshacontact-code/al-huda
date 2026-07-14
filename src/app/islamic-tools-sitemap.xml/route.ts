@@ -1,12 +1,13 @@
 export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 import { getSiteOrigin } from '@/lib/seo';
 import { getAllCitySlugs } from '@/lib/islamic-cities';
 import { ISLAMIC_TOOLS_SITEMAP_PATHS } from '@/lib/islamic-tools-seo';
+import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
 
 function renderIslamicToolsSitemapXml() {
   const baseUrl = getSiteOrigin();
-  const updatedAt = new Date().toISOString();
   const citySlugs = getAllCitySlugs();
 
   const entries: Array<{ url: string; priority: string; changefreq: string }> = [];
@@ -49,7 +50,7 @@ function renderIslamicToolsSitemapXml() {
   const items = entries
     .map(
       (entry) =>
-        `<url><loc>${entry.url}</loc><lastmod>${updatedAt}</lastmod><changefreq>${entry.changefreq}</changefreq><priority>${entry.priority}</priority></url>`
+        `<url><loc>${entry.url}</loc><lastmod>${SITEMAP_LASTMOD}</lastmod><changefreq>${entry.changefreq}</changefreq><priority>${entry.priority}</priority></url>`
     )
     .join('');
 
@@ -61,7 +62,7 @@ export async function GET() {
   return new Response(renderIslamicToolsSitemapXml(), {
     headers: {
       'Content-Type': 'application/xml',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': SITEMAP_CACHE_CONTROL,
     },
   });
 }

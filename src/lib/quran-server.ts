@@ -10,6 +10,9 @@ const URDU_TRANSLATION_ID = 234; // Fatah Muhammad Jalandhari (Urdu)
 // Quran.com's default page size is 10; 300 covers every ayah in a chapter.
 const CHAPTER_VERSES_PER_PAGE = 300;
 const QURAN_COM_TAFSIR_IDS = [160, 159, 818, 157] as const;
+const PERMANENT_QURAN_FETCH = {
+  cache: 'force-cache',
+} as const;
 
 export interface AyahContentEntry {
   ayahNumber: number;
@@ -28,18 +31,18 @@ interface QuranComTafsirPayload {
 export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta> => {
   const [chapterRes, versesRes, textRes] = await Promise.all([
     fetch(`${QURAN_COM_API}/chapters/${surahId}?language=en`, {
-      next: { revalidate: 60 * 60 * 24 },
+      ...PERMANENT_QURAN_FETCH,
       signal: AbortSignal.timeout(10_000),
     }),
     fetch(
       `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
       {
-        next: { revalidate: 60 * 60 * 24 },
+        ...PERMANENT_QURAN_FETCH,
         signal: AbortSignal.timeout(10_000),
       }
     ),
     fetch(`${QURAN_COM_API}/quran/verses/uthmani?chapter_number=${surahId}`, {
-      next: { revalidate: 60 * 60 * 24 },
+      ...PERMANENT_QURAN_FETCH,
       signal: AbortSignal.timeout(10_000),
     }),
   ]);
@@ -154,13 +157,13 @@ export const getAyahContent = cache(async (surahId: number, ayahNumber: number) 
 export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number) => {
   const [arabicResult, urduResult] = await Promise.allSettled([
     fetch(`${QURAN_COM_API}/verses/by_verse/ar-default/${surahId}:${ayahNumber}`, {
-      next: { revalidate: 60 * 60 * 24 },
+      ...PERMANENT_QURAN_FETCH,
       signal: AbortSignal.timeout(8_000),
     }),
     fetch(
       `https://ia801503.us.archive.org/28/items/quran_urdu_audio_only/${String(surahId).padStart(3, '0')}.json`,
       {
-        next: { revalidate: 60 * 60 * 24 },
+        ...PERMANENT_QURAN_FETCH,
         signal: AbortSignal.timeout(8_000),
       }
     ),
@@ -216,7 +219,7 @@ export const getUrduTafsirByAyah = cache(
             headers: {
               Accept: 'application/json',
             },
-            next: { revalidate: 60 * 60 * 24 },
+            ...PERMANENT_QURAN_FETCH,
             signal: AbortSignal.timeout(8_000),
           }
         );
