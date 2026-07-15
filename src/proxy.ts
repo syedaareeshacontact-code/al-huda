@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { getCanonicalSurahSlugById } from '@/lib/quran-index';
+
 const SESSION_COOKIE_NAME = 'alhuda_session';
 
 function getAuthSecret() {
@@ -58,7 +60,30 @@ async function hasValidSession(token: string | undefined) {
   }
 }
 
-export async function proxy(request: NextRequest) {
+function redirectNumericQuranPath(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const surahMatch = /^\/surah\/(\d+)(?:\/(ayah\/\d+|download))?$/.exec(pathname);
+  const tafsirMatch = /^\/tafsir\/(\d+)(?:\/(\d+))?$/.exec(pathname);
+  const match = surahMatch ?? tafsirMatch;
+
+  if (!match) {
+    return null;
+  }
+
+  const surahId = Number(match[1]);
+  const canonicalSlug = getCanonicalSurahSlugById(surahId);
+  if (!canonicalSlug || canonicalSlug === String(surahId)) {
+    return null;
+  }
+
+  const suffix = match[2] ? `/${match[2]}` : '';
+  const nextUrl = request.nextUrl.clone();
+  nextUrl.pathname = surahMatch ? `/surah/${canonicalSlug}${suffix}` : `/tafsir/${canonicalSlug}${suffix}`;
+
+  return NextResponse.redirect(nextUrl, 308);
+}
+
+async function protectSurahPdf(request: NextRequest) {
   if (await hasValidSession(request.cookies.get(SESSION_COOKIE_NAME)?.value)) {
     return NextResponse.next();
   }
@@ -71,6 +96,21 @@ export async function proxy(request: NextRequest) {
   });
 }
 
+export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/surah-pdfs/')) {
+    return protectSurahPdf(request);
+  }
+
+  return redirectNumericQuranPath(request) ?? NextResponse.next();
+}
+
 export const config = {
-  matcher: ['/surah-pdfs/:path*'],
+  matcher: [
+    '/surah-pdfs/:path*',
+    '/surah/:surah(\\d+)',
+    '/surah/:surah(\\d+)/ayah/:ayah(\\d+)',
+    '/surah/:surah(\\d+)/download',
+    '/tafsir/:surah(\\d+)',
+    '/tafsir/:surah(\\d+)/:ayah(\\d+)',
+  ],
 };

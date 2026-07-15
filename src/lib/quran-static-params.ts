@@ -3,10 +3,7 @@ import { buildSurahSlug } from '@/lib/quran-routing';
 import { getAllTafsirRefs } from '@/lib/tafsir-index';
 
 function getSurahParamValues(surahId: number, surahName: string) {
-  const canonicalSlug = buildSurahSlug(surahId, surahName);
-  const numericSlug = String(surahId);
-
-  return canonicalSlug === numericSlug ? [canonicalSlug] : [canonicalSlug, numericSlug];
+  return [buildSurahSlug(surahId, surahName)];
 }
 
 export function getAllSurahStaticParams() {
