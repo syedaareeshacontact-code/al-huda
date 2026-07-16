@@ -33,6 +33,17 @@ interface NotificationResponse {
   unreadCount?: number;
 }
 
+interface NotificationCreateResponse {
+  notification?: UserNotification;
+  pushTargets?: number;
+  push?: {
+    sent?: number;
+    failed?: number;
+    disabled?: number;
+    unavailable?: boolean;
+  };
+}
+
 interface PrayerTimingsPayload {
   code?: number;
   data?: {
@@ -325,12 +336,14 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         return null;
       }
 
-      const payload = (await response.json()) as { notification?: UserNotification };
+      const payload = (await response.json()) as NotificationCreateResponse;
       if (payload.notification) {
         setNotifications((prev) => [payload.notification!, ...prev].slice(0, 80));
         lastUnreadCountRef.current += 1;
         playNotificationSound();
-        sendDesktopNotification(payload.notification);
+        if (!payload.push || Number(payload.push.sent ?? 0) <= 0) {
+          sendDesktopNotification(payload.notification);
+        }
       }
 
       return payload.notification ?? null;
@@ -408,7 +421,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
       setPushEnabled(true);
       updateSettings({ ...settings, desktopEnabled: true });
-      setPushMessage('Quran push reminders are enabled for this device.');
+      setPushMessage('Website push notifications are enabled for this device.');
     } catch {
       setPushMessage('Push reminders could not be enabled on this browser.');
     } finally {
@@ -437,7 +450,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       }
 
       setPushEnabled(false);
-      setPushMessage('Quran push reminders are off for this device.');
+      setPushMessage('Website push notifications are off for this device.');
     } catch {
       setPushMessage('Unable to disable push reminders right now.');
     } finally {
@@ -724,10 +737,10 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold text-[var(--color-heading)]">
-                    Quran push reminders
+                    Website push notifications
                   </p>
                   <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
-                    Sends Surah reminders from server cron or your external scheduler.
+                    Sends Quran, account, audio, saved ayah, Islamic, and admin alerts.
                   </p>
                 </div>
                 <Button

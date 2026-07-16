@@ -3,11 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  BellRing,
   BarChart3,
+  CheckCircle2,
+  CircleAlert,
   Clock3,
   Gauge,
   Headphones,
   LayoutDashboard,
+  Loader2,
   RefreshCcw,
   Users,
 } from 'lucide-react';
@@ -30,6 +34,20 @@ interface AdminUserRecord {
 interface AdminUsersPayload {
   users?: AdminUserRecord[];
   summary?: AdminUsageSummary;
+  message?: string;
+}
+
+interface BroadcastPayload {
+  ok?: boolean;
+  users?: number;
+  inAppCreated?: number;
+  pushTargets?: number;
+  push?: {
+    sent?: number;
+    failed?: number;
+    disabled?: number;
+    unavailable?: boolean;
+  };
   message?: string;
 }
 
@@ -88,6 +106,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const loadSummary = async () => {
     try {
@@ -117,6 +138,52 @@ export default function AdminPage() {
   useEffect(() => {
     void loadSummary();
   }, []);
+
+  const sendTestNotification = async () => {
+    try {
+      setSendingTest(true);
+      setTestError(null);
+      setTestResult(null);
+
+      const response = await fetch('/api/admin/notifications/broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: 'Test notification',
+          message: 'This is a test notification from Al Huda admin.',
+          href: '/',
+          type: 'system',
+          priority: 'normal',
+          push: true,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as BroadcastPayload | null;
+
+      if (!response.ok) {
+        setTestError(payload?.message ?? 'Unable to send test notification.');
+        return;
+      }
+
+      const users = Math.max(0, Number(payload?.users) || 0);
+      const inAppCreated = Math.max(0, Number(payload?.inAppCreated) || 0);
+      const pushTargets = Math.max(0, Number(payload?.pushTargets) || 0);
+      const pushSent = Math.max(0, Number(payload?.push?.sent) || 0);
+      const pushFailed = Math.max(0, Number(payload?.push?.failed) || 0);
+
+      setTestResult(
+        `Sent to ${inAppCreated}/${users} logged-in users. Push sent ${pushSent}/${pushTargets}${
+          pushFailed > 0 ? `, failed ${pushFailed}` : ''
+        }.`
+      );
+    } catch {
+      setTestError('Unable to send test notification right now.');
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const graphStats = useMemo(() => {
     const maxTime = Math.max(summary.totalSessionSeconds, summary.totalAudioSeconds, 1);
@@ -183,23 +250,64 @@ export default function AdminPage() {
                   {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : 'Not synced yet'}
                 </span>
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => void loadSummary()}
-                disabled={loading}
-                className="gap-2"
-              >
-                <RefreshCcw className="size-4" />
-                Refresh
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void loadSummary()}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <RefreshCcw className="size-4" />
+                  Refresh
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => void sendTestNotification()}
+                  disabled={sendingTest}
+                  className="gap-2"
+                >
+                  {sendingTest ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <BellRing className="size-4" />
+                  )}
+                  {sendingTest ? 'Sending...' : 'Send test notification'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
           {error ? (
             <Card>
               <CardContent className="p-4 text-sm text-[var(--color-danger)]">{error}</CardContent>
+            </Card>
+          ) : null}
+
+          {testResult || testError ? (
+            <Card
+              className={
+                testError
+                  ? 'border-[color-mix(in_oklab,var(--color-danger),var(--color-border)_54%)]'
+                  : 'border-[color-mix(in_oklab,var(--color-success),var(--color-border)_56%)]'
+              }
+            >
+              <CardContent
+                className={
+                  testError
+                    ? 'flex items-start gap-2 p-4 text-sm text-[var(--color-danger)]'
+                    : 'flex items-start gap-2 p-4 text-sm text-[var(--color-text)]'
+                }
+              >
+                {testError ? (
+                  <CircleAlert className="mt-0.5 size-4 shrink-0 text-[var(--color-danger)]" />
+                ) : (
+                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--color-success)]" />
+                )}
+                <span>{testError ?? testResult}</span>
+              </CardContent>
             </Card>
           ) : null}
 

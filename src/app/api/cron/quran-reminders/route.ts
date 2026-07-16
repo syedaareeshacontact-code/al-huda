@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import {
+  createUserNotification,
   listQuranReminderPushSubscriptions,
   markPushReminderSent,
 } from '@/lib/auth/users-store';
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
   const now = new Date();
   const nowIso = now.toISOString();
   const subscriptions = await listQuranReminderPushSubscriptions();
+  const subscriptionsByUser = new Map<string, typeof subscriptions>();
   let sent = 0;
   let skipped = 0;
   let failed = 0;
@@ -55,12 +57,21 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const surah = getRandomSurah(`${subscription.endpoint}:${nowIso.slice(0, 16)}`);
+    const userSubscriptions = subscriptionsByUser.get(subscription.userId) ?? [];
+    userSubscriptions.push(subscription);
+    subscriptionsByUser.set(subscription.userId, userSubscriptions);
+  }
+
+  for (const [userId, dueSubscriptions] of subscriptionsByUser.entries()) {
+    const surah = getRandomSurah(`${userId}:${nowIso.slice(0, 16)}`);
     const href = buildSurahPath(surah.id, surah.surahName);
-    const result = await sendPushNotificationToSubscriptions([subscription], {
-      title: `Read Surah ${surah.surahName}`,
-      body: `${surah.surahNameTranslation} • ${surah.totalAyah} ayahs. Take two minutes for Quran reflection.`,
-      tag: `quran-reminder-${surah.id}`,
+    const title = `Read Surah ${surah.surahName}`;
+    const body = `${surah.surahNameTranslation} • ${surah.totalAyah} ayahs. Take two minutes for Quran reflection.`;
+
+    const result = await sendPushNotificationToSubscriptions(dueSubscriptions, {
+      title,
+      body,
+      tag: `quran-reminder-${userId}-${surah.id}`,
       url: href,
       data: {
         surahId: surah.id,
@@ -73,16 +84,35 @@ export async function GET(request: Request) {
     }
 
     if (result.sent > 0) {
-      await markPushReminderSent(subscription.userId, subscription.endpoint, nowIso);
-      sent += 1;
+      await Promise.all(
+        dueSubscriptions.map((subscription) =>
+          markPushReminderSent(subscription.userId, subscription.endpoint, nowIso)
+        )
+      );
+      await createUserNotification(userId, {
+        type: 'quran',
+        priority: 'normal',
+        title: `Read Surah ${surah.surahName}`,
+        message: body,
+        href,
+        metadata: {
+          kind: 'quran-reminder',
+          pushSent: result.sent,
+          pushTargets: dueSubscriptions.length,
+          surahId: surah.id,
+        },
+      });
+      sent += result.sent;
+      failed += result.failed;
     } else {
-      failed += 1;
+      failed += result.failed || dueSubscriptions.length;
     }
   }
 
   return NextResponse.json({
     ok: true,
     checked: subscriptions.length,
+    dueUsers: subscriptionsByUser.size,
     sent,
     skipped,
     failed,

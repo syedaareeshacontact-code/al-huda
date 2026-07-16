@@ -67,6 +67,7 @@ export async function POST(request: Request) {
         body: parsed.data.message,
         url: parsed.data.href ?? '/',
         tag: `admin-broadcast-${Date.now()}`,
+        urgency: parsed.data.priority === 'high' ? 'high' : 'normal',
         data: {
           kind: 'admin-broadcast',
           type: parsed.data.type,

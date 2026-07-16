@@ -13,6 +13,8 @@ export interface PushPayload {
   tag?: string;
   icon?: string;
   badge?: string;
+  ttlSeconds?: number;
+  urgency?: 'very-low' | 'low' | 'normal' | 'high';
   data?: Record<string, string | number | boolean | null>;
 }
 
@@ -62,8 +64,8 @@ export async function sendPushNotificationToSubscriptions(
         } satisfies PushSubscription,
         serializedPayload,
         {
-          TTL: 120,
-          urgency: 'normal',
+          TTL: payload.ttlSeconds ?? 86_400,
+          urgency: payload.urgency ?? 'normal',
         }
       );
       sent += 1;

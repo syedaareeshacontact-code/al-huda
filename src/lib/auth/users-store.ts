@@ -1203,6 +1203,49 @@ export async function listEnabledPushSubscriptions(): Promise<PushSubscriptionFo
   return subscriptions;
 }
 
+export async function listEnabledPushSubscriptionsForUser(
+  userId: string
+): Promise<PushSubscriptionForDelivery[]> {
+  const User = await ensureUsersModel();
+  const rawUser = await User.findOne(
+    { id: userId },
+    {
+      _id: 0,
+      id: 1,
+      name: 1,
+      pushSubscriptions: 1,
+    }
+  )
+    .lean()
+    .exec();
+
+  const candidate = rawUser as
+    | {
+        id?: unknown;
+        name?: unknown;
+        pushSubscriptions?: unknown;
+      }
+    | null;
+
+  if (!candidate) {
+    return [];
+  }
+
+  const normalizedUserId = String(candidate.id ?? '').trim();
+  const userName = String(candidate.name ?? 'Reader').trim() || 'Reader';
+  if (!normalizedUserId) {
+    return [];
+  }
+
+  return normalizePushSubscriptions(candidate.pushSubscriptions)
+    .filter((subscription) => subscription.enabled)
+    .map((subscription) => ({
+      ...subscription,
+      userId: normalizedUserId,
+      userName,
+    }));
+}
+
 export async function markPushReminderSent(userId: string, endpoint: string, sentAt: string) {
   const User = await ensureUsersModel();
   await User.findOneAndUpdate(

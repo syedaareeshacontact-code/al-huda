@@ -28,6 +28,7 @@
   --color-accent-foreground: #fafafa;
   --color-highlight: #92400e;
   --color-info: #2563eb;
+  --color-success: #16a34a;
   --color-danger: #dc2626;
   --color-ring: #c9a227;
 
@@ -58,6 +59,7 @@
   --color-accent-foreground: #09090b;
   --color-highlight: #a67c00;
   --color-info: #60a5fa;
+  --color-success: #4ade80;
   --color-danger: #f87171;
   --color-ring: #c9a227;
 

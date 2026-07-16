@@ -4,10 +4,12 @@ import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import {
   createUserNotification,
+  listEnabledPushSubscriptionsForUser,
   listUserNotifications,
   markAllUserNotificationsRead,
   markUserNotificationRead,
 } from '@/lib/auth/users-store';
+import { sendPushNotificationToSubscriptions } from '@/lib/push/send-push-notification';
 
 const notificationSchema = z.object({
   type: z.enum(['prayer', 'quran', 'bookmark', 'audio', 'system', 'islamic']),
@@ -57,7 +59,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Unable to create notification' }, { status: 400 });
   }
 
-  return NextResponse.json({ notification }, { status: 201 });
+  const subscriptions = await listEnabledPushSubscriptionsForUser(user.id);
+  const push = await sendPushNotificationToSubscriptions(subscriptions, {
+    title: notification.title,
+    body: notification.message,
+    url: notification.href ?? '/',
+    tag: `${notification.type}-${notification.id}`,
+    urgency: notification.priority === 'high' ? 'high' : 'normal',
+    data: {
+      kind: 'user-notification',
+      notificationId: notification.id,
+      type: notification.type,
+    },
+  });
+
+  return NextResponse.json({ notification, pushTargets: subscriptions.length, push }, { status: 201 });
 }
 
 export async function PATCH(request: Request) {
