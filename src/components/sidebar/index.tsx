@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  AudioLines,
   BookCheck,
   BookOpen,
   Bookmark,
   BookmarkCheck,
   ChevronDown,
-  Hash,
   Heart,
+  Languages,
   Menu,
   Play,
   Search,
@@ -1630,7 +1631,7 @@ export default function QuranReaderPage({
               </CardContent>
             </Card>
           ) : (
-            <section id="ayah-list" className="space-y-3" aria-label="Ayah list">
+            <section id="ayah-list" className="space-y-4 sm:space-y-5" aria-label="Ayah list">
               {visibleAyahs.map(({ ayah, translation }) => {
                 const bookmarked = isBookmarked(surahId, ayah.numberInSurah);
                 const isLastRead = currentLastRead?.ayahNumber === ayah.numberInSurah;
@@ -1640,29 +1641,53 @@ export default function QuranReaderPage({
                   isPlaying && activeAudioAyahNumber === ayah.numberInSurah;
                 const isUrduTranslation = settings.audioPreference === 'tr';
                 const ayahHighlightClass = isAudioActiveAyah
-                  ? 'ring-2 ring-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_45%)] shadow-[var(--shadow-soft)]'
+                  ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_28%)] shadow-[var(--shadow-glow)]'
                   : isLastRead
-                    ? 'ring-2 ring-[var(--color-accent)]/20'
+                    ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] shadow-[var(--shadow-soft)]'
                     : '';
 
                 return (
                   <Card
                     id={`ayah-${ayah.numberInSurah}`}
                     key={ayah.number}
-                    className={`ayah-card-optimized border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_52%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_10%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%))] ${ayahHighlightClass}`}
+                    className={`ayah-card-optimized group relative overflow-hidden rounded-2xl border-[color-mix(in_oklab,var(--color-border),var(--color-accent)_12%)] bg-[var(--color-surface)] shadow-[0_18px_45px_-36px_rgb(0_0_0_/_0.55)] transition-[border-color,box-shadow,transform] duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)] ${ayahHighlightClass}`}
                   >
-                    <CardContent className="p-4 sm:p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),white_76%),color-mix(in_oklab,var(--color-accent-soft),white_82%))] text-[color-mix(in_oklab,var(--color-heading),var(--color-accent)_34%)] dark:bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),black_20%),color-mix(in_oklab,var(--color-accent-soft),black_14%))] dark:text-[var(--color-accent-foreground)]"
-                        >
-                          <Hash className="mr-1 size-3.5" />
-                          Ayah {ayah.numberInSurah}
-                        </Badge>
-                        <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`absolute inset-y-0 left-0 w-1 transition-colors ${
+                        isAudioActiveAyah || isLastRead
+                          ? 'bg-[var(--color-accent)]'
+                          : 'bg-transparent group-hover:bg-[color-mix(in_oklab,var(--color-accent),transparent_55%)]'
+                      }`}
+                      aria-hidden="true"
+                    />
+
+                    <CardContent className="p-0">
+                      <div className="flex min-h-14 items-center justify-between gap-3 border-b border-[color-mix(in_oklab,var(--color-border),transparent_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_38%)] px-4 py-2.5 sm:px-5">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_84%)] text-sm font-bold tabular-nums text-[var(--color-accent-soft)] shadow-sm">
+                            {ayah.numberInSurah}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[var(--color-muted-text)]">
+                              Ayah {surahId}:{ayah.numberInSurah}
+                            </p>
+                            {isAudioActiveAyah ? (
+                              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent-soft)]">
+                                <AudioLines className="size-3.5" aria-hidden="true" />
+                                Now reciting
+                              </p>
+                            ) : isLastRead ? (
+                              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent-soft)]">
+                                <BookCheck className="size-3.5" aria-hidden="true" />
+                                Last read
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
                           <Button
-                            variant={bookmarked ? 'default' : 'outline'}
+                            variant="ghost"
                             size="icon"
                             title={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
                             aria-label={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
@@ -1673,7 +1698,11 @@ export default function QuranReaderPage({
                                 text: ayah.text,
                               })
                             }
-                            className="size-9"
+                            className={`size-9 rounded-lg border shadow-none ${
+                              bookmarked
+                                ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
+                                : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
+                            }`}
                           >
                             {bookmarked ? (
                               <BookmarkCheck className="size-4" />
@@ -1682,7 +1711,7 @@ export default function QuranReaderPage({
                             )}
                           </Button>
                           <Button
-                            variant={isLastRead ? 'default' : 'ghost'}
+                            variant="ghost"
                             size="icon"
                             title={isLastRead ? 'Last read ayah' : 'Mark as last read'}
                             aria-label={isLastRead ? 'Last read ayah' : 'Mark as last read'}
@@ -1693,44 +1722,83 @@ export default function QuranReaderPage({
                                 updatedAt: new Date().toISOString(),
                               })
                             }
-                            className="size-9"
+                            className={`size-9 rounded-lg border shadow-none ${
+                              isLastRead
+                                ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
+                                : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
+                            }`}
                           >
                             <BookCheck className="size-4" />
                           </Button>
                           <Button
-                            variant={isCurrentTafseerAyah ? 'default' : 'outline'}
+                            variant="ghost"
                             size="icon"
                             title="Open Urdu tafseer"
                             aria-label="Open Urdu tafseer"
                             onClick={() => openTafseer(ayah.numberInSurah, ayah.text)}
-                            className="size-9"
+                            className={`size-9 rounded-lg border shadow-none ${
+                              isCurrentTafseerAyah
+                                ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
+                                : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
+                            }`}
                           >
                             <BookOpen className="size-4" />
                           </Button>
                         </div>
                       </div>
 
-                      <p
-                        dir="rtl"
-                        lang="ar"
-                        className={`arabic-font quran-script arabic-reading mt-4 text-[var(--color-heading)] ${isAudioActiveAyah ? 'rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] px-3 py-2 shadow-[var(--shadow-glow)]' : ''}`}
+                      <div
+                        className={`flex min-h-32 items-center justify-end px-5 py-6 sm:min-h-40 sm:px-8 sm:py-8 ${
+                          isAudioActiveAyah
+                            ? 'bg-[linear-gradient(110deg,transparent,color-mix(in_oklab,var(--color-accent),var(--color-surface)_93%))]'
+                            : ''
+                        }`}
                       >
-                        <AudioSyncedArabicText
-                          text={ayah.text}
-                          query={highlightQuery}
-                          ayahNumber={ayah.numberInSurah}
-                          activeWord={activeAudioWord}
-                        />
-                        <AyahEndMarker number={ayah.numberInSurah} />
-                      </p>
+                        <p
+                          dir="rtl"
+                          lang="ar"
+                          className="arabic-font quran-script arabic-reading w-full text-[var(--color-heading)]"
+                        >
+                          <AudioSyncedArabicText
+                            text={ayah.text}
+                            query={highlightQuery}
+                            ayahNumber={ayah.numberInSurah}
+                            activeWord={activeAudioWord}
+                          />
+                          <AyahEndMarker
+                            number={ayah.numberInSurah}
+                            className="text-[var(--color-accent-soft)]"
+                          />
+                        </p>
+                      </div>
 
                       {translation ? (
-                        <p
-                          className={`mt-3 text-sm leading-relaxed text-[var(--color-muted-text)] ${isUrduTranslation ? 'urdu-font text-right text-[1.06rem]' : ''} ${isAudioActiveAyah ? 'rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] px-3 py-2 text-[var(--color-heading)] shadow-[var(--shadow-glow)]' : ''}`}
-                          dir={isUrduTranslation ? 'rtl' : 'ltr'}
+                        <div
+                          className={`border-t border-[color-mix(in_oklab,var(--color-border),transparent_12%)] px-5 py-4 sm:px-8 sm:py-5 ${
+                            isAudioActiveAyah
+                              ? 'bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%)]'
+                              : 'bg-[color-mix(in_oklab,var(--color-surface-2),transparent_45%)]'
+                          }`}
                         >
-                          <HighlightText text={translation} query={highlightQuery} />
-                        </p>
+                          <div
+                            className={`mb-2 flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[var(--color-muted-text)] ${
+                              isUrduTranslation ? 'justify-end' : ''
+                            }`}
+                          >
+                            <Languages className="size-3.5" aria-hidden="true" />
+                            {isUrduTranslation ? 'Urdu translation' : 'English translation'}
+                          </div>
+                          <p
+                            className={`text-[0.95rem] leading-7 text-[color-mix(in_oklab,var(--color-text),var(--color-muted-text)_20%)] ${
+                              isUrduTranslation
+                                ? 'urdu-font text-right text-[1.06rem]'
+                                : 'max-w-[68ch]'
+                            }`}
+                            dir={isUrduTranslation ? 'rtl' : 'ltr'}
+                          >
+                            <HighlightText text={translation} query={highlightQuery} />
+                          </p>
+                        </div>
                       ) : null}
                     </CardContent>
                   </Card>
