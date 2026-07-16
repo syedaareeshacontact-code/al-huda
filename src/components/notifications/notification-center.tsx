@@ -665,8 +665,8 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       </button>
 
       {open ? (
-        <div className="fixed left-1/2 top-4 z-[160] max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(0,0,0,0.38)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:translate-x-0">
-          <div className="border-b border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),transparent_86%),transparent)] p-4">
+        <div className="fixed left-1/2 top-4 z-[160] flex max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(0,0,0,0.38)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:max-h-[min(38rem,calc(100dvh-7rem))] sm:translate-x-0">
+          <div className="shrink-0 border-b border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),transparent_86%),transparent)] p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-accent-soft)]">
@@ -693,7 +693,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
             </div>
           </div>
 
-          <div className="border-b border-[var(--color-border)] p-3">
+          <div className="shrink-0 border-b border-[var(--color-border)] p-3">
             <div className="grid grid-cols-[1fr_auto] gap-2">
               <label className="min-w-0">
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
@@ -775,7 +775,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
             </div>
           </div>
 
-          <div className="max-h-[min(23rem,calc(100dvh-18rem))] overflow-y-auto p-2">
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-8 text-sm text-[var(--color-muted-text)]">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -861,14 +861,16 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-[var(--color-border)] p-3">
-            <Button type="button" variant="ghost" size="sm" onClick={() => void loadNotifications()}>
-              Refresh
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => void markAllRead()}>
-              <CheckCheck className="h-3.5 w-3.5" />
-              Mark all read
-            </Button>
+          <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => void loadNotifications()}>
+                Refresh
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => void markAllRead()}>
+                <CheckCheck className="h-3.5 w-3.5" />
+                Mark all read
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}
