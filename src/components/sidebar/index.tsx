@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import StickyNavigatorMenuButton from '@/components/ui/StickyNavigatorMenuButton';
 import SmartAyahScrollNav from '@/components/ui/SmartAyahScrollNav';
 import QuranSettingsPanel, { OPEN_QURAN_SETTINGS_EVENT } from '@/components/quran/quran-settings-panel';
+import { navigateToQuranPopup } from '@/components/quran/ayah-popup-navigation';
 import { useGlobalQuranAudio } from '@/components/providers/global-quran-audio-provider';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSurahContext } from '@/hooks/useSurahContext';
@@ -35,14 +36,12 @@ import {
   fetchCompleteSurahContent,
   fetchSurahDetail,
   fetchSurahMeta,
-  fetchUrduTafsirByAyah,
 } from '@/lib/quran-api';
 import type {
   SurahAudioOption,
   SurahAyah,
   SurahDetail,
   SurahMeta,
-  UrduTafsirEntry,
 } from '@/types/quran';
 import { useAppSettings } from '@/components/providers/app-settings-provider';
 import { clampRange, isValidSurahId } from '@/lib/quran-utils';
@@ -139,92 +138,6 @@ function reportUsageDelta(payload: { audioSeconds?: number }, beacon = false) {
     body: JSON.stringify(payload),
     keepalive: beacon,
   });
-}
-
-function sanitizeTafsirHtml(html: string) {
-  return html
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
-    .replace(/\son\w+="[^"]*"/gi, '')
-    .replace(/\son\w+='[^']*'/gi, '')
-    .replace(/\sstyle="[^"]*"/gi, '')
-    .replace(/\sstyle='[^']*'/gi, '')
-    .replace(/javascript:/gi, '');
-}
-
-function formatTafsirHtml(html: string) {
-  const sanitizedHtml = sanitizeTafsirHtml(html);
-  if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
-    return sanitizedHtml;
-  }
-
-  const parser = new DOMParser();
-  const documentNode = parser.parseFromString(
-    `<div id="tafseer-rich-root">${sanitizedHtml}</div>`,
-    'text/html'
-  );
-  const root = documentNode.getElementById('tafseer-rich-root');
-
-  if (!root) {
-    return sanitizedHtml;
-  }
-
-  for (const node of Array.from(root.childNodes)) {
-    if (node.nodeType !== 3) {
-      break;
-    }
-
-    const rawTitle = node.textContent?.trim() ?? '';
-    root.removeChild(node);
-
-    if (!rawTitle) {
-      continue;
-    }
-
-    const normalizedTitle = rawTitle.replace(/[٭*]+/g, ' ').replace(/\s+/g, ' ').trim();
-    if (normalizedTitle) {
-      const title = documentNode.createElement('h4');
-      title.className = 'tafseer-topic';
-      title.textContent = normalizedTitle;
-      root.insertBefore(title, root.firstChild);
-    }
-
-    break;
-  }
-
-  root.querySelectorAll('div.ur:not(.page-number)').forEach((element) => {
-    element.classList.add('tafseer-urdu-block');
-  });
-
-  root.querySelectorAll('p.ur').forEach((element) => {
-    element.classList.add('tafseer-urdu-paragraph');
-  });
-
-  root.querySelectorAll('p:not(.tafseer-urdu-paragraph)').forEach((element) => {
-    element.classList.add('tafseer-body-paragraph');
-  });
-
-  root.querySelectorAll('.page-number').forEach((element) => {
-    element.classList.add('tafseer-page-number');
-  });
-
-  root.querySelectorAll('.text-translation').forEach((element) => {
-    element.classList.add('tafseer-translation');
-  });
-
-  root.querySelectorAll('.arabic, .qpc-hafs').forEach((element) => {
-    element.classList.add('tafseer-arabic-inline');
-  });
-
-  root.querySelectorAll('.reference').forEach((element) => {
-    element.classList.add('tafseer-reference-chip');
-  });
-
-  root.querySelectorAll('.saw').forEach((element) => {
-    element.classList.add('tafseer-salawat');
-  });
-
-  return root.innerHTML;
 }
 
 function getTranslationAudioUrl(surahNumber: number) {
@@ -424,17 +337,6 @@ export default function QuranReaderPage({
   const [wordTimings, setWordTimings] = useState<WordTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
   const lastCommittedAudioTimeRef = useRef(0);
-  
-
-  const [tafseerOpen, setTafseerOpen] = useState(false);
-  const [tafseerAyahNumber, setTafseerAyahNumber] = useState<number | null>(null);
-  const [tafseerAyahText, setTafseerAyahText] = useState('');
-  const [tafseerData, setTafseerData] = useState<UrduTafsirEntry | null>(null);
-  const [tafseerLoading, setTafseerLoading] = useState(false);
-  const [tafseerError, setTafseerError] = useState<string | null>(null);
-
-  const tafseerCacheRef = useRef<Record<string, UrduTafsirEntry>>({});
-  const tafseerRequestRef = useRef(0);
 
   useEffect(() => {
     if (!isValidSurahId(surahId)) {
@@ -713,10 +615,10 @@ export default function QuranReaderPage({
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      document.body.style.overflow = tafseerOpen ? 'hidden' : previousOverflow;
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [isNavigatorOpen, tafseerOpen]);
+  }, [isNavigatorOpen]);
 
   useEffect(() => {
     if (!isNavigatorOpen || surahListLoading) {
@@ -1239,7 +1141,6 @@ export default function QuranReaderPage({
       !isPlaying ||
       !activeAudioAyahNumber ||
       settings.readingMode !== 'ayah' ||
-      tafseerOpen ||
       isNavigatorOpen
     ) {
       return;
@@ -1251,30 +1152,8 @@ export default function QuranReaderPage({
     isNavigatorOpen,
     isPlaying,
     settings.readingMode,
-    tafseerOpen,
     revealAndScrollToAyah,
   ]);
-
-  useEffect(() => {
-    if (!tafseerOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setTafseerOpen(false);
-      }
-    };
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [tafseerOpen]);
 
   const highlightQuery = debouncedSearch.trim();
   const favorite = isFavoriteSurah(surahId);
@@ -1289,10 +1168,6 @@ export default function QuranReaderPage({
       ? buildSurahPath(targetSurah.id, targetSurah.surahName)
       : `/surah/${surahId}`;
   }, [surahId, surahs]);
-  const formattedTafsirHtml = useMemo(
-    () => (tafseerData?.textHtml ? formatTafsirHtml(tafseerData.textHtml) : ''),
-    [tafseerData?.textHtml]
-  );
   const filteredAyahNumbers = useMemo(
     () => visibleAyahs.map(({ ayah }) => ayah.numberInSurah),
     [visibleAyahs]
@@ -1342,43 +1217,17 @@ export default function QuranReaderPage({
     );
   }
 
-  const openTafseer = async (ayahNumber: number, ayahText: string) => {
-    setTafseerOpen(true);
-    setTafseerAyahNumber(ayahNumber);
-    setTafseerAyahText(ayahText);
-    setTafseerError(null);
-
-    const cacheKey = `${surahId}:${ayahNumber}`;
-    const cached = tafseerCacheRef.current[cacheKey];
-    if (cached) {
-      setTafseerData(cached);
-      setTafseerLoading(false);
-      return;
+  const openAyahDetails = (ayahNumber: number) => {
+    const targetPath = `${currentSurahPath}?ayah=${ayahNumber}`;
+    if (!navigateToQuranPopup(targetPath)) {
+      router.push(targetPath, { scroll: false });
     }
+  };
 
-    setTafseerLoading(true);
-    setTafseerData(null);
-    const requestId = ++tafseerRequestRef.current;
-
-    try {
-      const tafseer = await fetchUrduTafsirByAyah(surahId, ayahNumber);
-      if (requestId !== tafseerRequestRef.current) {
-        return;
-      }
-
-      tafseerCacheRef.current[cacheKey] = tafseer;
-      setTafseerData(tafseer);
-    } catch (loadError) {
-      if (requestId !== tafseerRequestRef.current) {
-        return;
-      }
-
-      const errorObject = loadError as { message?: string };
-      setTafseerError(errorObject.message ?? 'Urdu tafseer could not be loaded.');
-    } finally {
-      if (requestId === tafseerRequestRef.current) {
-        setTafseerLoading(false);
-      }
+  const openTafsirPopup = (ayahNumber: number) => {
+    const targetPath = `${currentSurahPath}?ayah=${ayahNumber}&view=tafsir`;
+    if (!navigateToQuranPopup(targetPath)) {
+      router.push(targetPath, { scroll: false });
     }
   };
 
@@ -1635,8 +1484,6 @@ export default function QuranReaderPage({
               {visibleAyahs.map(({ ayah, translation }) => {
                 const bookmarked = isBookmarked(surahId, ayah.numberInSurah);
                 const isLastRead = currentLastRead?.ayahNumber === ayah.numberInSurah;
-                const isCurrentTafseerAyah =
-                  tafseerOpen && tafseerAyahNumber === ayah.numberInSurah;
                 const isAudioActiveAyah =
                   isPlaying && activeAudioAyahNumber === ayah.numberInSurah;
                 const isUrduTranslation = settings.audioPreference === 'tr';
@@ -1735,12 +1582,7 @@ export default function QuranReaderPage({
                             size="icon"
                             title="Open ayah details"
                             aria-label="Open ayah details"
-                            onClick={() =>
-                              router.push(
-                                `${currentSurahPath}?ayah=${ayah.numberInSurah}`,
-                                { scroll: false }
-                              )
-                            }
+                            onClick={() => openAyahDetails(ayah.numberInSurah)}
                             className="size-9 rounded-lg border border-transparent text-[var(--color-muted-text)] shadow-none hover:border-[var(--color-border)] hover:text-[var(--color-heading)]"
                           >
                             <Maximize2 className="size-4" />
@@ -1750,12 +1592,8 @@ export default function QuranReaderPage({
                             size="icon"
                             title="Open Urdu tafseer"
                             aria-label="Open Urdu tafseer"
-                            onClick={() => openTafseer(ayah.numberInSurah, ayah.text)}
-                            className={`size-9 rounded-lg border shadow-none ${
-                              isCurrentTafseerAyah
-                                ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
-                                : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
-                            }`}
+                            onClick={() => openTafsirPopup(ayah.numberInSurah)}
+                            className="size-9 rounded-lg border border-transparent text-[var(--color-muted-text)] shadow-none hover:border-[var(--color-border)] hover:text-[var(--color-heading)]"
                           >
                             <BookOpen className="size-4" />
                           </Button>
@@ -2050,94 +1888,6 @@ export default function QuranReaderPage({
         </div>
       ) : null}
 
-      {tafseerOpen ? (
-        <div className="fixed inset-0 z-[110]">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
-            onClick={() => setTafseerOpen(false)}
-            aria-label="Close tafseer panel"
-          />
-          <button
-            type="button"
-            onClick={() => setTafseerOpen(false)}
-            aria-label="Close tafseer"
-            className="absolute left-4 top-4 z-20 hidden size-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 md:flex"
-          >
-            <X className="size-5" aria-hidden="true" />
-          </button>
-          <aside className="absolute right-0 top-0 flex h-dvh w-full max-w-2xl animate-fade-up flex-col border-l border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(160deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))] shadow-2xl">
-            <div className="sticky top-0 z-10 shrink-0 border-b border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[linear-gradient(160deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4 sm:pb-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted-text)]">
-                    Urdu Tafseer
-                  </p>
-                  <h3 className="mt-1 font-display text-xl text-[var(--color-heading)] sm:text-2xl">
-                    Ayah {tafseerAyahNumber ?? '-'}
-                  </h3>
-                  <p className="mt-1 text-xs text-[var(--color-muted-text)]">
-                    {tafseerData?.sourceName ?? 'Loading source...'}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setTafseerOpen(false)}
-                  aria-label="Close tafseer"
-                  className="h-10 shrink-0 gap-1.5 rounded-xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_24%)] px-3 shadow-sm md:h-9"
-                >
-                  <X className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="text-sm font-semibold">Close</span>
-                </Button>
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-5">
-              <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_93%))] shadow-[var(--shadow-soft)]">
-                <CardContent className="space-y-2 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color-mix(in_oklab,var(--color-muted-text),#f3d690_38%)]">
-                    Arabic Ayah
-                  </p>
-                  <p className="arabic-font text-right text-[color-mix(in_oklab,#f7e1ad,var(--color-heading)_58%)]">
-                    {tafseerAyahText}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {tafseerLoading ? (
-                <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_14%)]">
-                  <CardContent className="p-5 text-sm text-[var(--color-muted-text)]">
-                    Tafseer is Loading...
-                  </CardContent>
-                </Card>
-              ) : null}
-
-              {tafseerError ? (
-                <Card className="border-[color-mix(in_oklab,var(--color-danger),var(--color-border)_65%)] bg-[color-mix(in_oklab,var(--color-surface),white_10%)]">
-                  <CardContent className="p-5 text-sm text-[var(--color-danger)]">
-                    {tafseerError}
-                  </CardContent>
-                </Card>
-              ) : null}
-
-              {tafseerData ? (
-                <Card className="border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_48%)] bg-[linear-gradient(155deg,color-mix(in_oklab,var(--color-surface),white_10%),color-mix(in_oklab,var(--color-surface-2),white_4%))] shadow-[var(--shadow-soft)]">
-                  <CardContent className="p-5 sm:p-6">
-                    <div
-                      className="tafseer-rich urdu-font text-right leading-relaxed text-[var(--color-text)]"
-                      dir="rtl"
-                      dangerouslySetInnerHTML={{
-                        __html: formattedTafsirHtml,
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              ) : null}
-            </div>
-          </aside>
-        </div>
-      ) : null}
     </div>
   );
 }

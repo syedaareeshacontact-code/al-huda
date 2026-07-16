@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   BookOpen,
@@ -16,6 +15,10 @@ import {
 } from 'lucide-react';
 
 import AuthDownloadLink from '@/components/quran/auth-download-link';
+import {
+  navigateToQuranPopup,
+  QURAN_POPUP_NAVIGATION_EVENT,
+} from '@/components/quran/ayah-popup-navigation';
 import { Button } from '@/components/ui/button';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import {
@@ -32,6 +35,7 @@ interface AyahDetailOverlayProps {
   surahName: string;
   surahArabicName: string;
   totalAyahs: number;
+  inlineTafsir?: boolean;
 }
 
 function parseAyahNumber(value: string | null, totalAyahs: number) {
@@ -51,17 +55,27 @@ export default function AyahDetailOverlay({
   mode,
   surahId,
   surahName,
-  surahArabicName,
   totalAyahs,
+  inlineTafsir = false,
 }: AyahDetailOverlayProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const payloadCacheRef = useRef<Record<string, AyahDetailPayload>>({});
   const [mounted, setMounted] = useState(false);
+  const [liveAyahParam, setLiveAyahParam] = useState<string | null | undefined>(undefined);
+  const [liveViewParam, setLiveViewParam] = useState<string | null | undefined>(undefined);
   const [payload, setPayload] = useState<AyahDetailPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const selectedAyah = parseAyahNumber(searchParams.get('ayah'), totalAyahs);
+  const selectedAyah = parseAyahNumber(
+    liveAyahParam === undefined ? searchParams.get('ayah') : liveAyahParam,
+    totalAyahs
+  );
+  const activeViewParam =
+    liveViewParam === undefined ? searchParams.get('view') : liveViewParam;
+  const effectiveMode: 'ayah' | 'tafsir' =
+    inlineTafsir && activeViewParam === 'tafsir' ? 'tafsir' : mode;
 
   const closePath = useMemo(
     () =>
@@ -72,19 +86,71 @@ export default function AyahDetailOverlay({
   );
 
   const buildPopupPath = useCallback(
-    (ayahNumber: number) =>
-      mode === 'tafsir'
-        ? buildTafsirPopupPath(surahId, surahName, ayahNumber)
-        : buildAyahPopupPath(surahId, surahName, ayahNumber),
-    [mode, surahId, surahName]
+    (ayahNumber: number) => {
+      if (effectiveMode === 'tafsir' && mode === 'tafsir') {
+        return buildTafsirPopupPath(surahId, surahName, ayahNumber);
+      }
+
+      const ayahPath = buildAyahPopupPath(surahId, surahName, ayahNumber);
+      return effectiveMode === 'tafsir' ? `${ayahPath}&view=tafsir` : ayahPath;
+    },
+    [effectiveMode, mode, surahId, surahName]
   );
 
   const close = useCallback(() => {
-    router.replace(closePath, { scroll: false });
+    if (!navigateToQuranPopup(closePath, { replace: true })) {
+      router.replace(closePath, { scroll: false });
+    }
   }, [closePath, router]);
+
+  const goToAyah = useCallback(
+    (ayahNumber: number) => {
+      const targetPath = buildPopupPath(ayahNumber);
+      if (!navigateToQuranPopup(targetPath, { replace: true })) {
+        router.replace(targetPath, { scroll: false });
+      }
+    },
+    [buildPopupPath, router]
+  );
+
+  const goToPath = useCallback(
+    (targetPath: string, replace = false) => {
+      const navigated = navigateToQuranPopup(targetPath, { replace });
+      if (!navigated) {
+        if (replace) {
+          router.replace(targetPath, { scroll: false });
+        } else {
+          router.push(targetPath, { scroll: false });
+        }
+      }
+    },
+    [router]
+  );
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setLiveAyahParam(searchParams.get('ayah'));
+    setLiveViewParam(searchParams.get('view'));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const syncFromLocation = () => {
+      const params = new URLSearchParams(window.location.search);
+      setLiveAyahParam(params.get('ayah'));
+      setLiveViewParam(params.get('view'));
+    };
+
+    syncFromLocation();
+    window.addEventListener(QURAN_POPUP_NAVIGATION_EVENT, syncFromLocation);
+    window.addEventListener('popstate', syncFromLocation);
+
+    return () => {
+      window.removeEventListener(QURAN_POPUP_NAVIGATION_EVENT, syncFromLocation);
+      window.removeEventListener('popstate', syncFromLocation);
+    };
   }, []);
 
   useEffect(() => {
@@ -95,12 +161,21 @@ export default function AyahDetailOverlay({
       return;
     }
 
+    const cacheKey = `${effectiveMode}:${surahId}:${selectedAyah}`;
+    const cachedPayload = payloadCacheRef.current[cacheKey];
+    if (cachedPayload) {
+      setPayload(cachedPayload);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const controller = new AbortController();
     const query = new URLSearchParams({
       surah: String(surahId),
       ayah: String(selectedAyah),
     });
-    if (mode === 'tafsir') {
+    if (effectiveMode === 'tafsir') {
       query.set('includeTafsir', 'true');
     }
 
@@ -120,6 +195,7 @@ export default function AyahDetailOverlay({
         return body;
       })
       .then((body) => {
+        payloadCacheRef.current[cacheKey] = body;
         setPayload(body);
       })
       .catch((loadError: unknown) => {
@@ -137,7 +213,7 @@ export default function AyahDetailOverlay({
     return () => {
       controller.abort();
     };
-  }, [mode, selectedAyah, surahId]);
+  }, [effectiveMode, selectedAyah, surahId]);
 
   useEffect(() => {
     if (!selectedAyah) {
@@ -169,7 +245,10 @@ export default function AyahDetailOverlay({
   const previousAyah = selectedAyah > 1 ? selectedAyah - 1 : null;
   const nextAyah = selectedAyah < totalAyahs ? selectedAyah + 1 : null;
   const ayahPopupPath = buildAyahPopupPath(surahId, surahName, selectedAyah);
-  const tafsirPopupPath = buildTafsirPopupPath(surahId, surahName, selectedAyah);
+  const tafsirPopupPath =
+    inlineTafsir && mode === 'ayah'
+      ? `${ayahPopupPath}&view=tafsir`
+      : buildTafsirPopupPath(surahId, surahName, selectedAyah);
 
   return createPortal(
     <div className="fixed inset-0 z-[160]" role="presentation">
@@ -184,24 +263,21 @@ export default function AyahDetailOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ayah-detail-overlay-title"
-        className="absolute inset-x-0 bottom-0 flex max-h-[92dvh] min-h-[62dvh] flex-col overflow-hidden rounded-t-2xl border-t border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)] bg-[var(--color-surface)] shadow-2xl sm:inset-y-0 sm:left-auto sm:right-0 sm:h-dvh sm:max-h-none sm:min-h-0 sm:w-[min(46rem,calc(100vw-3rem))] sm:rounded-none sm:border-l sm:border-t-0"
+        className="absolute inset-x-0 bottom-0 flex h-[min(90dvh,50rem)] max-h-[94dvh] min-h-[58dvh] w-full flex-col overflow-hidden rounded-t-xl border-t border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)] bg-[var(--color-surface)] shadow-2xl sm:rounded-t-2xl lg:h-[min(86dvh,52rem)]"
       >
-        <header className="shrink-0 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface),var(--color-accent)_4%)] px-4 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-[max(1rem,env(safe-area-inset-top))]">
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden" />
-          <div className="flex items-start justify-between gap-4">
+        <header className="shrink-0 border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface),var(--color-accent)_4%)] px-3 py-2 sm:px-5 sm:py-2.5">
+          <div className="mx-auto mb-1.5 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden" />
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                {mode === 'tafsir' ? 'Urdu Tafseer' : 'Ayah Detail'}
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                {effectiveMode === 'tafsir' ? 'Urdu Tafseer' : 'Ayah Detail'}
               </p>
               <h2
                 id="ayah-detail-overlay-title"
-                className="mt-1 truncate font-display text-2xl text-[var(--color-heading)] sm:text-3xl"
+                className="mt-0.5 truncate font-display text-lg leading-tight text-[var(--color-heading)] sm:text-xl"
               >
                 Surah {surahName} · {surahId}:{selectedAyah}
               </h2>
-              <p className="arabic-font mt-1 text-right text-base text-[var(--color-muted-text)]" dir="rtl" lang="ar">
-                {surahArabicName}
-              </p>
             </div>
             <Button
               ref={closeButtonRef}
@@ -211,7 +287,7 @@ export default function AyahDetailOverlay({
               onClick={close}
               aria-label="Close ayah details"
               title="Close"
-              className="size-10 shrink-0"
+              className="size-9 shrink-0 rounded-full"
             >
               <X className="size-4" />
             </Button>
@@ -273,7 +349,7 @@ export default function AyahDetailOverlay({
                 </p>
               </section>
 
-              {mode === 'tafsir' ? (
+              {effectiveMode === 'tafsir' ? (
                 <section className="border-b border-[var(--color-border)] px-4 py-5 sm:px-7 sm:py-6">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
@@ -357,7 +433,7 @@ export default function AyahDetailOverlay({
               disabled={!previousAyah}
               onClick={() => {
                 if (previousAyah) {
-                  router.replace(buildPopupPath(previousAyah), { scroll: false });
+                  goToAyah(previousAyah);
                 }
               }}
               aria-label="Previous ayah"
@@ -367,24 +443,24 @@ export default function AyahDetailOverlay({
             </Button>
 
             <div className="flex min-w-0 flex-1 justify-center gap-2">
-              {mode === 'tafsir' ? (
-                <Link
-                  href={ayahPopupPath}
-                  scroll={false}
+              {effectiveMode === 'tafsir' ? (
+                <button
+                  type="button"
+                  onClick={() => goToPath(ayahPopupPath, inlineTafsir && mode === 'ayah')}
                   className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] px-3 text-sm font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
                 >
                   <BookOpen className="size-4 shrink-0" />
                   <span className="truncate">Read Ayah</span>
-                </Link>
+                </button>
               ) : payload?.hasTafsir ? (
-                <Link
-                  href={tafsirPopupPath}
-                  scroll={false}
+                <button
+                  type="button"
+                  onClick={() => goToPath(tafsirPopupPath)}
                   className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent)] px-3 text-sm font-semibold text-[var(--color-accent-foreground)] transition hover:brightness-105"
                 >
                   <FileText className="size-4 shrink-0" />
                   <span className="truncate">Open Tafseer</span>
-                </Link>
+                </button>
               ) : (
                 <span className="inline-flex h-10 items-center px-3 text-xs text-[var(--color-muted-text)]">
                   Tafseer unavailable
@@ -399,7 +475,7 @@ export default function AyahDetailOverlay({
               disabled={!nextAyah}
               onClick={() => {
                 if (nextAyah) {
-                  router.replace(buildPopupPath(nextAyah), { scroll: false });
+                  goToAyah(nextAyah);
                 }
               }}
               aria-label="Next ayah"

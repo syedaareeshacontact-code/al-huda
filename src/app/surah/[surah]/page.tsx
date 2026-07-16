@@ -261,6 +261,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
           surahName={surah.surahName}
           surahArabicName={surah.surahNameArabic}
           totalAyahs={surah.totalAyah}
+          inlineTafsir
         />
       </Suspense>
     </>
