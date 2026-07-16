@@ -1,48 +1,16 @@
 import type { Metadata } from 'next';
-import { buildLocalBusinessJsonLd, buildEducationalOrganizationJsonLd, buildPageMetadata } from '@/lib/seo';
-import { ALL_LOCAL_KEYWORDS, MASTER_SEO_KEYWORDS } from '@/lib/seo-keywords';
+import { buildPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Contact Read al Quran - Pakistan | Get in Touch',
   description:
     'Contact Read al Quran team in Pakistan. Support, feedback, or partnership inquiries. Available in Urdu, English, and Arabic.',
   path: '/contact',
-  keywords: [
-    ...ALL_LOCAL_KEYWORDS,
-    ...MASTER_SEO_KEYWORDS.slice(0, 120),
-    'contact read al quran',
-    'quran app contact pakistan',
-    'read al quran support',
-    'quran app customer service',
-    'islamic learning support',
-  ],
 });
 
 export default function ContactPage() {
-  const localBusinessSchema = buildLocalBusinessJsonLd({
-    name: 'Read al Quran',
-    description: 'Islamic learning platform with Quran, Tafseer, and Hadith',
-    url: '/',
-    telephone: '+923364157981',
-    email: 'zainqlandar@gmail.com',
-    address: {
-      city: 'Islamabad',
-      country: 'Pakistan',
-      postalCode: '44000',
-    },
-    image: '/og?kind=surah-index',
-  });
-
-  const educationalOrgSchema = buildEducationalOrganizationJsonLd({
-    name: 'Read al Quran',
-    description: 'Islamic learning platform with Quran, Tafseer, and Hadith',
-    url: '/',
-    logo: '/logos/logo1.png',
-    location: 'Islamabad, Pakistan',
-  });
-
   return (
-    <main className="min-h-screen bg-[color:var(--color-bg)]">
+    <div className="min-h-screen bg-[color:var(--color-bg)]">
       <div className="container mx-auto px-4 py-16 md:py-24 text-[color:var(--color-text)]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
@@ -58,13 +26,12 @@ export default function ContactPage() {
             <div className="bg-[color:var(--color-surface-elevated)] border border-[color:var(--color-border)] p-8 rounded-3xl shadow-card">
               <h3 className="text-xl font-semibold text-[color:var(--color-accent)] mb-3">Email</h3>
               <p className="text-[color:var(--color-muted-text)] mb-2">General Inquiries:</p>
-              <a href="mailto:support@al-huda.quran" className="text-[color:var(--color-info)] hover:underline">
+              <a href="mailto:zainqlandar@gmail.com" className="text-[color:var(--color-info)] hover:underline">
                 zainqlandar@gmail.com
               </a>
-              <p className="text-[color:var(--color-muted-text)] mt-4 mb-2">Partnerships:</p>
-              <a href="mailto:partnerships@al-huda.quran" className="text-[color:var(--color-info)] hover:underline">
-                partnerships@al-huda.quran
-              </a>
+              <p className="text-[color:var(--color-muted-text)] mt-4 text-sm">
+                Use the same address for support, corrections, and partnership inquiries.
+              </p>
             </div>
 
             <div className="bg-[color:var(--color-surface-elevated)] border border-[color:var(--color-border)] p-8 rounded-3xl shadow-card">
@@ -86,32 +53,8 @@ export default function ContactPage() {
                 Pakistan
               </p>
               <p className="text-[color:var(--color-muted-text)] text-sm mt-4">
-                Available 24/7 for support
+                Response times vary. Urgent religious questions should be referred to a qualified local scholar.
               </p>
-            </div>
-          </div>
-
-          <div className="bg-[color:var(--color-surface-elevated)] border border-[color:var(--color-border)] p-8 rounded-3xl mb-16 shadow-card">
-            <h2 className="text-2xl font-semibold text-[color:var(--color-heading)] mb-6">Follow Us</h2>
-            <div className="flex flex-wrap gap-4">
-              <a
-                href="https://www.facebook.com/alhuda.quran"
-                className="px-6 py-3 bg-[color:var(--color-accent)] hover:bg-[color:var(--color-highlight)] text-[color:var(--color-accent-foreground)] rounded-lg transition"
-              >
-                Facebook
-              </a>
-              <a
-                href="https://www.instagram.com/alhuda.quran"
-                className="px-6 py-3 bg-[color:var(--color-accent)] hover:bg-[color:var(--color-highlight)] text-[color:var(--color-accent-foreground)] rounded-lg transition"
-              >
-                Instagram
-              </a>
-              <a
-                href="https://twitter.com/al_huda_quran"
-                className="px-6 py-3 bg-[color:var(--color-accent)] hover:bg-[color:var(--color-highlight)] text-[color:var(--color-accent-foreground)] rounded-lg transition"
-              >
-                Twitter
-              </a>
             </div>
           </div>
 
@@ -123,7 +66,7 @@ export default function ContactPage() {
                   How can I report a bug?
                 </summary>
                 <p className="mt-2 text-[color:var(--color-muted-text)] pl-4">
-                  Please email us at support@al-huda.quran with details about the bug.
+                  Please email us at zainqlandar@gmail.com or use the feedback page with details about the bug.
                 </p>
               </details>
 
@@ -132,7 +75,7 @@ export default function ContactPage() {
                   Is Read al Quran available offline?
                 </summary>
                 <p className="mt-2 text-[color:var(--color-muted-text)] pl-4">
-                  Yes, the app includes offline support for reading Quran.
+                  The installable app provides an offline fallback and may retain previously loaded public assets and Quran data. Complete offline availability is not guaranteed.
                 </p>
               </details>
 
@@ -149,14 +92,6 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(educationalOrgSchema) }}
-      />
-    </main>
+    </div>
   );
 }

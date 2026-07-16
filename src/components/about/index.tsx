@@ -10,6 +10,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const values = [
   {
@@ -20,7 +21,7 @@ const values = [
   },
   {
     title: 'Knowledge (Ilm)',
-    description: 'Sharing clear and authentic Islamic learning in simple, practical language.',
+    description: 'Sharing clear, source-attributed Islamic learning in simple, practical language.',
     icon: BookOpenText,
     color: 'text-[var(--color-info)]',
   },
@@ -69,7 +70,7 @@ export default function AboutRoot() {
         </Badge>
         <h1 className="font-display text-4xl text-[var(--color-heading)]">Our Mission & Vision</h1>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
-          Al-Quran is built to make authentic Islamic content easier to read and revisit.
+          Al-Quran is built to make source-attributed Islamic content easier to read and revisit.
           We focus on a respectful user experience so Quran recitation and reflection stay
           accessible on every device.
         </p>
@@ -82,7 +83,7 @@ export default function AboutRoot() {
           </CardHeader>
           <CardContent className="text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
             Provide a clean and practical Islamic app where users can read Quran with focus,
-            save progress, and access authentic reminders without clutter.
+            save progress, and access source-linked reminders without clutter.
           </CardContent>
         </Card>
         <Card className="animate-fade-up-delay-1 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))]">
@@ -177,9 +178,21 @@ export default function AboutRoot() {
         </div>
 
         <p className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-xs leading-relaxed text-[var(--color-muted-text)] sm:text-sm">
-          Read al Quran is an independent reading and learning platform. For further study and
-          religious guidance, please consult qualified scholars and the original source providers.
+          English Quran translation uses Sahih International (resource 20), while the Urdu
+          translation uses Fatah Muhammad Jalandhari (resource 234). Tafseer pages display the
+          source name supplied by Quran.com. Read al Quran does not claim that every page has been
+          independently reviewed by an appointed scholar; consult qualified scholars for religious
+          guidance.
         </p>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/editorial-policy" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] hover:border-[var(--color-accent-soft)]">
+            Editorial &amp; source policy
+          </Link>
+          <Link href="/corrections" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] hover:border-[var(--color-accent-soft)]">
+            Report a correction
+          </Link>
+        </div>
       </section>
     </div>
   );

@@ -12,7 +12,9 @@
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "security:check": "node scripts/check-tracked-secrets.mjs",
+    "seo:check": "npm run security:check && vitest run src/lib/seo-regressions.test.ts src/lib/aladhan-api.test.ts"
   },
   "dependencies": {
     "@next/third-parties": "16.2.10",

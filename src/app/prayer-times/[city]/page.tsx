@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import PrayerTimesDisplay from '@/components/prayer-times/prayer-times-display';
+import PrayerDataUnavailable from '@/components/prayer-times/prayer-data-unavailable';
 import QiblaCompass from '@/components/prayer-times/qibla-compass';
 import CityGrid from '@/components/islamic-tools/city-grid';
 import {
@@ -15,6 +16,7 @@ import {
   buildPrayerTimesMetadata,
   buildPrayerTimesJsonLd,
   buildPrayerTimesFaq,
+  getPrayerTimesFaqItems,
 } from '@/lib/islamic-tools-seo';
 
 export const revalidate = 3600;
@@ -45,17 +47,10 @@ export default async function CityPrayerTimesPage({ params }: PageProps) {
 
   const now = new Date();
 
-  let prayerData: Awaited<ReturnType<typeof getPrayerTimesByCity>>;
-  let qiblaData: Awaited<ReturnType<typeof getQiblaDirection>>;
-
-  try {
-    [prayerData, qiblaData] = await Promise.all([
-      getPrayerTimesByCity(city.name, city.country),
-      getQiblaDirection(city.latitude, city.longitude),
-    ]);
-  } catch {
-    notFound();
-  }
+  const [prayerData, qiblaData] = await Promise.all([
+    getPrayerTimesByCity(city.name, city.country),
+    getQiblaDirection(city.latitude, city.longitude),
+  ]);
 
   let monthlyData: Awaited<ReturnType<typeof getMonthlyPrayerCalendar>> = [];
   try {
@@ -64,13 +59,22 @@ export default async function CityPrayerTimesPage({ params }: PageProps) {
     // Monthly calendar is optional — page still renders daily timings
   }
 
-  const hijriStr = `${prayerData.date.hijri.day} ${prayerData.date.hijri.month.en} ${prayerData.date.hijri.year} AH`;
+  const hijriStr = prayerData.available
+    ? `${prayerData.date.hijri.day} ${prayerData.date.hijri.month.en} ${prayerData.date.hijri.year} AH`
+    : '';
   const breadcrumb = buildIslamicToolsBreadcrumb([
     { name: 'Prayer Times', path: '/prayer-times' },
     { name: `${city.name} Timings`, path: `/prayer-times/${city.slug}` },
   ]);
+  const faqItems = getPrayerTimesFaqItems(city.name);
   const faq = buildPrayerTimesFaq(city.name);
-  const prayerJsonLd = buildPrayerTimesJsonLd(city.name, prayerData.timings as unknown as Record<string, string>);
+  const prayerJsonLd = prayerData.available
+    ? buildPrayerTimesJsonLd(
+        city.name,
+        prayerData.timings as unknown as Record<string, string>,
+        prayerData.requestedDate
+      )
+    : null;
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 md:py-12">
@@ -79,7 +83,7 @@ export default async function CityPrayerTimesPage({ params }: PageProps) {
         badgeSecondary={city.province}
         title={`${city.name} Namaz Timings`}
         titleUrdu={`نماز کے اوقات ${city.nameUrdu}`}
-        description={`Today's accurate prayer times for ${city.name}, ${city.province}. Population: ${city.population}. ${city.localContext}`}
+        description={`Today's calculated prayer times for ${city.name}, ${city.province}, verified against the requested date. Compare with your local mosque where schedules differ. ${city.localContext}`}
         meta={
           <Link
             href="/mosque-finder"
@@ -90,12 +94,16 @@ export default async function CityPrayerTimesPage({ params }: PageProps) {
         }
       />
 
-      <PrayerTimesDisplay
-        timings={prayerData.timings}
-        cityName={city.name}
-        hijriDate={hijriStr}
-        gregorianDate={prayerData.date.readable}
-      />
+      {prayerData.available ? (
+        <PrayerTimesDisplay
+          timings={prayerData.timings}
+          cityName={city.name}
+          hijriDate={hijriStr}
+          gregorianDate={prayerData.date.readable}
+        />
+      ) : (
+        <PrayerDataUnavailable cityName={city.name} />
+      )}
 
       <section className="mt-10 grid gap-8 md:grid-cols-2">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
@@ -133,14 +141,28 @@ export default async function CityPrayerTimesPage({ params }: PageProps) {
         <h2 className="mb-4 font-display text-xl font-semibold text-[var(--color-heading)]">
           {city.name} Prayer Times FAQ
         </h2>
-        <p className="text-sm text-[var(--color-muted-text)]">
-          {city.prayerMethodNote} Notable mosques in {city.name}: {city.notableMosques.join(', ')}.
-        </p>
+        <div className="space-y-3">
+          {faqItems.map((item) => (
+            <details
+              key={item.question}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4"
+            >
+              <summary className="cursor-pointer font-semibold text-[var(--color-heading)]">
+                {item.question}
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted-text)]">
+                {item.answer}
+              </p>
+            </details>
+          ))}
+        </div>
       </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(prayerJsonLd) }} />
+      {prayerJsonLd ? (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(prayerJsonLd) }} />
+      ) : null}
     </div>
   );
 }
@@ -182,6 +204,14 @@ function MonthlyTimetable({
   data: Awaited<ReturnType<typeof getMonthlyPrayerCalendar>>;
   cityName: string;
 }) {
+  if (data.length === 0) {
+    return (
+      <p className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm text-[var(--color-muted-text)]">
+        The monthly timetable is temporarily unavailable. No estimated timings are shown.
+      </p>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)]">
       <table className="w-full min-w-[600px] text-sm">

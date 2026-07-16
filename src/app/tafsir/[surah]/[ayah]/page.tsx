@@ -17,14 +17,12 @@ import {
 } from '@/lib/quran-server';
 import { resolveSurahParam } from '@/lib/quran-index';
 import {
-  buildAyahPopupPath,
+  buildAyahPath,
   buildSurahPath,
   buildTafsirPath,
-  buildTafsirPopupPath,
   buildTafsirSurahPath,
 } from '@/lib/quran-routing';
 import { getFeaturedTafsirAyahStaticParams } from '@/lib/quran-static-params';
-import { isFeaturedAyah } from '@/lib/featured-quran-pages';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
@@ -87,7 +85,7 @@ export async function generateMetadata({
 
   const surah = resolved.surah;
   const canonicalPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
-  const title = `Tafseer Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — اردو تفسیر، Arabic & English`;
+  const title = `Tafseer Quran ${surah.id}:${ayahNumber} — Urdu Commentary`;
   const description = `Read Urdu tafseer of Ayah ${surah.id}:${ayahNumber} from Surah ${surah.surahName}, with Arabic text, Urdu translation, English reference, and audio.`;
 
   return buildPageMetadata({
@@ -116,17 +114,8 @@ export default async function TafsirDetailPage({
     notFound();
   }
 
-  const featuredAyah = isFeaturedAyah(surah.id, ayahNumber);
   if (!isCanonicalSlug) {
-    permanentRedirect(
-      featuredAyah
-        ? buildTafsirPath(surah.id, surah.surahName, ayahNumber)
-        : buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber)
-    );
-  }
-
-  if (!featuredAyah) {
-    permanentRedirect(buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber));
+    permanentRedirect(buildTafsirPath(surah.id, surah.surahName, ayahNumber));
   }
 
   const [ayah, tafsir, audioUrls] = await Promise.all([
@@ -144,13 +133,13 @@ export default async function TafsirDetailPage({
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const tafsirSurahPath = buildTafsirSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
-  const ayahPath = buildAyahPopupPath(surah.id, surah.surahName, ayahNumber);
+  const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
   const canonicalPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
   const prevTafsirPath = ayahNumber > 1 
-    ? buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber - 1)
+    ? buildTafsirPath(surah.id, surah.surahName, ayahNumber - 1)
     : null;
   const nextTafsirPath = ayahNumber < surah.totalAyah
-    ? buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber + 1)
+    ? buildTafsirPath(surah.id, surah.surahName, ayahNumber + 1)
     : null;
 
   const tafsirPlainText = stripHtml(tafsir.textHtml);
@@ -242,6 +231,11 @@ export default async function TafsirDetailPage({
           </p>
         </CardContent>
       </Card>
+
+      <p className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm text-[var(--color-muted-text)]">
+        Tafseer source: <span className="font-semibold text-[var(--color-heading)]">{tafsir.sourceName}</span>.
+        Content is supplied through Quran.com&apos;s API; consult qualified scholars for religious rulings.
+      </p>
 
       <Card className="mb-6">
         <CardHeader>

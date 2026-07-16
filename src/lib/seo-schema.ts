@@ -1,6 +1,5 @@
 import {
   buildArticleJsonLd,
-  buildBookJsonLd,
   buildBreadcrumbJsonLd,
   buildFaqJsonLd,
   toAbsoluteUrl,
@@ -8,10 +7,8 @@ import {
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import {
   buildAyahPath,
-  buildAyahPopupPath,
   buildSurahPath,
   buildTafsirPath,
-  buildTafsirPopupPath,
   buildTafsirSurahPath,
 } from '@/lib/quran-routing';
 import type { SurahDownloadOption } from '@/lib/surah-download';
@@ -46,14 +43,19 @@ export function buildSurahPageSchemas(
     },
   };
 
-  const book = buildBookJsonLd({
+  const creativeWork = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
     name: `Surah ${surah.surahName} (${surah.surahNameArabic})`,
     description: intro,
-    path,
-    author: 'Allah (revealed to Prophet Muhammad ﷺ)',
-    numberOfPages: ayahCount,
+    url: toAbsoluteUrl(path),
     inLanguage: ['ar', 'ur', 'en'],
-  });
+    numberOfItems: ayahCount,
+    isPartOf: {
+      '@type': 'Book',
+      name: 'The Holy Quran',
+    },
+  };
 
   const itemList = {
     '@context': 'https://schema.org',
@@ -64,9 +66,9 @@ export function buildSurahPageSchemas(
       { length: Math.min(surah.totalAyah, MAX_SCHEMA_LIST_ITEMS) },
       (_, i) => {
         const ayahNum = i + 1;
-        const ayahPath = buildAyahPopupPath(surah.id, surah.surahName, ayahNum);
+        const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNum);
         const tafsirPath = hasTafsirForAyah(surah.id, ayahNum)
-          ? buildTafsirPopupPath(surah.id, surah.surahName, ayahNum)
+          ? buildTafsirPath(surah.id, surah.surahName, ayahNum)
           : null;
 
         return {
@@ -86,7 +88,7 @@ export function buildSurahPageSchemas(
     ),
   };
 
-  return { breadcrumb, webPage, book, itemList };
+  return { breadcrumb, webPage, book: creativeWork, itemList };
 }
 
 export function buildAyahPageSchemas(options: {
@@ -113,7 +115,6 @@ export function buildAyahPageSchemas(options: {
     content: [arabicText, urduTranslation, englishTranslation].filter(Boolean).join('\n'),
     url: ayahPath,
     inLanguage: ['ar', 'ur', 'en'],
-    author: 'Read al Quran',
   });
 
   const webPage = {
@@ -150,7 +151,6 @@ export function buildTafsirSurahPageSchemas(options: {
     description: intro,
     url: tafsirSurahPath,
     inLanguage: ['ur', 'ar', 'en'],
-    author: 'Read al Quran',
   });
 
   const itemList = {
@@ -162,7 +162,7 @@ export function buildTafsirSurahPageSchemas(options: {
       '@type': 'ListItem',
       position: index + 1,
       name: `Tafseer Ayah ${surah.id}:${ayahNumber}`,
-      url: toAbsoluteUrl(buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber)),
+      url: toAbsoluteUrl(buildTafsirPath(surah.id, surah.surahName, ayahNumber)),
     })),
   };
 
@@ -207,7 +207,6 @@ export function buildTafsirPageSchemas(options: {
     content: tafsirText.slice(0, 500),
     url: tafsirPath,
     inLanguage: ['ur', 'ar', 'en'],
-    author: 'Read al Quran',
   });
 
   return { breadcrumb, article };

@@ -24,6 +24,8 @@ export interface HijriDate {
 }
 
 export interface PrayerTimesResponse {
+  available: boolean;
+  requestedDate: string;
   timings: PrayerTimings;
   date: {
     readable: string;
@@ -49,72 +51,123 @@ export interface MonthlyPrayerDay {
   timings: PrayerTimings;
 }
 
-function getFallbackPrayerTimesResponse(city: string, country: string, date?: string): PrayerTimesResponse {
-  const fallbackDate = date ?? new Date().toISOString().split('T')[0];
-  const fallbackGregorian = new Date();
-
+function getUnavailablePrayerTimesResponse(date: string): PrayerTimesResponse {
   return {
+    available: false,
+    requestedDate: date,
     timings: {
-      Fajr: '05:30',
-      Sunrise: '06:30',
-      Dhuhr: '12:30',
-      Asr: '15:45',
-      Sunset: '18:45',
-      Maghrib: '18:45',
-      Isha: '20:15',
-      Imsak: '05:15',
-      Midnight: '00:30',
+      Fajr: '',
+      Sunrise: '',
+      Dhuhr: '',
+      Asr: '',
+      Sunset: '',
+      Maghrib: '',
+      Isha: '',
     },
     date: {
-      readable: fallbackGregorian.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
+      readable: date,
       hijri: {
-        date: fallbackDate,
-        day: '01',
-        month: { number: 1, en: 'Muharram', ar: 'محرّم' },
-        year: '1446',
-        weekday: { en: 'Monday', ar: 'الاثنين' },
+        date: '',
+        day: '',
+        month: { number: 0, en: '', ar: '' },
+        year: '',
+        weekday: { en: '', ar: '' },
       },
       gregorian: {
-        date: fallbackDate,
-        weekday: { en: fallbackGregorian.toLocaleDateString('en-US', { weekday: 'long' }) },
+        date,
+        weekday: { en: '' },
       },
     },
     meta: {
-      latitude: 31.5204,
-      longitude: 74.3587,
+      latitude: 0,
+      longitude: 0,
       timezone: 'Asia/Karachi',
       method: { id: PAKISTAN_CALCULATION_METHOD, name: 'University of Islamic Sciences, Karachi' },
     },
   };
 }
 
-function getFallbackHijriResponse() {
-  const fallbackDate = new Date().toISOString().split('T')[0];
-  return {
-    hijri: {
-      date: fallbackDate,
-      day: '01',
-      month: { number: 1, en: 'Muharram', ar: 'محرّم' },
-      year: '1446',
-      weekday: { en: 'Monday', ar: 'الاثنين' },
-    },
-    gregorian: {
-      date: fallbackDate,
-      weekday: { en: 'Monday' },
-    },
-  };
+function getPakistanDateIso(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
 function getFallbackQiblaResponse(latitude: number, longitude: number): QiblaResponse {
+  const kaabaLatitude = 21.4225 * (Math.PI / 180);
+  const kaabaLongitude = 39.8262 * (Math.PI / 180);
+  const currentLatitude = latitude * (Math.PI / 180);
+  const currentLongitude = longitude * (Math.PI / 180);
+  const longitudeDifference = kaabaLongitude - currentLongitude;
+  const y = Math.sin(longitudeDifference);
+  const x =
+    Math.cos(currentLatitude) * Math.tan(kaabaLatitude) -
+    Math.sin(currentLatitude) * Math.cos(longitudeDifference);
+  const direction = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+
   return {
     latitude,
     longitude,
-    direction: 260.37,
+    direction: Number(direction.toFixed(2)),
+  };
+}
+
+function normalizeRequestedDate(date?: string) {
+  if (!date) {
+    return getPakistanDateIso();
+  }
+
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    throw new Error('Prayer date must use YYYY-MM-DD format');
+  }
+
+  const parsed = new Date(`${date}T00:00:00+05:00`);
+  if (Number.isNaN(parsed.getTime()) || getPakistanDateIso(parsed) !== date) {
+    throw new Error('Prayer date is invalid');
+  }
+
+  return date;
+}
+
+export function toAladhanDate(date: string) {
+  const [year, month, day] = normalizeRequestedDate(date).split('-');
+  return `${day}-${month}-${year}`;
+}
+
+function normalizeAladhanDate(date: string) {
+  const match = date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : date;
+}
+
+function cleanPrayerTime(value: string) {
+  return value.match(/\b(\d{1,2}):(\d{2})\b/)?.[0] ?? '';
+}
+
+function validatePrayerResponse(data: PrayerTimesResponse, requestedDate: string) {
+  const returnedDate = normalizeAladhanDate(data.date?.gregorian?.date ?? '');
+  if (returnedDate !== requestedDate) {
+    throw new Error(
+      `Aladhan returned ${returnedDate || 'no date'} for requested date ${requestedDate}`
+    );
+  }
+
+  const timings = Object.fromEntries(
+    Object.entries(data.timings).map(([name, time]) => [name, cleanPrayerTime(time)])
+  ) as unknown as PrayerTimings;
+
+  if (!timings.Fajr || !timings.Dhuhr || !timings.Asr || !timings.Maghrib || !timings.Isha) {
+    throw new Error('Aladhan returned incomplete prayer timings');
+  }
+
+  return {
+    ...data,
+    available: true,
+    requestedDate,
+    timings,
   };
 }
 
@@ -147,14 +200,16 @@ export async function getPrayerTimesByCity(
   country: string,
   date?: string
 ): Promise<PrayerTimesResponse> {
-  const dateParam = date ?? new Date().toISOString().split('T')[0];
+  const requestedDate = normalizeRequestedDate(date);
+  const dateParam = toAladhanDate(requestedDate);
 
   try {
-    return await aladhanFetch<PrayerTimesResponse>(
+    const response = await aladhanFetch<PrayerTimesResponse>(
       `/timingsByCity/${dateParam}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`
     );
+    return validatePrayerResponse(response, requestedDate);
   } catch {
-    return getFallbackPrayerTimesResponse(city, country, dateParam);
+    return getUnavailablePrayerTimesResponse(requestedDate);
   }
 }
 
@@ -163,14 +218,16 @@ export async function getPrayerTimesByCoords(
   longitude: number,
   date?: string
 ): Promise<PrayerTimesResponse> {
-  const dateParam = date ?? new Date().toISOString().split('T')[0];
+  const requestedDate = normalizeRequestedDate(date);
+  const dateParam = toAladhanDate(requestedDate);
 
   try {
-    return await aladhanFetch<PrayerTimesResponse>(
+    const response = await aladhanFetch<PrayerTimesResponse>(
       `/timings/${dateParam}?latitude=${latitude}&longitude=${longitude}&method=${PAKISTAN_CALCULATION_METHOD}&school=1`
     );
+    return validatePrayerResponse(response, requestedDate);
   } catch {
-    return getFallbackPrayerTimesResponse('Current Location', 'Pakistan', dateParam);
+    return getUnavailablePrayerTimesResponse(requestedDate);
   }
 }
 
@@ -207,11 +264,16 @@ export async function getQiblaDirection(
 export async function getCurrentHijriDate(): Promise<{
   hijri: HijriDate;
   gregorian: { date: string; weekday: { en: string } };
-}> {
+} | null> {
+  const requestedDate = getPakistanDateIso();
   try {
-    return await aladhanFetch(`/gToH`, 3600);
+    const response = await aladhanFetch<{
+      hijri: HijriDate;
+      gregorian: { date: string; weekday: { en: string } };
+    }>(`/gToH/${toAladhanDate(requestedDate)}`, 3600);
+    return normalizeAladhanDate(response.gregorian.date) === requestedDate ? response : null;
   } catch {
-    return getFallbackHijriResponse();
+    return null;
   }
 }
 

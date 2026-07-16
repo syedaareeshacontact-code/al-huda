@@ -1,4 +1,4 @@
-import { buildAyahPopupPath, buildSurahPath } from '@/lib/quran-routing';
+import { buildAyahPath, buildSurahPath } from '@/lib/quran-routing';
 import { buildHadithSearchPath } from '@/lib/hadith/hadith-routing';
 import {
   isEveningTime,
@@ -38,7 +38,7 @@ function ayahPath(surahId: number, ayahNumber: number) {
     return `/surah/${surahId}?ayah=${ayahNumber}`;
   }
 
-  return buildAyahPopupPath(surah.id, surah.surahName, ayahNumber);
+  return buildAyahPath(surah.id, surah.surahName, ayahNumber);
 }
 
 export function getHomeContextualWidgets(date: Date = new Date()): ContextualWidgetSection[] {
@@ -178,7 +178,7 @@ export function getHomeContextualWidgets(date: Date = new Date()): ContextualWid
         {
           label: 'Hadith Search',
           href: buildHadithSearchPath(),
-          description: 'Search authentic hadiths',
+          description: 'Search hadith collections',
         },
       ],
     });

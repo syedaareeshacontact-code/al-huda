@@ -83,7 +83,7 @@ export function buildPrayerTimesMetadata(city?: string, cityUrdu?: string): Meta
       title: urduTitle
         ? `${urduTitle} — ${city} Namaz Timings Today | Prayer Times Pakistan`
         : `${city} Namaz Timings Today — Prayer Times, Qibla & Hijri Date`,
-      description: `Accurate ${city} namaz timings for Fajr, Dhuhr, Asr, Maghrib & Isha. Qibla direction, Hijri calendar, and monthly prayer timetable for ${city}, Pakistan.${cityUrdu ? ` ${urduTitle} آج کے لیے.` : ''}`,
+      description: `Calculated ${city} namaz timings for Fajr, Dhuhr, Asr, Maghrib & Isha. Qibla direction, Hijri calendar, and monthly prayer timetable for ${city}, Pakistan.${cityUrdu ? ` ${urduTitle} آج کے لیے.` : ''}`,
       path: `/prayer-times/${slug}`,
       keywords: [
         `namaz timing ${city.toLowerCase()}`,
@@ -101,7 +101,7 @@ export function buildPrayerTimesMetadata(city?: string, cityUrdu?: string): Meta
   return buildPageMetadata({
     title: 'Prayer Times Pakistan — Namaz Timings, Qibla & Hijri Calendar',
     description:
-      'Free prayer times for all major Pakistani cities. Accurate Fajr, Dhuhr, Asr, Maghrib & Isha timings with Qibla direction and Hijri calendar.',
+      'Free calculated prayer times for major Pakistani cities, with Fajr, Dhuhr, Asr, Maghrib, Isha, Qibla direction, and Hijri calendar.',
     path: '/prayer-times',
     keywords: PRAYER_TIMES_KEYWORDS,
     imageUrl: '/og?kind=surah-index',
@@ -112,7 +112,7 @@ export function buildDuasMetadata(category?: string, categoryName?: string): Met
   if (category && categoryName) {
     return buildPageMetadata({
       title: `${categoryName} — Islamic Duas & Supplications with Arabic Text`,
-      description: `Read authentic ${categoryName.toLowerCase()} with Arabic text, transliteration, and English translation. Sourced from Quran and Sunnah.`,
+      description: `Read ${categoryName.toLowerCase()} with Arabic text, transliteration, English translation, and source information where supplied by the data provider.`,
       path: `/duas/${category}`,
       keywords: [
         categoryName.toLowerCase(),
@@ -124,9 +124,9 @@ export function buildDuasMetadata(category?: string, categoryName?: string): Met
   }
 
   return buildPageMetadata({
-    title: 'Islamic Duas & Azkar — 126 Authentic Supplications from Quran & Sunnah',
+    title: 'Islamic Duas & Azkar — 126 Supplications in Arabic & English',
     description:
-      'Browse 126 authentic Islamic duas and azkar across 27 categories. Arabic text, transliteration, and English translation for morning, evening, prayer, travel, and more.',
+      'Browse 126 Islamic duas and azkar across 27 categories, with Arabic text, transliteration, English translation, and source references where supplied.',
     path: '/duas',
     keywords: DUAS_KEYWORDS,
   });
@@ -136,7 +136,7 @@ export function buildAzkarMetadata(): Metadata {
   return buildPageMetadata({
     title: 'Morning & Evening Azkar — Daily Islamic Remembrance (Adhkar)',
     description:
-      'Daily morning and evening azkar (adhkar) with Arabic text, transliteration, and translation. Protect yourself with authentic supplications from the Sunnah.',
+      'Daily morning and evening azkar (adhkar) with Arabic text, transliteration, translation, and source references where supplied.',
     path: '/azkar',
     keywords: [
       'morning azkar',
@@ -202,7 +202,11 @@ export function buildMosqueFinderMetadata(city?: string): Metadata {
   });
 }
 
-export function buildPrayerTimesJsonLd(city: string, timings: Record<string, string>) {
+export function buildPrayerTimesJsonLd(
+  city: string,
+  timings: Record<string, string>,
+  date: string
+) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
@@ -210,29 +214,29 @@ export function buildPrayerTimesJsonLd(city: string, timings: Record<string, str
     description: `Daily Islamic prayer times for ${city}, Pakistan`,
     url: toAbsoluteUrl(`/prayer-times/${city.toLowerCase().replace(/\s+/g, '-')}`),
     mainEntity: {
-      '@type': 'Schedule',
-      name: `${city} Namaz Timings`,
-      scheduleTimezone: 'Asia/Karachi',
-      event: Object.entries(timings)
+      '@type': 'ItemList',
+      name: `${city} Namaz Timings for ${date}`,
+      itemListElement: Object.entries(timings)
         .filter(([k]) => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].includes(k))
-        .map(([name, time]) => ({
-          '@type': 'Event',
+        .map(([name, time], index) => ({
+          '@type': 'PropertyValue',
+          position: index + 1,
           name: `${name} Prayer`,
-          startDate: `T${time}:00`,
+          value: `${date}T${time}:00+05:00`,
         })),
     },
   };
 }
 
-export function buildPrayerTimesFaq(city: string) {
-  return buildFaqJsonLd([
+export function getPrayerTimesFaqItems(city: string) {
+  return [
     {
       question: `What are today's namaz timings in ${city}?`,
-      answer: `Today's prayer times for ${city} are calculated using the University of Islamic Sciences, Karachi method — the standard adopted across Pakistan. Visit this page for live Fajr, Dhuhr, Asr, Maghrib, and Isha timings updated daily.`,
+      answer: `Today's prayer times for ${city} are calculated using the University of Islamic Sciences, Karachi method with Hanafi Asr. Compare them with your local mosque where local schedules differ.`,
     },
     {
       question: `Which calculation method is used for ${city} prayer times?`,
-      answer: `We use the University of Islamic Sciences, Karachi method (method 1) with Hanafi school for Asr calculation — the same method used by most mosques in Pakistan.`,
+      answer: `We use the University of Islamic Sciences, Karachi method (method 1) with Hanafi school for Asr calculation. Local mosques may publish adjusted congregation or prayer times.`,
     },
     {
       question: 'What is the Qibla direction from Pakistan?',
@@ -244,15 +248,19 @@ export function buildPrayerTimesFaq(city: string) {
       answer:
         'The Hijri date is calculated using the Umm al-Qura calendar method. Note that local moon-sighting committees may announce dates one day differently, especially for Ramadan and Eid.',
     },
-  ]);
+  ];
 }
 
-export function buildDuasFaq() {
-  return buildFaqJsonLd([
+export function buildPrayerTimesFaq(city: string) {
+  return buildFaqJsonLd(getPrayerTimesFaqItems(city));
+}
+
+export function getDuasFaqItems() {
+  return [
     {
       question: 'How many duas are available?',
       answer:
-        'We provide 126 authentic duas and supplications across 27 categories, sourced from the Quran and Sunnah with references to hadith collections.',
+        'The directory contains 126 duas and supplications across 27 categories. Individual entries show source information where it is supplied by the data provider.',
     },
     {
       question: 'What is the difference between dua and azkar?',
@@ -264,12 +272,16 @@ export function buildDuasFaq() {
       answer:
         'Yes! All duas include Arabic text, transliteration, and translation. You can copy and share them with family and friends.',
     },
-  ]);
+  ];
 }
 
-export function buildMosqueFinderFaq(city?: string) {
+export function buildDuasFaq() {
+  return buildFaqJsonLd(getDuasFaqItems());
+}
+
+export function getMosqueFinderFaqItems(city?: string) {
   const location = city ?? 'your area';
-  return buildFaqJsonLd([
+  return [
     {
       question: `How do I find mosques near ${location}?`,
       answer: `Use our mosque finder to search for nearby masjids. Allow location access for automatic detection, or select ${city ?? 'a city'} to browse mosques in that area.`,
@@ -277,14 +289,18 @@ export function buildMosqueFinderFaq(city?: string) {
     {
       question: 'Where does the mosque data come from?',
       answer:
-        'Mosque locations are sourced from OpenStreetMap, a community-maintained global map. Data accuracy depends on community contributions in your area.',
+        'Mosque locations come from OpenStreetMap community data. Accuracy depends on local contributions, so confirm current details before travelling.',
     },
     {
       question: 'Can I get directions to a mosque?',
       answer:
         'Yes, each mosque listing includes a link to Google Maps for walking or driving directions.',
     },
-  ]);
+  ];
+}
+
+export function buildMosqueFinderFaq(city?: string) {
+  return buildFaqJsonLd(getMosqueFinderFaqItems(city));
 }
 
 export function buildIslamicToolsBreadcrumb(

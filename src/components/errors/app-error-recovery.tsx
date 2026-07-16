@@ -67,7 +67,7 @@ export default function AppErrorRecovery({ error, reset }: AppErrorRecoveryProps
   }, [error, isAssetMismatch, refreshLatestVersion]);
 
   return (
-    <main className="grid min-h-[70vh] place-items-center px-4 py-16">
+    <div className="grid min-h-[70vh] place-items-center px-4 py-16">
       <section className="w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center shadow-[var(--shadow-card)]">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
           {recovering ? 'Updating website' : 'Page recovery'}
@@ -99,6 +99,6 @@ export default function AppErrorRecovery({ error, reset }: AppErrorRecoveryProps
           </div>
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }

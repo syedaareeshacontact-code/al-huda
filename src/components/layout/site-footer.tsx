@@ -75,6 +75,13 @@ export default function SiteFooter() {
           <p className="text-xs text-[var(--color-muted-text)]">
             © {new Date().getFullYear()} Read al Quran. All rights reserved.
           </p>
+          <nav aria-label="Trust and legal information" className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:justify-end">
+            <Link href="/editorial-policy" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Sources</Link>
+            <Link href="/corrections" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Corrections</Link>
+            <Link href="/privacy-policy" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Privacy</Link>
+            <Link href="/terms" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Terms</Link>
+            <Link href="/contact" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Contact</Link>
+          </nav>
         </div>
       </div>
     </footer>

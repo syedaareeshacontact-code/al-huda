@@ -5,7 +5,6 @@ import { Suspense } from 'react';
 import { BookOpen, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 import AyahDetailOverlay from '@/components/quran/ayah-detail-overlay';
-import { AyahPopupLinkScope } from '@/components/quran/ayah-popup-navigation';
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +12,7 @@ import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { resolveSurahParam, getAllSurahs } from '@/lib/quran-index';
 import {
   buildSurahPath,
-  buildTafsirPopupPath,
+  buildTafsirPath,
   buildTafsirSurahPath,
 } from '@/lib/quran-routing';
 import { getAllTafsirSurahStaticParams } from '@/lib/quran-static-params';
@@ -153,18 +152,19 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
         </CardHeader>
         <CardContent>
           <nav aria-label={`Tafseer links for Surah ${surah.surahName}`}>
-            <AyahPopupLinkScope className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {ayahNumbers.map((ayahNumber) => (
-                <a
+                <Link
                   key={ayahNumber}
-                  href={buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber)}
+                  href={buildTafsirPath(surah.id, surah.surahName, ayahNumber)}
+                  prefetch={false}
                   className="inline-flex min-w-[4.5rem] items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
                 >
                   <FileText className="h-3.5 w-3.5" />
                   {surah.id}:{ayahNumber}
-                </a>
+                </Link>
               ))}
-            </AyahPopupLinkScope>
+            </div>
           </nav>
         </CardContent>
       </Card>

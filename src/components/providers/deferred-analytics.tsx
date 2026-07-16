@@ -1,13 +1,29 @@
 'use client';
 
 import { useEffect, useState, type ComponentType } from 'react';
+import {
+  ANALYTICS_CONSENT_EVENT,
+  ANALYTICS_CONSENT_KEY,
+} from '@/components/providers/analytics-consent';
 
 const ANALYTICS_DELAY_MS = 60_000;
 
 export default function DeferredAnalytics({ gaId }: { gaId: string }) {
   const [Analytics, setAnalytics] = useState<ComponentType<{ gaId: string }> | null>(null);
+  const [consented, setConsented] = useState(false);
 
   useEffect(() => {
+    const syncConsent = () => {
+      setConsented(window.localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'accepted');
+    };
+    syncConsent();
+    window.addEventListener(ANALYTICS_CONSENT_EVENT, syncConsent);
+    return () => window.removeEventListener(ANALYTICS_CONSENT_EVENT, syncConsent);
+  }, []);
+
+  useEffect(() => {
+    if (!gaId || !consented) return;
+
     let active = true;
     let requested = false;
     const enable = () => {
@@ -34,7 +50,7 @@ export default function DeferredAnalytics({ gaId }: { gaId: string }) {
       window.clearTimeout(timer);
       events.forEach((eventName) => window.removeEventListener(eventName, enable));
     };
-  }, []);
+  }, [consented, gaId]);
 
   return Analytics ? <Analytics gaId={gaId} /> : null;
 }

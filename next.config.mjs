@@ -4,6 +4,21 @@ const APP_VERSION =
   process.env.VERCEL_GIT_COMMIT_SHA ||
   process.env.NEXT_PUBLIC_APP_VERSION ||
   `build-${Date.now().toString(36)}`;
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+const isProductionDeployment =
+  process.env.VERCEL_ENV === 'production' ||
+  process.env.DEPLOYMENT_ENV === 'production';
+
+if (
+  isProductionDeployment &&
+  (!configuredSiteUrl ||
+    !configuredSiteUrl.startsWith('https://') ||
+    configuredSiteUrl.includes('localhost'))
+) {
+  throw new Error(
+    'Production deployments require NEXT_PUBLIC_SITE_URL to be a public HTTPS origin.'
+  );
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

@@ -12,7 +12,7 @@ export const revalidate = 86400;
 export const metadata = buildPageMetadata({
   title: 'Hadith Collections – Sahih Bukhari, Muslim & Six Books Online',
   description:
-    'Browse authentic Hadith collections including Sahih Bukhari, Sahih Muslim, Abu Dawud, Tirmidhi, Nasai, and Ibn Majah with Arabic, English and Urdu translations.',
+    'Browse major Hadith collections including Sahih Bukhari, Sahih Muslim, Abu Dawud, Tirmidhi, Nasai, Ibn Majah, and Mishkat with Arabic, English and Urdu translations.',
   path: buildHadithIndexPath(),
   keywords: [...GLOBAL_HADITH_SEO_KEYWORDS, ...GENERATED_HADITH_KEYWORDS],
   imageUrl: buildHadithOgImagePath({ variant: 'index' }),
@@ -31,7 +31,7 @@ export default async function HadithPage() {
           badge="Sunnah & Hadith"
           badgeSecondary={`${collections.length} Collections`}
           title="Hadith Collections"
-          description={`Explore ${totalHadiths.toLocaleString()} authentic hadiths from major Islamic books — with Arabic text, English translation, and Urdu translation for every narration.`}
+          description={`Explore ${totalHadiths.toLocaleString()} narrations from major Hadith collections, with Arabic text and available English and Urdu translations. Grades are shown where supplied.`}
         />
 
         <CollectionGrid collections={collections} />

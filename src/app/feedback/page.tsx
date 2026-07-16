@@ -9,6 +9,8 @@ export const metadata: Metadata = buildPageMetadata({
   description:
     'Share feedback, report issues, and suggest improvements for Read al Quran. Signed-in users can send direct feedback to help improve the Quran, Hadith, and Islamic tools experience.',
   path: '/feedback',
+  index: false,
+  follow: false,
   keywords: [
     ...TRUST_KEYWORDS,
     ...MASTER_SEO_KEYWORDS.slice(0, 80),
@@ -21,9 +23,8 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default function FeedbackPage() {
   return (
-    <main className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <FeedbackForm />
-    </main>
+    </div>
   );
 }
-

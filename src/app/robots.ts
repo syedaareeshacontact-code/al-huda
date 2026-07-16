@@ -21,7 +21,6 @@ export default function robots(): MetadataRoute.Robots {
           '/*?*q=*',
           '/*?*filter=*',
         ],
-        crawlDelay: 0,
       },
       {
         userAgent: 'Bingbot',
@@ -35,7 +34,6 @@ export default function robots(): MetadataRoute.Robots {
           '/settings',
           '/practice',
         ],
-        crawlDelay: 1,
       },
       {
         userAgent: '*',
@@ -52,12 +50,10 @@ export default function robots(): MetadataRoute.Robots {
           '/*?*q=*',
           '/*?*filter=*',
         ],
-        crawlDelay: 2,
       },
     ],
     sitemap: [
       `${baseUrl}/sitemap.xml`,
     ],
-    host: baseUrl,
   };
 }

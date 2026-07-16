@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { BookMarked, Languages, Search, ShieldCheck } from 'lucide-react';
+import { BookMarked, Languages, Library, Search } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: 'Authentic Collections',
-    description: 'Sahih Bukhari, Sahih Muslim, and the six major hadith books compiled by trusted scholars.',
+    icon: Library,
+    title: 'Major Collections',
+    description: 'Browse Sahih al-Bukhari, Sahih Muslim, the major Sunan works, and Mishkat al-Masabih.',
   },
   {
     icon: Languages,
@@ -61,7 +61,7 @@ export default function HadithSeoIntro() {
           id="hadith-about-heading"
           className="font-display text-2xl font-bold text-[var(--color-heading)]"
         >
-          Read Authentic Hadith Online
+          Read Hadith Online
         </h2>
         <div className="mt-4 space-y-4 text-sm leading-relaxed text-[var(--color-muted-text)] md:text-base">
           <p>
@@ -71,8 +71,9 @@ export default function HadithSeoIntro() {
           </p>
           <p>
             On Read al Quran, you can browse major hadith collections with Arabic text alongside
-            English and Urdu translations. Each hadith includes its grade (Sahih, Hasan, or
-            Da&apos;if), narrator chain, and chapter context for deeper study.
+            English and Urdu translations. Grades, narrator information, and chapter context are
+            shown where the data provider supplies them. Consult qualified scholars when a grading
+            or religious ruling needs expert verification.
           </p>
         </div>
 

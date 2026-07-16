@@ -24,8 +24,8 @@ export async function generateMetadata({
   return buildPageMetadata({
     title: q ? `"${q}" – Hadith Search` : 'Search Hadiths Online',
     description: q
-      ? `Search results for "${q}" across authentic Hadith collections with English and Urdu translations.`
-      : 'Search thousands of authentic hadiths by keyword across Sahih Bukhari, Sahih Muslim, and the six major books.',
+      ? `Search results for "${q}" across major Hadith collections with English and Urdu translations.`
+      : 'Search thousands of narrations by keyword across major Hadith collections, with grades shown where supplied.',
     path: q ? `${buildHadithSearchPath()}?q=${encodeURIComponent(q)}` : buildHadithSearchPath(),
     index: false,
     keywords: HADITH_SEARCH_KEYWORDS,
@@ -41,7 +41,7 @@ async function SearchResults({ query, page }: { query: string; page: number }) {
         <CardContent className="py-16 text-center">
           <SearchX className="mx-auto mb-4 size-10 text-[var(--color-muted-text)]" aria-hidden="true" />
           <p className="text-lg font-medium text-[var(--color-heading)]">
-            Search authentic hadiths
+            Search Hadith collections
           </p>
           <p className="mt-2 text-sm text-[var(--color-muted-text)]">
             Type a keyword above in English or Urdu to find hadiths across all major collections.

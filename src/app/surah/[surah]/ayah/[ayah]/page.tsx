@@ -17,12 +17,10 @@ import {
 import { resolveSurahParam } from '@/lib/quran-index';
 import {
   buildAyahPath,
-  buildAyahPopupPath,
   buildSurahPath,
-  buildTafsirPopupPath,
+  buildTafsirPath,
 } from '@/lib/quran-routing';
 import { getFeaturedAyahStaticParams } from '@/lib/quran-static-params';
-import { isFeaturedAyah } from '@/lib/featured-quran-pages';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildAyahPageSchemas } from '@/lib/seo-schema';
@@ -87,7 +85,7 @@ export async function generateMetadata({
   const canonicalPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
 
   return buildPageMetadata({
-    title: `Ayah ${surah.id}:${ayahNumber} (${surah.surahName} / ${surah.surahNameArabic}) — Urdu & English Translation`,
+    title: `Quran ${surah.id}:${ayahNumber} — ${surah.surahName} in Arabic, Urdu & English`,
     description: `Read Ayah ${surah.id}:${ayahNumber} of Surah ${surah.surahName} with Arabic text, Urdu translation, English translation, audio, and tafseer link.`,
     path: canonicalPath,
     ogType: 'article',
@@ -113,17 +111,8 @@ export default async function AyahDetailPage({
     notFound();
   }
 
-  const featuredAyah = isFeaturedAyah(surah.id, ayahNumber);
   if (!isCanonicalSlug) {
-    permanentRedirect(
-      featuredAyah
-        ? buildAyahPath(surah.id, surah.surahName, ayahNumber)
-        : buildAyahPopupPath(surah.id, surah.surahName, ayahNumber)
-    );
-  }
-
-  if (!featuredAyah) {
-    permanentRedirect(buildAyahPopupPath(surah.id, surah.surahName, ayahNumber));
+    permanentRedirect(buildAyahPath(surah.id, surah.surahName, ayahNumber));
   }
 
   const ayah = await getAyahContent(surah.id, ayahNumber);
@@ -140,15 +129,15 @@ export default async function AyahDetailPage({
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
-  const tafsirPath = buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber);
+  const tafsirPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
   const canonicalPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
   const prevAyahPath =
     ayahNumber > 1
-      ? buildAyahPopupPath(surah.id, surah.surahName, ayahNumber - 1)
+      ? buildAyahPath(surah.id, surah.surahName, ayahNumber - 1)
       : null;
   const nextAyahPath =
     ayahNumber < surah.totalAyah
-      ? buildAyahPopupPath(surah.id, surah.surahName, ayahNumber + 1)
+      ? buildAyahPath(surah.id, surah.surahName, ayahNumber + 1)
       : null;
 
   const breadcrumbs = buildAyahPageSchemas({
@@ -255,6 +244,12 @@ export default async function AyahDetailPage({
           </p>
         </CardContent>
       </Card>
+
+      <p className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm leading-relaxed text-[var(--color-muted-text)]">
+        Quran text and translations are supplied through Quran.com. English uses Sahih
+        International and Urdu uses Fatah Muhammad Jalandhari. Please report any alignment issue
+        through the corrections page.
+      </p>
 
       <section className="mb-6 grid gap-4 lg:grid-cols-2">
         <Card>

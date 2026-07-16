@@ -57,7 +57,6 @@ export function buildPageMetadata(options: BuildMetadataOptions): Metadata {
     follow = true,
     ogType = 'website',
     imageUrl = DEFAULT_OG_IMAGE,
-    keywords,
     author,
     publishedDate,
     modifiedDate,
@@ -106,13 +105,8 @@ export function buildPageMetadata(options: BuildMetadataOptions): Metadata {
       title,
       description,
       images: [absoluteImage],
-      site: '@al_huda_quran',
     },
   };
-
-  if (keywords && keywords.length > 0) {
-    metadata.keywords = keywords.slice(0, 15);
-  }
 
   if (author) {
     metadata.creator = author;
@@ -247,15 +241,10 @@ export function buildOrganizationJsonLd() {
     url: siteOrigin,
     logo: toAbsoluteUrl('/logos/logo1.png'),
     description: SITE_DESCRIPTION,
-    sameAs: [
-      'https://www.facebook.com/alhuda.quran',
-      'https://www.instagram.com/alhuda.quran',
-      'https://twitter.com/al_huda_quran',
-    ],
-    contact: {
+    contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'Customer Support',
-      url: `${siteOrigin}/about`,
+      url: `${siteOrigin}/contact`,
     },
   };
 }
@@ -268,18 +257,6 @@ export function buildWebsiteJsonLd() {
     url: siteOrigin,
     description: SITE_DESCRIPTION,
     inLanguage: ['en', 'ur', 'ar'],
-    potentialAction: [
-      {
-        '@type': 'SearchAction',
-        target: `${siteOrigin}/surah?search={search_term_string}`,
-        'query-input': 'required name=search_term_string',
-      },
-      {
-        '@type': 'SearchAction',
-        target: `${siteOrigin}/hadith/search?q={search_term_string}`,
-        'query-input': 'required name=search_term_string',
-      },
-    ],
   };
 }
 
@@ -342,11 +319,6 @@ export function buildLocalBusinessJsonLd(options: {
       postalCode: options.address.postalCode,
     },
     image: toAbsoluteUrl(options.image),
-    sameAs: [
-      'https://www.facebook.com/alhuda.quran',
-      'https://www.instagram.com/alhuda.quran',
-      'https://twitter.com/al_huda_quran',
-    ],
   };
 }
 
@@ -366,10 +338,6 @@ export function buildEducationalOrganizationJsonLd(options: {
     logo: toAbsoluteUrl(options.logo),
     location: options.location,
     foundingDate: '2024',
-    sameAs: [
-      'https://www.facebook.com/alhuda.quran',
-      'https://www.instagram.com/alhuda.quran',
-    ],
   };
 }
 
@@ -401,33 +369,6 @@ export function buildHowToJsonLd(options: {
       }),
     })),
     ...(options.totalTime && { totalTime: options.totalTime }),
-  };
-}
-
-export function buildSearchActionJsonLd() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: SITE_NAME,
-    url: siteOrigin,
-    potentialAction: [
-      {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: `${siteOrigin}/surah?search={search_term_string}`,
-        },
-        'query-input': 'required name=search_term_string',
-      },
-      {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: `${siteOrigin}/hadith/search?q={search_term_string}`,
-        },
-        'query-input': 'required name=search_term_string',
-      },
-    ],
   };
 }
 
@@ -553,7 +494,6 @@ export function buildVoiceSearchOptimizedPage(options: {
     }),
     schemas: {
       faq: buildFaqJsonLd(options.faqs),
-      searchAction: buildSearchActionJsonLd(),
     },
   };
 }

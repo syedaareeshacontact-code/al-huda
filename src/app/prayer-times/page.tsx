@@ -2,15 +2,15 @@ import Link from 'next/link';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import CityGrid from '@/components/islamic-tools/city-grid';
 import PrayerTimesDisplay from '@/components/prayer-times/prayer-times-display';
+import PrayerDataUnavailable from '@/components/prayer-times/prayer-data-unavailable';
 import QiblaCompass from '@/components/prayer-times/qibla-compass';
-import { getCurrentHijriDate } from '@/lib/aladhan-api';
 import { getPrayerTimesByCity } from '@/lib/aladhan-api';
 import {
   buildIslamicToolsBreadcrumb,
   buildPrayerTimesMetadata,
-  PRAYER_TIMES_FAQ_STATIC,
   buildPrayerTimesFaq,
   buildWebApplicationJsonLd,
+  getPrayerTimesFaqItems,
 } from '@/lib/islamic-tools-seo';
 
 export const revalidate = 3600;
@@ -18,13 +18,13 @@ export const revalidate = 3600;
 export const metadata = buildPrayerTimesMetadata();
 
 export default async function PrayerTimesPage() {
-  const [hijriData, lahoreTimings] = await Promise.all([
-    getCurrentHijriDate(),
-    getPrayerTimesByCity('Lahore', 'Pakistan'),
-  ]);
+  const lahoreTimings = await getPrayerTimesByCity('Lahore', 'Pakistan');
 
-  const hijriStr = `${hijriData.hijri.day} ${hijriData.hijri.month.en} ${hijriData.hijri.year} AH`;
+  const hijriStr = lahoreTimings.available
+    ? `${lahoreTimings.date.hijri.day} ${lahoreTimings.date.hijri.month.en} ${lahoreTimings.date.hijri.year} AH`
+    : '';
   const breadcrumb = buildIslamicToolsBreadcrumb([{ name: 'Prayer Times', path: '/prayer-times' }]);
+  const faqItems = getPrayerTimesFaqItems('Pakistan');
   const faq = buildPrayerTimesFaq('Pakistan');
   const webApp = buildWebApplicationJsonLd({
     name: 'Prayer Times Pakistan',
@@ -40,7 +40,7 @@ export default async function PrayerTimesPage() {
         badgeSecondary="Aladhan API"
         title="Prayer Times Pakistan"
         titleUrdu="نماز کے اوقات"
-        description="Accurate namaz timings for 35+ Pakistani cities. Fajr, Dhuhr, Asr, Maghrib & Isha with Qibla direction and Hijri calendar — updated daily."
+        description="Calculated namaz timings for 35+ Pakistani cities. Fajr, Dhuhr, Asr, Maghrib & Isha with Qibla direction and Hijri calendar — verified against the requested date."
         meta={
           <div className="flex flex-wrap gap-3">
             <Link
@@ -63,12 +63,16 @@ export default async function PrayerTimesPage() {
         <h2 className="mb-6 font-display text-2xl font-semibold text-[var(--color-heading)]">
           Today&apos;s Timings — Lahore (Sample)
         </h2>
-        <PrayerTimesDisplay
-          timings={lahoreTimings.timings}
-          cityName="Lahore"
-          hijriDate={hijriStr}
-          gregorianDate={hijriData.gregorian.date}
-        />
+        {lahoreTimings.available ? (
+          <PrayerTimesDisplay
+            timings={lahoreTimings.timings}
+            cityName="Lahore"
+            hijriDate={hijriStr}
+            gregorianDate={lahoreTimings.date.readable}
+          />
+        ) : (
+          <PrayerDataUnavailable cityName="Lahore" />
+        )}
       </section>
 
       <section className="mb-12 grid gap-8 md:grid-cols-2">
@@ -88,18 +92,24 @@ export default async function PrayerTimesPage() {
             Hijri Calendar
           </h2>
           <div className="space-y-4">
-            <div className="rounded-xl bg-[var(--color-surface-2)] p-5 text-center">
-              <p className="text-sm text-[var(--color-muted-text)]">Today&apos;s Islamic Date</p>
-              <p className="urdu-font mt-2 text-3xl font-bold text-[var(--color-accent-soft)]" dir="rtl">
-                {hijriData.hijri.day} {hijriData.hijri.month.ar} {hijriData.hijri.year}
+            {lahoreTimings.available ? (
+              <div className="rounded-xl bg-[var(--color-surface-2)] p-5 text-center">
+                <p className="text-sm text-[var(--color-muted-text)]">Today&apos;s Islamic Date</p>
+                <p className="urdu-font mt-2 text-3xl font-bold text-[var(--color-accent-soft)]" dir="rtl">
+                  {lahoreTimings.date.hijri.day} {lahoreTimings.date.hijri.month.ar} {lahoreTimings.date.hijri.year}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-[var(--color-heading)]">
+                  {hijriStr}
+                </p>
+                <p className="mt-2 text-sm text-[var(--color-muted-text)]">
+                  {lahoreTimings.date.hijri.weekday.en} · {lahoreTimings.date.gregorian.date}
+                </p>
+              </div>
+            ) : (
+              <p className="rounded-xl bg-[var(--color-surface-2)] p-5 text-sm text-[var(--color-muted-text)]">
+                The Islamic date is temporarily unavailable because the live date response could not be verified.
               </p>
-              <p className="mt-1 text-lg font-semibold text-[var(--color-heading)]">
-                {hijriData.hijri.day} {hijriData.hijri.month.en} {hijriData.hijri.year} AH
-              </p>
-              <p className="mt-2 text-sm text-[var(--color-muted-text)]">
-                {hijriData.hijri.weekday.en} · {hijriData.gregorian.date}
-              </p>
-            </div>
+            )}
             <p className="text-sm leading-relaxed text-[var(--color-muted-text)]">
               The Hijri calendar is based on the Umm al-Qura method. Local moon-sighting committees in Pakistan may announce dates one day differently for Ramadan and Eid.
             </p>
@@ -116,9 +126,7 @@ export default async function PrayerTimesPage() {
           Frequently Asked Questions
         </h2>
         <div className="space-y-4">
-          {[...PRAYER_TIMES_FAQ_STATIC, ...[
-            { question: 'Which cities are covered?', answer: 'We cover 35 major Pakistani cities including Lahore, Karachi, Islamabad, Rawalpindi, Faisalabad, Multan, Peshawar, Quetta, and more.' },
-          ]].map((item) => (
+          {faqItems.map((item) => (
             <details
               key={item.question}
               className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4"

@@ -6,6 +6,7 @@ import {
   buildMosqueFinderMetadata,
   buildMosqueFinderFaq,
   buildIslamicToolsBreadcrumb,
+  getMosqueFinderFaqItems,
 } from '@/lib/islamic-tools-seo';
 
 export const metadata = buildMosqueFinderMetadata();
@@ -14,6 +15,7 @@ export default function MosqueFinderPage() {
   const breadcrumb = buildIslamicToolsBreadcrumb([
     { name: 'Mosque Finder', path: '/mosque-finder' },
   ]);
+  const faqItems = getMosqueFinderFaqItems();
   const faq = buildMosqueFinderFaq();
 
   return (
@@ -38,6 +40,27 @@ export default function MosqueFinderPage() {
 
       <section className="mt-12">
         <CityGrid basePath="/mosque-finder" label="Find Mosques by City" />
+      </section>
+
+      <section className="mt-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+        <h2 className="mb-4 font-display text-xl font-semibold text-[var(--color-heading)]">
+          Mosque Finder FAQ
+        </h2>
+        <div className="space-y-3">
+          {faqItems.map((item) => (
+            <details
+              key={item.question}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4"
+            >
+              <summary className="cursor-pointer font-semibold text-[var(--color-heading)]">
+                {item.question}
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted-text)]">
+                {item.answer}
+              </p>
+            </details>
+          ))}
+        </div>
       </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />

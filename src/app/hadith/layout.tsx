@@ -54,9 +54,9 @@ export default async function HadithLayout({
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 pb-16" id="main-content">
+        <div className="min-w-0 flex-1 pb-16">
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );

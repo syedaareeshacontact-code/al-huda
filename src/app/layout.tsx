@@ -17,7 +17,7 @@ import { GlobalQuranAudioProvider } from '@/components/providers/global-quran-au
 import FloatingMiniPlayer from '@/components/ui/floating-mini-player';
 import { SuspenseBoundary } from '@/components/ui/suspense-boundary';
 import DeferredAnalytics from '@/components/providers/deferred-analytics';
-import { HOMEPAGE_KEYWORDS } from '@/lib/seo-keywords';
+import AnalyticsConsent from '@/components/providers/analytics-consent';
 import { buildOrganizationJsonLd, buildWebsiteJsonLd } from '@/lib/seo';
 
 // Dynamically import components that don't need to be critical for initial render
@@ -80,7 +80,6 @@ export const metadata: Metadata = {
 	},
 	description: siteDescription,
 	applicationName: 'Read al Quran',
-	keywords: HOMEPAGE_KEYWORDS,
 	category: 'education',
 	alternates: {
 		canonical: siteOriginString,
@@ -241,7 +240,8 @@ export default function RootLayout({
 					</AppSettingsProvider>
 				</ThemeProvider>
 
-				<DeferredAnalytics gaId="G-HZJ0Z0MFBP" />
+				<AnalyticsConsent />
+				<DeferredAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ''} />
 			</body>
 		</html>
 	);

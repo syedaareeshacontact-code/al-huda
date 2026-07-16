@@ -91,9 +91,9 @@ export const pageMetadataConfigs = {
    * Hadith page metadata (if implemented)
    */
   hadith: {
-    title: 'Hadith Collection – Authentic Islamic Hadith Online',
+    title: 'Hadith Collection – Islamic Hadith Online',
     description:
-      'Explore authentic hadith collections with Arabic text, Urdu and English translations. Learn from prophetic traditions with commentary.',
+      'Explore major hadith collections with Arabic text and Urdu and English translations. Provider-supplied grades and source context are shown where available.',
     path: '/hadith',
     keywords: [
       'hadith online',
@@ -187,7 +187,7 @@ export function generateAyahMetadata(
   const description =
     tafseerPreview && tafseerPreview.length > 0
       ? `Tafseer of Ayah ${surahId}:${ayahNumber} (${surahName}): ${tafseerPreview.slice(0, 120)}...`
-      : `Read and understand Ayah ${surahId}:${ayahNumber} of Surah ${surahName} with authentic Urdu tafseer, translation, and audio.`;
+      : `Read and understand Ayah ${surahId}:${ayahNumber} of Surah ${surahName} with Urdu tafseer, translation, and audio.`;
 
   return buildPageMetadata({
     title: `Tafseer of Ayah ${surahId}:${ayahNumber} – ${surahName} (Urdu Explanation)`,

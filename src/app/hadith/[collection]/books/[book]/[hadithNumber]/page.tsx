@@ -115,8 +115,7 @@ export default async function HadithDetailPage({
         content={hadith.hadithEnglish}
         path={detailPath}
         description={description}
-        datePublished="2024-01-01T00:00:00Z"
-        inLanguage={['Arabic', 'English', 'Urdu']}
+        inLanguage={['ar', 'en', 'ur']}
         imageUrl={buildHadithOgImagePath({
           variant: 'detail',
           bookName: hadith.book.bookName,
@@ -270,6 +269,8 @@ export default async function HadithDetailPage({
               <span className="font-semibold text-[var(--color-heading)]">Source</span>
               <span className="mx-1.5">·</span>
               {hadith.book.bookName} by {hadith.book.writerName}
+              <span className="mx-1.5">·</span>
+              Data supplied through HadithAPI.com; verify disputed grades or rulings with qualified scholars.
             </p>
           </div>
           <HadithActions hadith={hadith} shareUrl={detailPath} variant="full" />

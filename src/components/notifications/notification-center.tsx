@@ -509,17 +509,30 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     let timings: Record<string, string> | null = null;
 
     const loadPrayerTimings = async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Karachi',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+      const [year, month, day] = today.split('-');
+      const aladhanDate = `${day}-${month}-${year}`;
       if (timings && todayDate === today) {
         return timings;
       }
 
       const response = await fetch(
-        `https://api.aladhan.com/v1/timingsByCity/${today}?city=${encodeURIComponent(
+        `https://api.aladhan.com/v1/timingsByCity/${aladhanDate}?city=${encodeURIComponent(
           settings.prayerCity
         )}&country=${encodeURIComponent(settings.prayerCountry)}&method=1&school=1`
       );
+      if (!response.ok) {
+        return null;
+      }
       const payload = (await response.json()) as PrayerTimingsPayload;
+      if (payload.data?.date?.gregorian?.date !== aladhanDate) {
+        return null;
+      }
       timings = payload.data?.timings ?? null;
       todayDate = today;
       return timings;

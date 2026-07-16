@@ -107,7 +107,7 @@ export default function HomeRoot() {
   const latestBookmark = bookmarks[0];
 
   return (
-    <main className="pb-20 pt-5 sm:pt-9">
+    <div className="pb-20 pt-5 sm:pt-9">
       <HomeFeatureTour />
 
       <section className="relative z-20" data-slot="page-shell" aria-labelledby="home-heading">
@@ -301,6 +301,6 @@ export default function HomeRoot() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

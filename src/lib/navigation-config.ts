@@ -142,13 +142,13 @@ export const HADITH_MEGA_NAV: MegaNavGroup = {
   id: 'hadith',
   label: 'Hadith',
   icon: BookMarked,
-  tagline: 'Authentic Prophetic traditions in three languages',
+  tagline: 'Prophetic traditions in three languages',
   highlight: {
     label: 'All Collections',
-    description: '60,000+ hadiths · Arabic · English · Urdu',
+    description: 'Arabic · English · Urdu translations',
     href: '/hadith',
     icon: Library,
-    badge: '6 Books',
+    badge: 'Collections',
   },
   columns: [
     {
@@ -176,13 +176,13 @@ export const HADITH_MEGA_NAV: MegaNavGroup = {
       items: [
         {
           label: 'Sahih al-Bukhari',
-          description: 'The most authentic hadith collection',
+          description: 'A major Sunni hadith collection',
           href: buildHadithCollectionPath('sahih-bukhari'),
           icon: BookMarked,
         },
         {
           label: 'Sahih Muslim',
-          description: 'Second most authentic compilation',
+          description: 'A major Sunni hadith compilation',
           href: buildHadithCollectionPath('sahih-muslim'),
           icon: BookMarked,
         },
@@ -262,7 +262,7 @@ export const ISLAMIC_TOOLS_MEGA_NAV: MegaNavGroup = {
       items: [
         {
           label: 'Islamic Duas',
-          description: '126 authentic supplications from Quran & Sunnah',
+          description: 'Arabic, transliteration, translation & sources',
           href: '/duas',
           icon: HandHeart,
         },

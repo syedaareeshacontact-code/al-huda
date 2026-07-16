@@ -14,6 +14,7 @@ import {
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import QuranReaderPage from '@/components/sidebar';
 import AyahDetailOverlay from '@/components/quran/ayah-detail-overlay';
+import SurahCrawlableContent from '@/components/quran/surah-crawlable-content';
 import { resolveSurahParam } from '@/lib/quran-index';
 import { getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
 import { buildSurahPath } from '@/lib/quran-routing';
@@ -246,7 +247,6 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
         </div>
       </section>
 
-      {/* Interactive reader is the only visible ayah list to avoid duplicate ayahs. */}
       <SurhasListProvider>
         <QuranReaderPage
           initialSurahId={surah.id}
@@ -264,6 +264,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
           inlineTafsir
         />
       </Suspense>
+      <SurahCrawlableContent surah={surah} />
     </>
   );
 }

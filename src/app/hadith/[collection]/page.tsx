@@ -81,10 +81,9 @@ export default async function CollectionPage({
   ]);
   const bookJsonLd = buildBookJsonLd({
     name: book.bookName,
-    description: `Authentic hadith collection compiled by ${book.writerName}.`,
+    description: `Hadith collection compiled by ${book.writerName}.`,
     path: collectionPath,
     author: book.writerName,
-    numberOfPages: book.hadiths_count,
     inLanguage: ['ar', 'en', 'ur'],
   });
 
@@ -111,9 +110,10 @@ export default async function CollectionPage({
         <CollectionHero book={book} chapterCount={chapters.length} />
 
         <p className="max-w-3xl text-sm leading-relaxed text-[var(--color-muted-text)]">
-          {book.bookName} by {book.writerName} contains {book.hadiths_count.toLocaleString()} authenticated narrations
+          {book.bookName} by {book.writerName} contains {book.hadiths_count.toLocaleString()} narrations
           organised into {chapters.length} chapters. Read each hadith in Arabic with English and Urdu translations —
-          sourced from HadithAPI.com and cross-referenced with standard Islamic scholarship.
+          supplied through HadithAPI.com. Grades and source references are shown where the provider supplies them;
+          consult qualified scholars and printed critical editions for religious rulings.
         </p>
 
         <ChapterList collectionSlug={collection} chapters={chapters} />

@@ -3,11 +3,11 @@ import type { HadithItem } from '@/lib/hadith/types/hadith.types';
 /** Unique context lines for major hadith books — avoids thin duplicate content */
 const BOOK_INTROS: Record<string, string> = {
   'sahih-bukhari':
-    'Sahih al-Bukhari, compiled by Imam Muhammad al-Bukhari (d. 870 CE), is regarded as the most authentic hadith collection in Islam with over 7,000 narrations rigorously verified.',
+    'Sahih al-Bukhari was compiled by Imam Muhammad al-Bukhari (d. 870 CE) and is one of the best-known major Sunni hadith collections.',
   'sahih-muslim':
-    'Sahih Muslim by Imam Muslim ibn al-Hajjaj is the second most authentic hadith book, known for its precise categorisation and scholarly methodology alongside Sahih Bukhari.',
+    'Sahih Muslim was compiled by Imam Muslim ibn al-Hajjaj and is a major Sunni hadith collection known for its organisation and transmission methodology.',
   'al-tirmidhi':
-    'Sunan al-Tirmidhi by Imam al-Tirmidhi includes hadith grading (Sahih, Hasan, Daif) for each narration, making it invaluable for understanding hadith authenticity.',
+    'Jami at-Tirmidhi was compiled by Imam al-Tirmidhi and frequently records scholarly discussion or grading alongside narrations.',
   'abu-dawood':
     'Sunan Abu Dawud by Imam Abu Dawud focuses on legal (fiqh) hadiths and is one of the six canonical hadith collections (Kutub al-Sittah).',
   'ibn-e-majah':
@@ -15,13 +15,13 @@ const BOOK_INTROS: Record<string, string> = {
   'sunan-nasai':
     'Sunan an-Nasa\'i by Imam an-Nasa\'i is distinguished for its strict criteria in evaluating narrator reliability among the Kutub al-Sittah.',
   mishkat:
-    'Mishkat al-Masabih is a comprehensive hadith collection that gathers authentic narrations from the six canonical books and other sources for easy reference.',
+    'Mishkat al-Masabih is a later hadith compilation that brings narrations from the six canonical books and other sources into a topical arrangement.',
 };
 
 export function getHadithSeoIntro(hadith: HadithItem): string {
   const bookIntro =
     BOOK_INTROS[hadith.book.bookSlug] ??
-    `${hadith.book.bookName} by ${hadith.book.writerName} is a respected collection of Prophetic traditions preserved with chain of narration (isnad).`;
+    `${hadith.book.bookName} by ${hadith.book.writerName} is a collection of Prophetic traditions organised for study and reference.`;
 
   return `Hadith ${hadith.hadithNumber} from ${hadith.book.bookName}, chapter "${hadith.chapter.chapterEnglish}". ${bookIntro} Read the Arabic original, English translation, and Urdu tarjuma below.`;
 }

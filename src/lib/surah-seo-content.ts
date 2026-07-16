@@ -41,7 +41,7 @@ export function getSurahUrduTitle(surah: SurahIndexEntry): string {
 }
 
 export function getSurahMetaTitle(surah: SurahIndexEntry): string {
-  return `سورۃ ${surah.surahNameArabic} — Surah ${surah.surahName} Urdu Tarjuma, Tafseer & English Translation`;
+  return `Surah ${surah.surahName} (${surah.surahNameArabic}) — Urdu & English Translation`;
 }
 
 export function getSurahMetaDescription(surah: SurahIndexEntry): string {

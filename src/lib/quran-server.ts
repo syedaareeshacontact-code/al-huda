@@ -3,6 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 
 import type { SurahDetail, SurahMeta, UrduTafsirEntry } from '@/types/quran';
+import { getSurahById } from '@/lib/quran-index';
 
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
@@ -103,7 +104,7 @@ export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta
     surahName: chapter.name_simple || '',
     surahNameArabic: chapter.name_arabic || '',
     surahNameTranslation: chapter.translated_name?.name || '',
-    revelationPlace: 'Unknown',
+    revelationPlace: getSurahById(surahId)?.revelationPlace || 'Unknown',
     totalAyah: chapter.verses_count || 0,
     surahNo: surahId,
     english,

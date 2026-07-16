@@ -9,7 +9,7 @@ interface HadithPageHeaderProps {
 }
 
 export default function HadithPageHeader({
-  badge = 'Authentic Hadith',
+  badge = 'Hadith Collection',
   badgeSecondary,
   title,
   description,

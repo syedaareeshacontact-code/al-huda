@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
-import { buildAyahPopupPath } from '@/lib/quran-routing';
+import { buildAyahPath } from '@/lib/quran-routing';
 
 interface AyahSidebarProps {
   surahId: number;
@@ -84,7 +84,7 @@ export default function AyahSidebar({
           <div className="flex gap-2">
             {ayahNumber > 1 && (
               <Link
-                href={buildAyahPopupPath(surahId, surahName, ayahNumber - 1)}
+                href={buildAyahPath(surahId, surahName, ayahNumber - 1)}
                 onClick={() => setIsOpen(false)}
                 className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] hover:border-[var(--color-accent-soft)]"
               >
@@ -93,7 +93,7 @@ export default function AyahSidebar({
             )}
             {ayahNumber < totalAyah && (
               <Link
-                href={buildAyahPopupPath(surahId, surahName, ayahNumber + 1)}
+                href={buildAyahPath(surahId, surahName, ayahNumber + 1)}
                 onClick={() => setIsOpen(false)}
                 className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] hover:border-[var(--color-accent-soft)]"
               >

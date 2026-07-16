@@ -6,12 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getSurahById } from '@/lib/quran-index';
 import {
-  buildAyahPopupPath,
+  buildAyahPath,
   buildSurahPath,
-  buildTafsirPopupPath,
+  buildTafsirPath,
 } from '@/lib/quran-routing';
 import { buildPageMetadata } from '@/lib/seo';
-import { GENERATED_LONG_TAIL_KEYWORDS, MASTER_SEO_KEYWORDS } from '@/lib/seo-keywords';
 
 const POPULAR_SURAH_IDS = [1, 2, 18, 36, 55, 56, 67] as const;
 
@@ -30,7 +29,7 @@ function getAyahPath(surahId: number, ayahNumber: number) {
     return `/surah/${surahId}?ayah=${ayahNumber}`;
   }
 
-  return buildAyahPopupPath(surah.id, surah.surahName, ayahNumber);
+  return buildAyahPath(surah.id, surah.surahName, ayahNumber);
 }
 
 function getTafsirPath(surahId: number, ayahNumber: number) {
@@ -39,7 +38,7 @@ function getTafsirPath(surahId: number, ayahNumber: number) {
     return `/tafsir/${surahId}?ayah=${ayahNumber}`;
   }
 
-  return buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber);
+  return buildTafsirPath(surah.id, surah.surahName, ayahNumber);
 }
 
 export const metadata: Metadata = buildPageMetadata({
@@ -49,7 +48,6 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/read-quran-online',
   ogType: 'article',
   imageUrl: '/og?kind=surah-index',
-  keywords: [...MASTER_SEO_KEYWORDS, ...GENERATED_LONG_TAIL_KEYWORDS],
 });
 
 export default function ReadQuranOnlinePage() {
@@ -63,7 +61,8 @@ export default function ReadQuranOnlinePage() {
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
           Read Quran Pak online with Arabic script, Urdu translation, English translation,
           audio tilawat, and ayah-wise tafseer. This page gives direct access to commonly
-          searched surahs and ayahs.
+          read surahs, understand translations, listen to recitation, and open detailed
+          ayah or tafseer pages.
         </p>
       </section>
 
@@ -80,8 +79,8 @@ export default function ReadQuranOnlinePage() {
           </CardHeader>
           <CardContent className="text-sm text-[var(--color-muted-text)]">
             <p>
-              Popular intents: Quran with Urdu translation, Quran urdu tarjuma online, and
-              Quran with Urdu translation and tafseer.
+              Select a Surah and use the reader settings to view Arabic alongside Fatah
+              Muhammad Jalandhari&apos;s Urdu translation or Sahih International English translation.
             </p>
           </CardContent>
         </Card>
@@ -98,8 +97,8 @@ export default function ReadQuranOnlinePage() {
           </CardHeader>
           <CardContent className="text-sm text-[var(--color-muted-text)]">
             <p>
-              Popular intents: Quran audio online, Quran recitation online, Quran Urdu
-              audio, and Quran audio download.
+              Start recitation from the Surah reader, choose an available reciter, follow
+              ayah highlighting, and download audio where a source provides it.
             </p>
           </CardContent>
         </Card>
@@ -116,8 +115,8 @@ export default function ReadQuranOnlinePage() {
           </CardHeader>
           <CardContent className="text-sm text-[var(--color-muted-text)]">
             <p>
-              Popular intents: Ayat ul Kursi Arabic, Ayat ul Kursi Urdu translation, and
-              ayah tafseer Urdu.
+              Every canonical ayah page provides its own Arabic text and translations.
+              Where available, a separate Urdu tafseer page explains the selected ayah.
             </p>
           </CardContent>
         </Card>

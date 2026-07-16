@@ -8,6 +8,7 @@ import {
   buildMosqueFinderMetadata,
   buildMosqueFinderFaq,
   buildIslamicToolsBreadcrumb,
+  getMosqueFinderFaqItems,
 } from '@/lib/islamic-tools-seo';
 
 interface PageProps {
@@ -38,6 +39,7 @@ export default async function CityMosqueFinderPage({ params }: PageProps) {
     { name: 'Mosque Finder', path: '/mosque-finder' },
     { name: `Mosques in ${city.name}`, path: `/mosque-finder/${city.slug}` },
   ]);
+  const faqItems = getMosqueFinderFaqItems(city.name);
   const faq = buildMosqueFinderFaq(city.name);
 
   return (
@@ -66,6 +68,27 @@ export default async function CityMosqueFinderPage({ params }: PageProps) {
 
       <section className="mt-10">
         <CityGrid basePath="/mosque-finder" label="Other Cities" />
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+        <h2 className="mb-4 font-display text-xl font-semibold text-[var(--color-heading)]">
+          Mosques in {city.name} FAQ
+        </h2>
+        <div className="space-y-3">
+          {faqItems.map((item) => (
+            <details
+              key={item.question}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4"
+            >
+              <summary className="cursor-pointer font-semibold text-[var(--color-heading)]">
+                {item.question}
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted-text)]">
+                {item.answer}
+              </p>
+            </details>
+          ))}
+        </div>
       </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />

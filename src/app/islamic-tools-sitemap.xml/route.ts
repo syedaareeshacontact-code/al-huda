@@ -4,33 +4,21 @@ export const revalidate = 86400;
 import { getSiteOrigin } from '@/lib/seo';
 import { getAllCitySlugs } from '@/lib/islamic-cities';
 import { ISLAMIC_TOOLS_SITEMAP_PATHS } from '@/lib/islamic-tools-seo';
-import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
+import { SITEMAP_CACHE_CONTROL } from '@/lib/sitemap-config';
 
 function renderIslamicToolsSitemapXml() {
   const baseUrl = getSiteOrigin();
   const citySlugs = getAllCitySlugs();
 
-  const entries: Array<{ url: string; priority: string; changefreq: string }> = [];
+  const entries: string[] = [];
 
   for (const path of ISLAMIC_TOOLS_SITEMAP_PATHS) {
-    entries.push({
-      url: `${baseUrl}${path}`,
-      priority: path === '/prayer-times' ? '0.95' : '0.85',
-      changefreq: path === '/prayer-times' ? 'daily' : 'weekly',
-    });
+    entries.push(`${baseUrl}${path}`);
   }
 
   for (const slug of citySlugs) {
-    entries.push({
-      url: `${baseUrl}/prayer-times/${slug}`,
-      priority: '0.9',
-      changefreq: 'daily',
-    });
-    entries.push({
-      url: `${baseUrl}/mosque-finder/${slug}`,
-      priority: '0.8',
-      changefreq: 'weekly',
-    });
+    entries.push(`${baseUrl}/prayer-times/${slug}`);
+    entries.push(`${baseUrl}/mosque-finder/${slug}`);
   }
 
   const duaCategories = [
@@ -40,18 +28,11 @@ function renderIslamicToolsSitemapXml() {
   ];
 
   for (const cat of duaCategories) {
-    entries.push({
-      url: `${baseUrl}/duas/${cat}`,
-      priority: '0.75',
-      changefreq: 'monthly',
-    });
+    entries.push(`${baseUrl}/duas/${cat}`);
   }
 
   const items = entries
-    .map(
-      (entry) =>
-        `<url><loc>${entry.url}</loc><lastmod>${SITEMAP_LASTMOD}</lastmod><changefreq>${entry.changefreq}</changefreq><priority>${entry.priority}</priority></url>`
-    )
+    .map((url) => `<url><loc>${url}</loc></url>`)
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>

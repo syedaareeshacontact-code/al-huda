@@ -27,7 +27,7 @@ export function HadithIndexSchema({ collections }: HadithIndexSchemaProps) {
     '@id': `${pageUrl}#collection-page`,
     url: pageUrl,
     name: 'Hadith Collections',
-    description: `Complete collection of authentic Hadith books including Sahih Bukhari, Sahih Muslim, Tirmidhi, Abu Dawood, Ibn Majah, Nasai, and Mishkat with translations.`,
+    description: `Major Hadith collections including Sahih Bukhari, Sahih Muslim, Tirmidhi, Abu Dawood, Ibn Majah, Nasai, and Mishkat with translations and grades where supplied.`,
     isPartOf: {
       '@type': 'WebSite',
       name: siteName,
@@ -105,8 +105,8 @@ export function HadithDetailSchema({
   content,
   path,
   imageUrl,
-  datePublished = '2024-01-01T00:00:00Z',
-  inLanguage = ['Arabic', 'English', 'Urdu'],
+  datePublished,
+  inLanguage = ['ar', 'en', 'ur'],
   description,
 }: HadithDetailSchemaProps) {
   const pageUrl = toAbsoluteUrl(path);
@@ -122,8 +122,10 @@ export function HadithDetailSchema({
     headline: headline,
     description: resolvedDescription,
     articleBody: content,
-    datePublished: datePublished,
-    dateModified: datePublished,
+    ...(datePublished && {
+      datePublished,
+      dateModified: datePublished,
+    }),
     inLanguage: inLanguage,
     author: {
       '@type': 'Person',

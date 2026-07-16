@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   const subtitle =
     kind === 'hadith'
-      ? 'Arabic • English • Urdu • Authentic Collections'
+      ? 'Arabic • English • Urdu • Major Collections'
       : kind === 'surah-index'
         ? 'Surah Index • Arabic • Urdu • Audio'
         : 'Arabic Text • Urdu Translation • Audio';
