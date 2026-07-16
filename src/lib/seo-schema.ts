@@ -6,7 +6,14 @@ import {
   toAbsoluteUrl,
 } from '@/lib/seo';
 import type { SurahIndexEntry } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import {
+  buildAyahPath,
+  buildAyahPopupPath,
+  buildSurahPath,
+  buildTafsirPath,
+  buildTafsirPopupPath,
+  buildTafsirSurahPath,
+} from '@/lib/quran-routing';
 import type { SurahDownloadOption } from '@/lib/surah-download';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
 
@@ -57,9 +64,9 @@ export function buildSurahPageSchemas(
       { length: Math.min(surah.totalAyah, MAX_SCHEMA_LIST_ITEMS) },
       (_, i) => {
         const ayahNum = i + 1;
-        const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNum);
+        const ayahPath = buildAyahPopupPath(surah.id, surah.surahName, ayahNum);
         const tafsirPath = hasTafsirForAyah(surah.id, ayahNum)
-          ? buildTafsirPath(surah.id, surah.surahName, ayahNum)
+          ? buildTafsirPopupPath(surah.id, surah.surahName, ayahNum)
           : null;
 
         return {
@@ -155,7 +162,7 @@ export function buildTafsirSurahPageSchemas(options: {
       '@type': 'ListItem',
       position: index + 1,
       name: `Tafseer Ayah ${surah.id}:${ayahNumber}`,
-      url: toAbsoluteUrl(buildTafsirPath(surah.id, surah.surahName, ayahNumber)),
+      url: toAbsoluteUrl(buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber)),
     })),
   };
 

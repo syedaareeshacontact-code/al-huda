@@ -1,14 +1,20 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { BookOpen, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
+import AyahDetailOverlay from '@/components/quran/ayah-detail-overlay';
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { resolveSurahParam, getAllSurahs } from '@/lib/quran-index';
-import { buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import {
+  buildSurahPath,
+  buildTafsirPopupPath,
+  buildTafsirSurahPath,
+} from '@/lib/quran-routing';
 import { getAllTafsirSurahStaticParams } from '@/lib/quran-static-params';
 import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
@@ -150,8 +156,9 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
               {ayahNumbers.map((ayahNumber) => (
                 <Link
                   key={ayahNumber}
-                  href={buildTafsirPath(surah.id, surah.surahName, ayahNumber)}
+                  href={buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber)}
                   prefetch={false}
+                  scroll={false}
                   className="inline-flex min-w-[4.5rem] items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
                 >
                   <FileText className="h-3.5 w-3.5" />
@@ -231,6 +238,15 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
       </aside>
 
       <StickyScrollNav position="right" minScroll={0} compact />
+      <Suspense fallback={null}>
+        <AyahDetailOverlay
+          mode="tafsir"
+          surahId={surah.id}
+          surahName={surah.surahName}
+          surahArabicName={surah.surahNameArabic}
+          totalAyahs={surah.totalAyah}
+        />
+      </Suspense>
     </div>
   );
 }

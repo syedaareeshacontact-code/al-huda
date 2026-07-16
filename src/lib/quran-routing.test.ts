@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildAyahPopupPath,
   buildAyahPath,
   buildSurahPath,
   buildSurahSlug,
+  buildTafsirPopupPath,
   buildTafsirPath,
   parseSurahIdFromParam,
 } from './quran-routing';
@@ -24,5 +26,14 @@ describe('quran-routing', () => {
     expect(buildSurahPath(1, 'Al-Faatiha')).toBe('/surah/1-al-faatiha');
     expect(buildAyahPath(2, 'Al-Baqara', 255)).toBe('/surah/2-al-baqara/ayah/255');
     expect(buildTafsirPath(2, 'Al-Baqara', 255)).toBe('/tafsir/2-al-baqara/255');
+  });
+
+  it('builds query-based popup paths', () => {
+    expect(buildAyahPopupPath(2, 'Al-Baqara', 255)).toBe(
+      '/surah/2-al-baqara?ayah=255'
+    );
+    expect(buildTafsirPopupPath(2, 'Al-Baqara', 255)).toBe(
+      '/tafsir/2-al-baqara?ayah=255'
+    );
   });
 });

@@ -16,8 +16,15 @@ import {
   stripHtml,
 } from '@/lib/quran-server';
 import { resolveSurahParam } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
-import { getAllTafsirAyahStaticParams } from '@/lib/quran-static-params';
+import {
+  buildAyahPopupPath,
+  buildSurahPath,
+  buildTafsirPath,
+  buildTafsirPopupPath,
+  buildTafsirSurahPath,
+} from '@/lib/quran-routing';
+import { getFeaturedTafsirAyahStaticParams } from '@/lib/quran-static-params';
+import { isFeaturedAyah } from '@/lib/featured-quran-pages';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
@@ -32,10 +39,10 @@ interface TafsirPageProps {
 
 export const dynamic = 'force-static';
 export const revalidate = false;
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return getAllTafsirAyahStaticParams();
+  return getFeaturedTafsirAyahStaticParams();
 }
 
 function parseAyahNumber(value: string) {
@@ -109,8 +116,17 @@ export default async function TafsirDetailPage({
     notFound();
   }
 
+  const featuredAyah = isFeaturedAyah(surah.id, ayahNumber);
   if (!isCanonicalSlug) {
-    permanentRedirect(buildTafsirPath(surah.id, surah.surahName, ayahNumber));
+    permanentRedirect(
+      featuredAyah
+        ? buildTafsirPath(surah.id, surah.surahName, ayahNumber)
+        : buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber)
+    );
+  }
+
+  if (!featuredAyah) {
+    permanentRedirect(buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber));
   }
 
   const [ayah, tafsir, audioUrls] = await Promise.all([
@@ -128,13 +144,13 @@ export default async function TafsirDetailPage({
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const tafsirSurahPath = buildTafsirSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
-  const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
+  const ayahPath = buildAyahPopupPath(surah.id, surah.surahName, ayahNumber);
   const canonicalPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
   const prevTafsirPath = ayahNumber > 1 
-    ? buildTafsirPath(surah.id, surah.surahName, ayahNumber - 1)
+    ? buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber - 1)
     : null;
   const nextTafsirPath = ayahNumber < surah.totalAyah
-    ? buildTafsirPath(surah.id, surah.surahName, ayahNumber + 1)
+    ? buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber + 1)
     : null;
 
   const tafsirPlainText = stripHtml(tafsir.textHtml);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import {
   AudioLines,
   BookCheck,
@@ -12,6 +11,7 @@ import {
   Heart,
   Languages,
   Menu,
+  Maximize2,
   Play,
   Search,
   Sparkles,
@@ -1729,6 +1729,21 @@ export default function QuranReaderPage({
                             }`}
                           >
                             <BookCheck className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Open ayah details"
+                            aria-label="Open ayah details"
+                            onClick={() =>
+                              router.push(
+                                `${currentSurahPath}?ayah=${ayah.numberInSurah}`,
+                                { scroll: false }
+                              )
+                            }
+                            className="size-9 rounded-lg border border-transparent text-[var(--color-muted-text)] shadow-none hover:border-[var(--color-border)] hover:text-[var(--color-heading)]"
+                          >
+                            <Maximize2 className="size-4" />
                           </Button>
                           <Button
                             variant="ghost"

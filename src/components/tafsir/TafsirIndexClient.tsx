@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import StickySearchShell from '@/components/ui/sticky-search-shell';
-import { buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import { buildSurahPath, buildTafsirPopupPath } from '@/lib/quran-routing';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 
 interface SurahWithTafseer extends SurahIndexEntry {
@@ -476,7 +476,7 @@ export default function TafsirIndexClient({
                         {surah.tafseerAyahs.slice(0, 10).map((ayahNum) => (
                           <Link
                             key={ayahNum}
-                            href={buildTafsirPath(
+                            href={buildTafsirPopupPath(
                               surah.id,
                               surah.surahName,
                               ayahNum
@@ -510,7 +510,7 @@ export default function TafsirIndexClient({
 
                     {surah.tafseerAyahs.length > 0 && (
                       <Link
-                        href={buildTafsirPath(
+                        href={buildTafsirPopupPath(
                           surah.id,
                           surah.surahName,
                           surah.tafseerAyahs[0]

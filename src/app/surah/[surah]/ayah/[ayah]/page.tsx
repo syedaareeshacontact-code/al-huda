@@ -15,8 +15,14 @@ import {
   stripHtml,
 } from '@/lib/quran-server';
 import { resolveSurahParam } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
-import { getAllAyahStaticParams } from '@/lib/quran-static-params';
+import {
+  buildAyahPath,
+  buildAyahPopupPath,
+  buildSurahPath,
+  buildTafsirPopupPath,
+} from '@/lib/quran-routing';
+import { getFeaturedAyahStaticParams } from '@/lib/quran-static-params';
+import { isFeaturedAyah } from '@/lib/featured-quran-pages';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildAyahPageSchemas } from '@/lib/seo-schema';
@@ -31,10 +37,10 @@ interface AyahPageProps {
 
 export const dynamic = 'force-static';
 export const revalidate = false;
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return getAllAyahStaticParams();
+  return getFeaturedAyahStaticParams();
 }
 
 function parseAyahNumber(value: string) {
@@ -107,8 +113,17 @@ export default async function AyahDetailPage({
     notFound();
   }
 
+  const featuredAyah = isFeaturedAyah(surah.id, ayahNumber);
   if (!isCanonicalSlug) {
-    permanentRedirect(buildAyahPath(surah.id, surah.surahName, ayahNumber));
+    permanentRedirect(
+      featuredAyah
+        ? buildAyahPath(surah.id, surah.surahName, ayahNumber)
+        : buildAyahPopupPath(surah.id, surah.surahName, ayahNumber)
+    );
+  }
+
+  if (!featuredAyah) {
+    permanentRedirect(buildAyahPopupPath(surah.id, surah.surahName, ayahNumber));
   }
 
   const ayah = await getAyahContent(surah.id, ayahNumber);
@@ -125,13 +140,15 @@ export default async function AyahDetailPage({
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
-  const tafsirPath = buildTafsirPath(surah.id, surah.surahName, ayahNumber);
+  const tafsirPath = buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber);
   const canonicalPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
   const prevAyahPath =
-    ayahNumber > 1 ? buildAyahPath(surah.id, surah.surahName, ayahNumber - 1) : null;
+    ayahNumber > 1
+      ? buildAyahPopupPath(surah.id, surah.surahName, ayahNumber - 1)
+      : null;
   const nextAyahPath =
     ayahNumber < surah.totalAyah
-      ? buildAyahPath(surah.id, surah.surahName, ayahNumber + 1)
+      ? buildAyahPopupPath(surah.id, surah.surahName, ayahNumber + 1)
       : null;
 
   const breadcrumbs = buildAyahPageSchemas({

@@ -61,6 +61,20 @@ export interface UrduTafsirEntry {
   textHtml: string;
 }
 
+export interface AyahDetailPayload {
+  surahId: number;
+  ayahNumber: number;
+  arabicText: string;
+  englishTranslation: string;
+  urduTranslation: string;
+  audio: {
+    arabic: string | null;
+    urdu: string | null;
+  };
+  hasTafsir: boolean;
+  tafsir: UrduTafsirEntry | null;
+}
+
 export interface AyahBookmark {
   id: string;
   surahId: number;

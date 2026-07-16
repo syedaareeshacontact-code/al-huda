@@ -2,7 +2,12 @@ import Link from 'next/link';
 import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AyahContentEntry } from '@/lib/quran-server';
 import type { SurahIndexEntry } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
+import {
+  buildAyahPopupPath,
+  buildSurahPath,
+  buildTafsirPopupPath,
+  buildTafsirSurahPath,
+} from '@/lib/quran-routing';
 import {
   buildSurahDownloadPath,
   buildSurahPdfPublicPath,
@@ -60,7 +65,7 @@ export default async function SurahCrawlableContent({ surah, ayahs }: SurahCrawl
           <div className="flex flex-wrap gap-1.5">
             {Array.from({ length: surah.totalAyah }, (_, i) => {
               const n = i + 1;
-              const ayahPath = buildAyahPath(surah.id, surah.surahName, n);
+              const ayahPath = buildAyahPopupPath(surah.id, surah.surahName, n);
               const hasTafsir = hasTafsirForAyah(surah.id, n);
               return (
                 <Link
@@ -95,7 +100,7 @@ export default async function SurahCrawlableContent({ surah, ayahs }: SurahCrawl
                 .map((a) => (
                   <Link
                     key={a.ayahNumber}
-                    href={buildTafsirPath(surah.id, surah.surahName, a.ayahNumber)}
+                    href={buildTafsirPopupPath(surah.id, surah.surahName, a.ayahNumber)}
                     className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
                   >
                     <FileText className="h-3 w-3" />
@@ -163,9 +168,13 @@ export default async function SurahCrawlableContent({ surah, ayahs }: SurahCrawl
           </h2>
 
           {fullTextAyahs.map((ayah) => {
-            const ayahPath = buildAyahPath(surah.id, surah.surahName, ayah.ayahNumber);
+            const ayahPath = buildAyahPopupPath(
+              surah.id,
+              surah.surahName,
+              ayah.ayahNumber
+            );
             const tafsirPath = hasTafsirForAyah(surah.id, ayah.ayahNumber)
-              ? buildTafsirPath(surah.id, surah.surahName, ayah.ayahNumber)
+              ? buildTafsirPopupPath(surah.id, surah.surahName, ayah.ayahNumber)
               : null;
 
             return (
@@ -213,7 +222,7 @@ export default async function SurahCrawlableContent({ surah, ayahs }: SurahCrawl
           {fullTextLimit < surah.totalAyah && (
             <p className="text-sm text-[var(--color-muted-text)]">
               <Link
-                href={buildAyahPath(surah.id, surah.surahName, fullTextLimit + 1)}
+                href={buildAyahPopupPath(surah.id, surah.surahName, fullTextLimit + 1)}
                 className="font-semibold text-[var(--color-accent)] hover:underline"
               >
                 Continue reading ayahs {fullTextLimit + 1}–{surah.totalAyah} of Surah {surah.surahName} →

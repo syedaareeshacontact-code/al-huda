@@ -1,33 +1,18 @@
-import { getAllSurahs, TOTAL_AYAHS } from '@/lib/quran-index';
+import { getAllSurahs } from '@/lib/quran-index';
 import { getSiteOrigin } from '@/lib/seo';
 import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
-import { getAllTafsirRefs } from '@/lib/tafsir-index';
 
 export const dynamic = 'force-static';
 export const revalidate = 86400;
 
-const AYAH_SITEMAP_CHUNK_SIZE = 1000;
-const TAFSIR_SITEMAP_CHUNK_SIZE = 800;
-
 function buildQuranSitemapNames() {
-  const ayahChunkCount = Math.max(1, Math.ceil(TOTAL_AYAHS / AYAH_SITEMAP_CHUNK_SIZE));
-  const tafsirRefs = getAllTafsirRefs();
-  const tafsirChunkCount = Math.max(
-    1,
-    Math.ceil(tafsirRefs.length / TAFSIR_SITEMAP_CHUNK_SIZE)
-  );
-
-  const names: string[] = ['surah', 'tafsir-surah', 'download-surah'];
-
-  for (let index = 1; index <= ayahChunkCount; index += 1) {
-    names.push(`ayah-${index}`);
-  }
-
-  for (let index = 1; index <= tafsirChunkCount; index += 1) {
-    names.push(`tafsir-${index}`);
-  }
-
-  return names;
+  return [
+    'surah',
+    'tafsir-surah',
+    'download-surah',
+    'ayah-featured',
+    'tafsir-featured',
+  ];
 }
 
 function buildHadithSitemapNames() {

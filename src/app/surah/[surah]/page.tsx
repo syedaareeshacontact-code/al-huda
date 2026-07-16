@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
+import { Suspense } from 'react';
 import {
   BookOpenCheck,
   Bookmark,
@@ -12,6 +13,7 @@ import {
 
 import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import QuranReaderPage from '@/components/sidebar';
+import AyahDetailOverlay from '@/components/quran/ayah-detail-overlay';
 import { resolveSurahParam } from '@/lib/quran-index';
 import { getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
 import { buildSurahPath } from '@/lib/quran-routing';
@@ -252,6 +254,15 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
           initialSurahMeta={initialSurahMeta}
         />
       </SurhasListProvider>
+      <Suspense fallback={null}>
+        <AyahDetailOverlay
+          mode="ayah"
+          surahId={surah.id}
+          surahName={surah.surahName}
+          surahArabicName={surah.surahNameArabic}
+          totalAyahs={surah.totalAyah}
+        />
+      </Suspense>
     </>
   );
 }

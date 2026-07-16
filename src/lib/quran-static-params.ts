@@ -1,5 +1,9 @@
 import { getAllSurahs } from '@/lib/quran-index';
 import { buildSurahSlug } from '@/lib/quran-routing';
+import {
+  getFeaturedAyahRefs,
+  getFeaturedTafsirRefs,
+} from '@/lib/featured-quran-pages';
 import { getAllTafsirRefs } from '@/lib/tafsir-index';
 
 function getSurahParamValues(surahId: number, surahName: string) {
@@ -14,15 +18,11 @@ export function getAllSurahStaticParams() {
   );
 }
 
-export function getAllAyahStaticParams() {
-  return getAllSurahs().flatMap((surah) =>
-    getSurahParamValues(surah.id, surah.surahName).flatMap((surahParam) =>
-      Array.from({ length: surah.totalAyah }, (_, index) => ({
-        surah: surahParam,
-        ayah: String(index + 1),
-      }))
-    )
-  );
+export function getFeaturedAyahStaticParams() {
+  return getFeaturedAyahRefs().map((ref) => ({
+    surah: buildSurahSlug(ref.surahId, ref.surahName),
+    ayah: String(ref.ayahNumber),
+  }));
 }
 
 export function getAllTafsirSurahStaticParams() {
@@ -37,11 +37,9 @@ export function getAllTafsirSurahStaticParams() {
     );
 }
 
-export function getAllTafsirAyahStaticParams() {
-  return getAllTafsirRefs().flatMap((ref) =>
-    getSurahParamValues(ref.surahId, ref.surahName).map((surahParam) => ({
-      surah: surahParam,
-      ayah: String(ref.ayahNumber),
-    }))
-  );
+export function getFeaturedTafsirAyahStaticParams() {
+  return getFeaturedTafsirRefs().map((ref) => ({
+    surah: buildSurahSlug(ref.surahId, ref.surahName),
+    ayah: String(ref.ayahNumber),
+  }));
 }

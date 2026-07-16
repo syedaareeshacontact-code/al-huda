@@ -156,7 +156,7 @@ export const getAyahContent = cache(async (surahId: number, ayahNumber: number) 
 
 export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number) => {
   const [arabicResult, urduResult] = await Promise.allSettled([
-    fetch(`${QURAN_COM_API}/verses/by_verse/ar-default/${surahId}:${ayahNumber}`, {
+    fetch(`${QURAN_COM_API}/verses/by_key/${surahId}:${ayahNumber}?audio=7`, {
       ...PERMANENT_QURAN_FETCH,
       signal: AbortSignal.timeout(8_000),
     }),
@@ -178,14 +178,18 @@ export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number
   if (arabicResponse?.ok) {
     try {
       const arabicData = (await arabicResponse.json()) as {
-        verses?: Array<{
+        verse?: {
           audio?: {
             url?: string;
           };
-        }>;
+        };
       };
-      const verse = arabicData.verses?.[0];
-      arabicAudio = verse?.audio?.url || null;
+      const audioPath = arabicData.verse?.audio?.url?.trim();
+      arabicAudio = audioPath
+        ? audioPath.startsWith('http')
+          ? audioPath
+          : `https://verses.quran.foundation/${audioPath.replace(/^\/+/, '')}`
+        : null;
     } catch {
       arabicAudio = null;
     }

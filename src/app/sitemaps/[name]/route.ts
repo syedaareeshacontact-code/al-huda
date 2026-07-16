@@ -1,4 +1,4 @@
-import { getAllSurahs, TOTAL_AYAHS } from '@/lib/quran-index';
+import { getAllSurahs } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { getAllCollections, getChaptersByCollection } from '@/lib/hadith/collections.service';
@@ -12,12 +12,13 @@ import {
 import { getSiteOrigin } from '@/lib/seo';
 import { SITEMAP_CACHE_CONTROL, SITEMAP_LASTMOD } from '@/lib/sitemap-config';
 import { getAllTafsirRefs } from '@/lib/tafsir-index';
+import {
+  getFeaturedAyahRefs,
+  getFeaturedTafsirRefs,
+} from '@/lib/featured-quran-pages';
 
 export const dynamic = 'force-static';
 export const revalidate = 86400;
-
-const AYAH_SITEMAP_CHUNK_SIZE = 1000;
-const TAFSIR_SITEMAP_CHUNK_SIZE = 800;
 
 function escapeXml(input: string) {
   return input
@@ -34,24 +35,13 @@ const SITEMAP_HEADERS = {
 };
 
 function buildQuranSitemapNames() {
-  const ayahChunkCount = Math.max(1, Math.ceil(TOTAL_AYAHS / AYAH_SITEMAP_CHUNK_SIZE));
-  const tafsirRefs = getAllTafsirRefs();
-  const tafsirChunkCount = Math.max(
-    1,
-    Math.ceil(tafsirRefs.length / TAFSIR_SITEMAP_CHUNK_SIZE)
-  );
-
-  const names: string[] = ['surah', 'tafsir-surah', 'download-surah'];
-
-  for (let index = 1; index <= ayahChunkCount; index += 1) {
-    names.push(`ayah-${index}`);
-  }
-
-  for (let index = 1; index <= tafsirChunkCount; index += 1) {
-    names.push(`tafsir-${index}`);
-  }
-
-  return names;
+  return [
+    'surah',
+    'tafsir-surah',
+    'download-surah',
+    'ayah-featured',
+    'tafsir-featured',
+  ];
 }
 
 async function buildSitemapNames() {
@@ -64,43 +54,6 @@ export async function generateStaticParams() {
   return names.map((name) => ({ name: `${name}.xml` }));
 }
 
-function buildAyahChunkRefs(page: number) {
-  const surahs = getAllSurahs();
-  const refs: Array<{ surahId: number; surahName: string; ayahNumber: number }> = [];
-  const start = (page - 1) * AYAH_SITEMAP_CHUNK_SIZE;
-  const end = start + AYAH_SITEMAP_CHUNK_SIZE;
-  let offset = 0;
-
-  for (const surah of surahs) {
-    const surahStart = offset;
-    const surahEnd = surahStart + surah.totalAyah;
-
-    if (surahEnd <= start) {
-      offset = surahEnd;
-      continue;
-    }
-
-    if (surahStart >= end) {
-      break;
-    }
-
-    const firstAyah = Math.max(1, start - surahStart + 1);
-    const lastAyah = Math.min(surah.totalAyah, end - surahStart);
-
-    for (let ayahNumber = firstAyah; ayahNumber <= lastAyah; ayahNumber += 1) {
-      refs.push({
-        surahId: surah.id,
-        surahName: surah.surahName,
-        ayahNumber,
-      });
-    }
-
-    offset = surahEnd;
-  }
-
-  return refs;
-}
-
 function renderUrlSet(urls: string[], changeFrequency: string, priority: string) {
   const body = urls
     .map((url) => {
@@ -110,34 +63,6 @@ function renderUrlSet(urls: string[], changeFrequency: string, priority: string)
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${body}</urlset>`;
-}
-
-function getAyahChunk(name: string) {
-  const match = /^ayah-(\d+)$/.exec(name);
-  if (!match) {
-    return null;
-  }
-
-  const page = Number(match[1]);
-  if (!Number.isInteger(page) || page < 1) {
-    return null;
-  }
-
-  return page;
-}
-
-function getTafsirChunk(name: string) {
-  const match = /^tafsir-(\d+)$/.exec(name);
-  if (!match) {
-    return null;
-  }
-
-  const page = Number(match[1]);
-  if (!Number.isInteger(page) || page < 1) {
-    return null;
-  }
-
-  return page;
 }
 
 export async function GET(
@@ -241,38 +166,22 @@ export async function GET(
     return new Response('Not found.', { status: 404 });
   }
 
-  const ayahChunk = getAyahChunk(normalizedName);
-  if (ayahChunk) {
-    const chunk = buildAyahChunkRefs(ayahChunk);
-
-    if (chunk.length === 0) {
-      return new Response('Not found.', { status: 404 });
-    }
-
-    const urls = chunk.map((entry) => {
+  if (normalizedName === 'ayah-featured') {
+    const urls = getFeaturedAyahRefs().map((entry) => {
       return `${origin}${buildAyahPath(entry.surahId, entry.surahName, entry.ayahNumber)}`;
     });
 
-    return new Response(renderUrlSet(urls, 'weekly', '0.7'), {
+    return new Response(renderUrlSet(urls, 'monthly', '0.7'), {
       headers: SITEMAP_HEADERS,
     });
   }
 
-  const tafsirChunk = getTafsirChunk(normalizedName);
-  if (tafsirChunk) {
-    const refs = getAllTafsirRefs();
-    const start = (tafsirChunk - 1) * TAFSIR_SITEMAP_CHUNK_SIZE;
-    const chunk = refs.slice(start, start + TAFSIR_SITEMAP_CHUNK_SIZE);
-
-    if (chunk.length === 0) {
-      return new Response('Not found.', { status: 404 });
-    }
-
-    const urls = chunk.map((entry) => {
+  if (normalizedName === 'tafsir-featured') {
+    const urls = getFeaturedTafsirRefs().map((entry) => {
       return `${origin}${buildTafsirPath(entry.surahId, entry.surahName, entry.ayahNumber)}`;
     });
 
-    return new Response(renderUrlSet(urls, 'weekly', '0.65'), {
+    return new Response(renderUrlSet(urls, 'monthly', '0.65'), {
       headers: SITEMAP_HEADERS,
     });
   }

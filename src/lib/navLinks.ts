@@ -1,5 +1,5 @@
 import { getSurahById } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath } from '@/lib/quran-routing';
+import { buildAyahPopupPath, buildSurahPath } from '@/lib/quran-routing';
 
 export interface NavLinkItem {
   id: number;
@@ -21,11 +21,11 @@ const navLinks: NavLinkItem[] = [
 function buildPopularSurahLink(surahId: number, ayahNumber?: number) {
   const surah = getSurahById(surahId);
   if (!surah) {
-    return ayahNumber ? `/surah/${surahId}/ayah/${ayahNumber}` : `/surah/${surahId}`;
+    return ayahNumber ? `/surah/${surahId}?ayah=${ayahNumber}` : `/surah/${surahId}`;
   }
 
   return ayahNumber
-    ? buildAyahPath(surah.id, surah.surahName, ayahNumber)
+    ? buildAyahPopupPath(surah.id, surah.surahName, ayahNumber)
     : buildSurahPath(surah.id, surah.surahName);
 }
 

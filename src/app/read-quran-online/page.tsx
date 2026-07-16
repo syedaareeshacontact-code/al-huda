@@ -5,7 +5,11 @@ import { Headphones, Languages, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getSurahById } from '@/lib/quran-index';
-import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
+import {
+  buildAyahPopupPath,
+  buildSurahPath,
+  buildTafsirPopupPath,
+} from '@/lib/quran-routing';
 import { buildPageMetadata } from '@/lib/seo';
 import { GENERATED_LONG_TAIL_KEYWORDS, MASTER_SEO_KEYWORDS } from '@/lib/seo-keywords';
 
@@ -23,19 +27,19 @@ function getSurahPath(surahId: number) {
 function getAyahPath(surahId: number, ayahNumber: number) {
   const surah = getSurahById(surahId);
   if (!surah) {
-    return `/surah/${surahId}/ayah/${ayahNumber}`;
+    return `/surah/${surahId}?ayah=${ayahNumber}`;
   }
 
-  return buildAyahPath(surah.id, surah.surahName, ayahNumber);
+  return buildAyahPopupPath(surah.id, surah.surahName, ayahNumber);
 }
 
 function getTafsirPath(surahId: number, ayahNumber: number) {
   const surah = getSurahById(surahId);
   if (!surah) {
-    return `/tafsir/${surahId}/${ayahNumber}`;
+    return `/tafsir/${surahId}?ayah=${ayahNumber}`;
   }
 
-  return buildTafsirPath(surah.id, surah.surahName, ayahNumber);
+  return buildTafsirPopupPath(surah.id, surah.surahName, ayahNumber);
 }
 
 export const metadata: Metadata = buildPageMetadata({
@@ -186,4 +190,3 @@ export default function ReadQuranOnlinePage() {
     </div>
   );
 }
-
