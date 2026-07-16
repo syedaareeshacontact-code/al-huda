@@ -12,6 +12,7 @@ import {
   getSurahUrduAudioUrl,
 } from '@/lib/surah-download';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
+import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import {
   getSurahSeoIntro,
   getSurahUrduTitle,
@@ -192,7 +193,7 @@ export default async function SurahCrawlableContent({ surah, ayahs }: SurahCrawl
                 </div>
                 {ayah.arabicText && (
                   <p lang="ar" dir="rtl" className="arabic-font text-right text-xl leading-loose text-[var(--color-heading)]">
-                    {ayah.arabicText}
+                    {formatQuranArabicForDisplay(ayah.arabicText)}
                   </p>
                 )}
                 {ayah.urduTranslation && (

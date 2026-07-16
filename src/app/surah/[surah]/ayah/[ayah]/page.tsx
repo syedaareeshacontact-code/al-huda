@@ -17,6 +17,7 @@ import {
 import { resolveSurahParam } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath } from '@/lib/quran-routing';
 import { getAllAyahStaticParams } from '@/lib/quran-static-params';
+import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildAyahPageSchemas } from '@/lib/seo-schema';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
@@ -120,6 +121,7 @@ export default async function AyahDetailPage({
     getUrduTafsirByAyah(surah.id, ayahNumber),
   ]);
   const canOpenTafsir = Boolean(tafsir);
+  const arabicTextForDisplay = formatQuranArabicForDisplay(ayah.arabicText || '');
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
@@ -176,7 +178,7 @@ export default async function AyahDetailPage({
         surahName={surah.surahName.toLocaleLowerCase()}
         ayahNumber={ayahNumber}
         totalAyah={surah.totalAyah}
-        arabicText={ayah.arabicText || ''}
+        arabicText={arabicTextForDisplay}
         urduTranslation={ayah.urduTranslation || ''}
         englishTranslation={ayah.englishTranslation || ''}
         tafsirPath={canOpenTafsir ? tafsirPath : undefined}
@@ -226,7 +228,7 @@ export default async function AyahDetailPage({
       <Card className="mb-6">
         <CardContent className="space-y-4 p-5">
           <p lang="ar" dir="rtl" className="arabic-font quran-script arabic-mushaf text-[var(--color-heading)]">
-            {ayah.arabicText || 'Arabic text unavailable.'}
+            {arabicTextForDisplay || 'Arabic text unavailable.'}
           </p>
           <p lang="ur" dir="rtl" className="urdu-font text-right text-[var(--color-text)]">
             {ayah.urduTranslation || 'Urdu translation unavailable.'}

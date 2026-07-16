@@ -45,6 +45,7 @@ import type {
 } from '@/types/quran';
 import { useAppSettings } from '@/components/providers/app-settings-provider';
 import { clampRange, isValidSurahId } from '@/lib/quran-utils';
+import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildSurahPath, parseSurahIdFromParam } from '@/lib/quran-routing';
 import AyahEndMarker from '@/components/quran/AyahEndMarker';
 
@@ -312,7 +313,7 @@ function AudioSyncedArabicText({
   ayahNumber: number;
   activeWord: ActiveAudioWord | null;
 }) {
-  const words = text.trim().split(/\s+/).filter(Boolean);
+  const words = formatQuranArabicForDisplay(text).trim().split(/\s+/).filter(Boolean);
 
   return (
     <>
@@ -1618,7 +1619,7 @@ export default function QuranReaderPage({
                           id={`ayah-${ayah.numberInSurah}`}
                           className={`ayah-phrase ${isActive ? 'is-active' : ''}`.trim()}
                         >
-                          {ayah.text}
+                          {formatQuranArabicForDisplay(ayah.text)}
                         </span>
                         <AyahEndMarker number={ayah.numberInSurah} />
                         {index === visibleAyahs.length - 1 ? '' : ' '}

@@ -18,6 +18,7 @@ import {
 import { resolveSurahParam } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { getAllTafsirAyahStaticParams } from '@/lib/quran-static-params';
+import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
@@ -123,6 +124,7 @@ export default async function TafsirDetailPage({
   }
 
   const safeTafsirHtml = sanitizeTafsirHtml(tafsir.textHtml);
+  const arabicTextForDisplay = formatQuranArabicForDisplay(ayah.arabicText);
   const surahPath = buildSurahPath(surah.id, surah.surahName);
   const tafsirSurahPath = buildTafsirSurahPath(surah.id, surah.surahName);
   const surahBreadcrumbLabel = `Surah ${surah.surahName}`;
@@ -214,7 +216,7 @@ export default async function TafsirDetailPage({
         </CardHeader>
         <CardContent className="space-y-4 p-5">
           <p lang="ar" dir="rtl" className="arabic-font arabic-mushaf text-[var(--color-heading)]">
-            {ayah.arabicText}
+            {arabicTextForDisplay}
           </p>
           <p lang="ur" dir="rtl" className="urdu-font text-right text-[var(--color-text)]">
             {ayah.urduTranslation}

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 
+import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
+
 interface AyahSidebarProps {
   surahId: number;
   surahName: string;
@@ -29,6 +31,7 @@ export default function AyahSidebar({
 }: AyahSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<'text' | 'tafseer' | null>('text');
+  const arabicTextForDisplay = formatQuranArabicForDisplay(arabicText);
 
   const toggleExpand = (section: 'text' | 'tafseer') => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -128,7 +131,7 @@ export default function AyahSidebar({
                   dir="rtl"
                   className="arabic-font leading-relaxed text-[var(--color-heading)]"
                 >
-                  {arabicText || 'N/A'}
+                  {arabicTextForDisplay || 'N/A'}
                 </p>
                 <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
                   <p className="text-xs font-semibold text-[var(--color-muted-text)]">
