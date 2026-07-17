@@ -124,3 +124,20 @@ export function findTimingAtMs<T extends { fromMs: number; toMs: number }>(
   const candidate = candidateIndex >= 0 ? timings[candidateIndex] : null;
   return candidate && currentMs < candidate.toMs + endGraceMs ? candidate : null;
 }
+
+export function getNextUrduAyahNumber(
+  currentAyahNumber: number | null | undefined,
+  totalAyahs: number
+): number | null {
+  if (
+    !Number.isInteger(currentAyahNumber) ||
+    !Number.isInteger(totalAyahs) ||
+    totalAyahs < 1 ||
+    currentAyahNumber < 1 ||
+    currentAyahNumber >= totalAyahs
+  ) {
+    return null;
+  }
+
+  return currentAyahNumber + 1;
+}

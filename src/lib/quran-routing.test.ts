@@ -7,6 +7,7 @@ import {
   buildSurahSlug,
   buildTafsirPopupPath,
   buildTafsirPath,
+  buildUrduAyahAudioUrl,
   parseSurahIdFromParam,
 } from './quran-routing';
 
@@ -34,6 +35,18 @@ describe('quran-routing', () => {
     );
     expect(buildTafsirPopupPath(2, 'Al-Baqara', 255)).toBe(
       '/tafsir/2-al-baqara?ayah=255'
+    );
+  });
+
+  it('builds ayah-level Urdu translation audio URLs', () => {
+    expect(buildUrduAyahAudioUrl(2, 1)).toBe(
+      'https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/002001.mp3'
+    );
+    expect(buildUrduAyahAudioUrl(2, 286)).toBe(
+      'https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/002286.mp3'
+    );
+    expect(buildUrduAyahAudioUrl(114, 6)).toBe(
+      'https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/114006.mp3'
     );
   });
 });

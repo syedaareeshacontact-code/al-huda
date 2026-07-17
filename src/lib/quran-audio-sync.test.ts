@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { findTimingAtMs, parseChapterTimings } from './quran-audio-sync';
+import {
+  findTimingAtMs,
+  getNextUrduAyahNumber,
+  parseChapterTimings,
+} from './quran-audio-sync';
 
 describe('parseChapterTimings', () => {
   it('parses valid timing rows and skips boundary-only segments', () => {
@@ -63,5 +67,20 @@ describe('findTimingAtMs', () => {
   it('returns null in a timing gap unless grace covers it', () => {
     expect(findTimingAtMs(timings, 190)).toBeNull();
     expect(findTimingAtMs(timings, 190, 20)?.value).toBe('second');
+  });
+});
+
+describe('getNextUrduAyahNumber', () => {
+  it('advances within the surah and stops after the last ayah', () => {
+    expect(getNextUrduAyahNumber(1, 286)).toBe(2);
+    expect(getNextUrduAyahNumber(20, 286)).toBe(21);
+    expect(getNextUrduAyahNumber(285, 286)).toBe(286);
+    expect(getNextUrduAyahNumber(286, 286)).toBeNull();
+  });
+
+  it('rejects invalid bounds', () => {
+    expect(getNextUrduAyahNumber(null, 286)).toBeNull();
+    expect(getNextUrduAyahNumber(0, 286)).toBeNull();
+    expect(getNextUrduAyahNumber(1, 0)).toBeNull();
   });
 });
