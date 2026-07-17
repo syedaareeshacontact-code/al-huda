@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type RefObject } from 'react';
-import { AudioLines, Loader2, Menu, Play, Settings } from 'lucide-react';
+import { AudioLines, ListTree, Loader2, Play, Settings } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -168,7 +168,7 @@ export default function StickyNavigatorMenuButton({
           title="Surah navigator"
           className="size-9 shrink-0 animate-pulse-border rounded-lg border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)]"
         >
-          <Menu className="size-4" />
+          <ListTree className="size-4" />
         </Button>
       </div>
     </div>
