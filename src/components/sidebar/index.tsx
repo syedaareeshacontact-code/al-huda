@@ -8,6 +8,7 @@ import {
   Bookmark,
   BookmarkCheck,
   ChevronDown,
+  CheckCircle2,
   Heart,
   Languages,
   Menu,
@@ -73,6 +74,12 @@ interface QuranReaderPageProps {
   initialSurahId?: number;
   initialSurahDetail?: SurahDetail | null;
   initialSurahMeta?: SurahMeta | null;
+}
+
+interface ReaderActivityNotice {
+  id: number;
+  title: string;
+  description: string;
 }
 
 const INITIAL_VISIBLE_AYAHS = 20;
@@ -290,6 +297,9 @@ export default function QuranReaderPage({
   const { audioRef, updateSession, isPlayerHidden, showPlayer } = useGlobalQuranAudioController();
   const audioUsageLastTimeRef = useRef(0);
   const pendingStickyAudioPlayRef = useRef(false);
+  const activityNoticeTimerRef = useRef<number | null>(null);
+  const actionAnimationTimerRef = useRef<number | null>(null);
+  const activityNoticeIdRef = useRef(0);
 
   const [audioSrc, setAudioSrc] = useState('');
   const [audioRequested, setAudioRequested] = useState(false);
@@ -304,6 +314,8 @@ export default function QuranReaderPage({
   const [wordTimings, setWordTimings] = useState<WordTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
   const [urduAyahNumber, setUrduAyahNumber] = useState<number | null>(null);
+  const [activityNotice, setActivityNotice] = useState<ReaderActivityNotice | null>(null);
+  const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
   const audioDurationRef = useRef(0);
   const activeAudioAyahNumberRef = useRef<number | null>(null);
   const activeAudioWordElementRef = useRef<HTMLElement | null>(null);
@@ -313,6 +325,43 @@ export default function QuranReaderPage({
   useEffect(() => {
     urduAyahNumberRef.current = urduAyahNumber;
   }, [urduAyahNumber]);
+
+  const showReaderActivity = useCallback(
+    (notice: Omit<ReaderActivityNotice, 'id'>, actionKey: string) => {
+      activityNoticeIdRef.current += 1;
+      setActivityNotice({ id: activityNoticeIdRef.current, ...notice });
+      setActiveActionKey(actionKey);
+
+      if (activityNoticeTimerRef.current) {
+        window.clearTimeout(activityNoticeTimerRef.current);
+      }
+      if (actionAnimationTimerRef.current) {
+        window.clearTimeout(actionAnimationTimerRef.current);
+      }
+
+      activityNoticeTimerRef.current = window.setTimeout(() => {
+        setActivityNotice(null);
+        activityNoticeTimerRef.current = null;
+      }, 2800);
+
+      actionAnimationTimerRef.current = window.setTimeout(() => {
+        setActiveActionKey(null);
+        actionAnimationTimerRef.current = null;
+      }, 650);
+    },
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      if (activityNoticeTimerRef.current) {
+        window.clearTimeout(activityNoticeTimerRef.current);
+      }
+      if (actionAnimationTimerRef.current) {
+        window.clearTimeout(actionAnimationTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isValidSurahId(surahId)) {
@@ -1239,8 +1288,46 @@ export default function QuranReaderPage({
     revealAndScrollToAyah(ayahNumber);
   };
 
+  const favoriteActionKey = `favorite-${surahId}`;
+  const handleFavoriteToggle = () => {
+    const willFavorite = !favorite;
+    toggleFavoriteSurah(surahId);
+    showReaderActivity(
+      {
+        title: willFavorite ? 'Surah added to favorites' : 'Surah removed from favorites',
+        description: `Surah ${surahDetail.englishName} ${
+          willFavorite ? 'is now in your favorites.' : 'was removed from your favorites.'
+        }`,
+      },
+      favoriteActionKey
+    );
+  };
+
   return (
     <div id="interactive-reader" className="pb-36 pt-6 sm:pb-28 sm:pt-8" data-slot="page-shell">
+      {activityNotice ? (
+        <div
+          key={activityNotice.id}
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed right-3 top-[calc(3.75rem+env(safe-area-inset-top,0px))] z-[120] w-[min(calc(100vw-1.5rem),22rem)] animate-reader-toast sm:right-5"
+        >
+          <div className="flex items-start gap-3 rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_48%)] bg-[color-mix(in_oklab,var(--color-surface),transparent_3%)] p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_82%)] text-[var(--color-accent-soft)]">
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[var(--color-heading)]">
+                {activityNotice.title}
+              </p>
+              <p className="mt-0.5 text-xs leading-5 text-[var(--color-muted-text)]">
+                {activityNotice.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mx-auto w-full max-w-4xl">
         <div className="min-w-0 space-y-5">
           <Card className="lux-light-card animate-fade-up overflow-hidden rounded-3xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%))] shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-card)]">
@@ -1282,8 +1369,10 @@ export default function QuranReaderPage({
                     <Button
                       variant={favorite ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => toggleFavoriteSurah(surahId)}
-                      className="rounded-full"
+                      onClick={handleFavoriteToggle}
+                      className={`rounded-full ${
+                        activeActionKey === favoriteActionKey ? 'reader-action-feedback' : ''
+                      }`}
                     >
                       <Heart className={`size-4 ${favorite ? 'fill-current' : ''}`} />
                       {favorite ? 'Favorited' : 'Favorite'}
@@ -1467,6 +1556,39 @@ export default function QuranReaderPage({
                   : isLastRead
                     ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] shadow-[var(--shadow-soft)]'
                     : '';
+                const bookmarkActionKey = `bookmark-${ayah.numberInSurah}`;
+                const lastReadActionKey = `last-read-${ayah.numberInSurah}`;
+                const handleBookmarkClick = () => {
+                  const willBookmark = !bookmarked;
+                  toggleBookmark({
+                    surahId,
+                    ayahNumber: ayah.numberInSurah,
+                    text: ayah.text,
+                  });
+                  showReaderActivity(
+                    {
+                      title: willBookmark ? 'Bookmark saved' : 'Bookmark removed',
+                      description: `Ayah ${surahId}:${ayah.numberInSurah} ${
+                        willBookmark ? 'was saved for later.' : 'was removed from bookmarks.'
+                      }`,
+                    },
+                    bookmarkActionKey
+                  );
+                };
+                const handleMarkLastReadClick = () => {
+                  setLastRead({
+                    surahId,
+                    ayahNumber: ayah.numberInSurah,
+                    updatedAt: new Date().toISOString(),
+                  });
+                  showReaderActivity(
+                    {
+                      title: isLastRead ? 'Last read refreshed' : 'Marked as last read',
+                      description: `Ayah ${surahId}:${ayah.numberInSurah} is your current reading point.`,
+                    },
+                    lastReadActionKey
+                  );
+                };
 
                 return (
                   <Card
@@ -1513,18 +1635,12 @@ export default function QuranReaderPage({
                             size="icon"
                             title={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
                             aria-label={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
-                            onClick={() =>
-                              toggleBookmark({
-                                surahId,
-                                ayahNumber: ayah.numberInSurah,
-                                text: ayah.text,
-                              })
-                            }
+                            onClick={handleBookmarkClick}
                             className={`size-9 rounded-lg border shadow-none ${
                               bookmarked
                                 ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
                                 : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
-                            }`}
+                            } ${activeActionKey === bookmarkActionKey ? 'reader-action-feedback' : ''}`}
                           >
                             {bookmarked ? (
                               <BookmarkCheck className="size-4" />
@@ -1537,18 +1653,12 @@ export default function QuranReaderPage({
                             size="icon"
                             title={isLastRead ? 'Last read ayah' : 'Mark as last read'}
                             aria-label={isLastRead ? 'Last read ayah' : 'Mark as last read'}
-                            onClick={() =>
-                              setLastRead({
-                                surahId,
-                                ayahNumber: ayah.numberInSurah,
-                                updatedAt: new Date().toISOString(),
-                              })
-                            }
+                            onClick={handleMarkLastReadClick}
                             className={`size-9 rounded-lg border shadow-none ${
                               isLastRead
                                 ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
                                 : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
-                            }`}
+                            } ${activeActionKey === lastReadActionKey ? 'reader-action-feedback' : ''}`}
                           >
                             <BookCheck className="size-4" />
                           </Button>
@@ -1687,8 +1797,16 @@ export default function QuranReaderPage({
       <SmartAyahScrollNav
         ayahNumbers={filteredAyahNumbers}
         activeAudioAyahNumber={activeAudioAyahNumber}
+        lastReadAyahNumber={currentLastRead?.ayahNumber ?? null}
         isPlaying={isPlaying}
         hasAudioPlayer={Boolean(audioSrc && !isPlayerHidden)}
+        onLastReadShortcut={() => {
+          if (!currentLastRead) {
+            return;
+          }
+
+          revealAndScrollToAyah(currentLastRead.ayahNumber);
+        }}
       />
       <QuranSettingsPanel variant="floating" showTrigger={false} />
       <StickyNavigatorMenuButton

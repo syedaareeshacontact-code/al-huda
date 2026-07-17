@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, MapPin } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookCheck, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -9,8 +9,10 @@ import { cn } from '@/lib/utils';
 interface SmartAyahScrollNavProps {
   ayahNumbers?: number[];
   activeAudioAyahNumber?: number | null;
+  lastReadAyahNumber?: number | null;
   isPlaying?: boolean;
   hasAudioPlayer?: boolean;
+  onLastReadShortcut?: () => void;
 }
 
 function getViewportCenterAyah(ayahNumbers: number[]) {
@@ -51,17 +53,21 @@ function isAyahInViewport(ayahNumber: number) {
 export default function SmartAyahScrollNav({
   ayahNumbers = [],
   activeAudioAyahNumber = null,
+  lastReadAyahNumber = null,
   isPlaying = false,
   hasAudioPlayer = false,
+  onLastReadShortcut,
 }: SmartAyahScrollNavProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [userScrolledAway, setUserScrolledAway] = useState(false);
+  const [lastReadScrolledAway, setLastReadScrolledAway] = useState(false);
   const audioAnchorRef = useRef<number | null>(null);
   const programmaticScrollRef = useRef(false);
   const scrollResetTimerRef = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
   const isVisibleRef = useRef(false);
   const userScrolledAwayRef = useRef(false);
+  const lastReadScrolledAwayRef = useRef(false);
 
   const sortedAyahNumbers = useMemo(
     () => [...ayahNumbers].sort((left, right) => left - right),
@@ -109,6 +115,17 @@ export default function SmartAyahScrollNav({
         setIsVisible(nextVisible);
       }
 
+      const nextLastReadScrolledAway = Boolean(
+        nextVisible &&
+          lastReadAyahNumber &&
+          !isAyahInViewport(lastReadAyahNumber)
+      );
+
+      if (nextLastReadScrolledAway !== lastReadScrolledAwayRef.current) {
+        lastReadScrolledAwayRef.current = nextLastReadScrolledAway;
+        setLastReadScrolledAway(nextLastReadScrolledAway);
+      }
+
       if (
         !isPlaying ||
         !audioAnchorRef.current ||
@@ -141,7 +158,7 @@ export default function SmartAyahScrollNav({
       }
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isPlaying]);
+  }, [isPlaying, lastReadAyahNumber]);
 
   useEffect(() => {
     return () => {
@@ -199,29 +216,58 @@ export default function SmartAyahScrollNav({
     setUserScrolledAway(false);
   };
 
+  const scrollBackToLastRead = () => {
+    if (!lastReadAyahNumber) {
+      return;
+    }
+
+    if (onLastReadShortcut) {
+      onLastReadShortcut();
+    } else {
+      scrollToAyah(lastReadAyahNumber);
+    }
+
+    lastReadScrolledAwayRef.current = false;
+    setLastReadScrolledAway(false);
+  };
+
   if (!isVisible) {
     return null;
   }
 
   const showBackToAudio =
     isPlaying && userScrolledAway && audioAnchorRef.current !== null;
+  const showBackToLastRead = Boolean(lastReadAyahNumber && lastReadScrolledAway);
 
   return (
     <div
       className={cn(
-        'fixed right-3 z-[68] hidden flex-col gap-2 md:right-4 md:flex',
+        'fixed right-3 z-[68] flex flex-col gap-2 md:right-4',
         hasAudioPlayer
           ? 'bottom-[calc(13.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-[12.25rem]'
           : 'bottom-8'
       )}
       aria-label="Ayah scroll navigation"
     >
+      {showBackToLastRead ? (
+        <Button
+          variant="default"
+          size="icon"
+          onClick={scrollBackToLastRead}
+          className="size-10 rounded-full shadow-lg"
+          aria-label={`Back to last read ayah ${lastReadAyahNumber}`}
+          title={`Back to last read Ayah ${lastReadAyahNumber}`}
+        >
+          <BookCheck className="size-5" />
+        </Button>
+      ) : null}
+
       {showBackToAudio ? (
         <Button
           variant="default"
           size="icon"
           onClick={scrollBackToAudio}
-          className="size-10 rounded-full shadow-lg"
+          className="hidden size-10 rounded-full shadow-lg md:inline-flex"
           aria-label={`Back to playing ayah ${audioAnchorRef.current}`}
           title={`Back to Ayah ${audioAnchorRef.current}`}
         >
@@ -233,7 +279,7 @@ export default function SmartAyahScrollNav({
         variant="outline"
         size="icon"
         onClick={scrollToPreviousAyah}
-        className="size-10 rounded-full bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] text-[var(--color-accent)] shadow-lg hover:bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_15%)]"
+        className="hidden size-10 rounded-full border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] text-[var(--color-accent)] shadow-lg hover:bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_15%)] md:inline-flex"
         aria-label={hasAyahNav ? 'Previous ayah' : 'Scroll to top'}
         title={hasAyahNav ? 'Previous ayah' : 'Scroll to top'}
       >
@@ -244,7 +290,7 @@ export default function SmartAyahScrollNav({
         variant="outline"
         size="icon"
         onClick={scrollToNextAyah}
-        className="size-10 rounded-full bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] text-[var(--color-accent)] shadow-lg hover:bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_15%)]"
+        className="hidden size-10 rounded-full border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] text-[var(--color-accent)] shadow-lg hover:bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_15%)] md:inline-flex"
         aria-label={hasAyahNav ? 'Next ayah' : 'Scroll to bottom'}
         title={hasAyahNav ? 'Next ayah' : 'Scroll to bottom'}
       >
