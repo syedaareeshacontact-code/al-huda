@@ -288,7 +288,7 @@ export default function QuranReaderPage({
 
   const debouncedSearch = useDebouncedValue(searchInput, 280);
   const resumeTargetRef = useRef<HTMLButtonElement | null>(null);
-  const { audioRef, updateSession } = useGlobalQuranAudioController();
+  const { audioRef, updateSession, isPlayerHidden, showPlayer } = useGlobalQuranAudioController();
   const audioUsageLastTimeRef = useRef(0);
   const pendingStickyAudioPlayRef = useRef(false);
 
@@ -1649,7 +1649,7 @@ export default function QuranReaderPage({
         ayahNumbers={filteredAyahNumbers}
         activeAudioAyahNumber={activeAudioAyahNumber}
         isPlaying={isPlaying}
-        hasAudioPlayer
+        hasAudioPlayer={Boolean(audioSrc && !isPlayerHidden)}
       />
       <QuranSettingsPanel variant="floating" showTrigger={false} />
       <StickyNavigatorMenuButton
@@ -1658,10 +1658,19 @@ export default function QuranReaderPage({
         surahName={`Surah ${surahDetail.englishName}`}
         surahArabicName={surahDetail.name}
         surahMeta={`${surahDetail.numberOfAyahs} ayahs`}
-        showAudioShortcut={!audioSrc}
-        audioShortcutPending={loadingAudioSource || isPlayPending}
-        audioShortcutDisabled={loadingAudioSource}
-        onAudioShortcut={handleStickyAudioShortcut}
+        showAudioShortcut={isPlayerHidden || !audioSrc}
+        audioShortcutPending={isPlayerHidden ? false : loadingAudioSource || isPlayPending}
+        audioShortcutDisabled={!isPlayerHidden && loadingAudioSource}
+        audioShortcutMode={isPlayerHidden ? 'open' : 'play'}
+        forceShow={isPlayerHidden}
+        onAudioShortcut={() => {
+          if (isPlayerHidden) {
+            showPlayer();
+            return;
+          }
+
+          handleStickyAudioShortcut();
+        }}
         onOpenSettings={() => {
           window.dispatchEvent(new Event(OPEN_QURAN_SETTINGS_EVENT));
         }}

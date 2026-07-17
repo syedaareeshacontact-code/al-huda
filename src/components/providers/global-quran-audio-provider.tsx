@@ -38,6 +38,9 @@ interface GlobalQuranAudioContextValue {
   controls: GlobalAudioControls | null;
   volume: number;
   setVolume: (volume: number) => void;
+  isPlayerHidden: boolean;
+  hidePlayer: () => void;
+  showPlayer: () => void;
   stopAudio: () => void;
   updateSession: (session: GlobalAudioSession | null) => void;
   dismissSession: () => void;
@@ -46,6 +49,8 @@ interface GlobalQuranAudioContextValue {
 interface GlobalQuranAudioControllerContextValue {
   audioRef: RefObject<HTMLAudioElement | null>;
   updateSession: (session: GlobalAudioSession | null) => void;
+  isPlayerHidden: boolean;
+  showPlayer: () => void;
 }
 
 const GlobalQuranAudioContext = createContext<GlobalQuranAudioContextValue | null>(null);
@@ -56,6 +61,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [session, setSession] = useState<GlobalAudioSession | null>(null);
   const [volume, setVolumeState] = useState(1);
+  const [isPlayerHidden, setIsPlayerHidden] = useState(false);
   const sessionRef = useRef<GlobalAudioSession | null>(null);
   const lastProgressSyncRef = useRef(0);
 
@@ -69,8 +75,13 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   }, []);
 
   const updateSession = useCallback((nextSession: GlobalAudioSession | null) => {
+    const previousAudioSrc = sessionRef.current?.audioSrc;
     sessionRef.current = nextSession;
     setSession(nextSession);
+
+    if (!nextSession || nextSession.audioSrc !== previousAudioSrc) {
+      setIsPlayerHidden(false);
+    }
   }, []);
 
   const dismissSession = useCallback(() => {
@@ -81,7 +92,16 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
       audio.load();
     }
     sessionRef.current = null;
+    setIsPlayerHidden(false);
     setSession(null);
+  }, []);
+
+  const hidePlayer = useCallback(() => {
+    setIsPlayerHidden(true);
+  }, []);
+
+  const showPlayer = useCallback(() => {
+    setIsPlayerHidden(false);
   }, []);
 
   const toggleGlobalPlay = useCallback(async () => {
@@ -218,13 +238,19 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
       controls,
       volume,
       setVolume,
+      isPlayerHidden,
+      hidePlayer,
+      showPlayer,
       stopAudio,
       updateSession,
       dismissSession,
     }),
     [
       dismissSession,
+      hidePlayer,
+      isPlayerHidden,
       session,
+      showPlayer,
       controls,
       setVolume,
       stopAudio,
@@ -237,8 +263,8 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   // Keeping those in a separate context prevents progress updates in the mini
   // player from re-rendering every ayah card several times per second.
   const controllerValue = useMemo(
-    () => ({ audioRef, updateSession }),
-    [updateSession]
+    () => ({ audioRef, updateSession, isPlayerHidden, showPlayer }),
+    [isPlayerHidden, showPlayer, updateSession]
   );
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type RefObject } from 'react';
-import { Loader2, Menu, Play, Settings } from 'lucide-react';
+import { AudioLines, Loader2, Menu, Play, Settings } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +15,8 @@ interface StickyNavigatorMenuButtonProps {
   showAudioShortcut?: boolean;
   audioShortcutPending?: boolean;
   audioShortcutDisabled?: boolean;
+  audioShortcutMode?: 'play' | 'open';
+  forceShow?: boolean;
   onAudioShortcut?: () => void;
   onOpenSettings?: () => void;
 }
@@ -29,6 +31,8 @@ export default function StickyNavigatorMenuButton({
   showAudioShortcut = false,
   audioShortcutPending = false,
   audioShortcutDisabled = false,
+  audioShortcutMode = 'play',
+  forceShow = false,
   onAudioShortcut,
   onOpenSettings,
 }: StickyNavigatorMenuButtonProps) {
@@ -90,7 +94,9 @@ export default function StickyNavigatorMenuButton({
     };
   }, []);
 
-  const showSticky = targetHidden && isScrollingDown && !isNavigatorOpen;
+  const showSticky = targetHidden && (isScrollingDown || forceShow) && !isNavigatorOpen;
+  const audioShortcutLabel =
+    audioShortcutMode === 'open' ? 'Open voice controls' : 'Play Surah audio';
 
   if (!showSticky) {
     return null;
@@ -106,12 +112,14 @@ export default function StickyNavigatorMenuButton({
             variant="default"
             onClick={onAudioShortcut}
             disabled={audioShortcutDisabled}
-            aria-label="Play Surah audio"
-            title="Play Surah audio"
-            className="size-8 shrink-0 rounded-full sm:size-9"
+            aria-label={audioShortcutLabel}
+            title={audioShortcutLabel}
+            className="size-8 shrink-0 rounded-full animate-audio-shortcut-attention sm:size-9"
           >
             {audioShortcutPending ? (
               <Loader2 className="size-3.5 animate-spin sm:size-4" />
+            ) : audioShortcutMode === 'open' ? (
+              <AudioLines className="size-3.5 sm:size-4" />
             ) : (
               <Play className="ml-0.5 size-3.5 fill-current sm:size-4" />
             )}

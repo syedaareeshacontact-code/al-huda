@@ -209,7 +209,7 @@ export default function SmartAyahScrollNav({
   return (
     <div
       className={cn(
-        'fixed right-3 z-[68] flex flex-col gap-2 sm:right-4',
+        'fixed right-3 z-[68] hidden flex-col gap-2 md:right-4 md:flex',
         hasAudioPlayer
           ? 'bottom-[calc(13.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-[12.25rem]'
           : 'bottom-8'

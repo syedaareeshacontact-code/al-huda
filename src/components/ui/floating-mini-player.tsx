@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  ChevronDown,
   FastForward,
   Loader2,
   MoreHorizontal,
@@ -26,12 +27,14 @@ export default function FloatingMiniPlayer() {
     session,
     controls,
     dismissSession,
+    hidePlayer,
+    isPlayerHidden,
     volume,
     setVolume,
     stopAudio,
   } = useGlobalQuranAudio();
 
-  if (!session?.audioSrc || !controls) {
+  if (!session?.audioSrc || !controls || isPlayerHidden) {
     return null;
   }
 
@@ -150,6 +153,17 @@ export default function FloatingMiniPlayer() {
                   aria-label="Audio volume"
                 />
               </div>
+              {isReaderRoute ? (
+                <button
+                  type="button"
+                  onClick={hidePlayer}
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--color-muted-text)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-heading)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+                  aria-label="Hide audio player"
+                  title="Hide player"
+                >
+                  <ChevronDown className="size-4" aria-hidden="true" />
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={stopOrDismiss}

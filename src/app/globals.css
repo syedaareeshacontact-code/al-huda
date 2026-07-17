@@ -664,6 +664,22 @@ body.feature-tour-active {
   }
 }
 
+@keyframes audio-shortcut-attention {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--color-accent), transparent 58%),
+      0 14px 26px -18px color-mix(in oklab, var(--color-accent), transparent 18%);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px color-mix(in oklab, var(--color-accent), transparent 90%),
+      0 18px 34px -18px color-mix(in oklab, var(--color-accent), transparent 8%);
+    transform: scale(1.04);
+  }
+}
+
 .animate-fade-up {
   animation: fade-up 0.5s ease-out both;
 }
@@ -682,4 +698,8 @@ body.feature-tour-active {
 
 .animate-pulse-border {
   animation: pulse-border 2.8s ease-in-out infinite;
+}
+
+.animate-audio-shortcut-attention {
+  animation: audio-shortcut-attention 1.8s ease-in-out infinite;
 }
