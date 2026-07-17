@@ -43,7 +43,14 @@ interface GlobalQuranAudioContextValue {
   dismissSession: () => void;
 }
 
+interface GlobalQuranAudioControllerContextValue {
+  audioRef: RefObject<HTMLAudioElement | null>;
+  updateSession: (session: GlobalAudioSession | null) => void;
+}
+
 const GlobalQuranAudioContext = createContext<GlobalQuranAudioContextValue | null>(null);
+const GlobalQuranAudioControllerContext =
+  createContext<GlobalQuranAudioControllerContextValue | null>(null);
 
 export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -226,12 +233,32 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     ]
   );
 
-  return (
-    <GlobalQuranAudioContext.Provider value={value}>
-      {children}
-      <audio ref={audioRef} preload="none" crossOrigin="anonymous" />
-    </GlobalQuranAudioContext.Provider>
+  // Reader pages only need the audio element and the stable session writer.
+  // Keeping those in a separate context prevents progress updates in the mini
+  // player from re-rendering every ayah card several times per second.
+  const controllerValue = useMemo(
+    () => ({ audioRef, updateSession }),
+    [updateSession]
   );
+
+  return (
+    <GlobalQuranAudioControllerContext.Provider value={controllerValue}>
+      <GlobalQuranAudioContext.Provider value={value}>
+        {children}
+        <audio ref={audioRef} preload="none" crossOrigin="anonymous" />
+      </GlobalQuranAudioContext.Provider>
+    </GlobalQuranAudioControllerContext.Provider>
+  );
+}
+
+export function useGlobalQuranAudioController() {
+  const context = useContext(GlobalQuranAudioControllerContext);
+  if (!context) {
+    throw new Error(
+      'useGlobalQuranAudioController must be used within GlobalQuranAudioProvider'
+    );
+  }
+  return context;
 }
 
 export function useGlobalQuranAudio() {
