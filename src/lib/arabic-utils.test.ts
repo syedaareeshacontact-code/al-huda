@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatQuranArabicForDisplay, toArabicIndicNumerals } from './arabic-utils';
+import {
+  formatQuranArabicForDisplay,
+  getQuranRecitationTokens,
+  isQuranRecitationWord,
+  toArabicIndicNumerals,
+} from './arabic-utils';
 
 describe('arabic-utils', () => {
   it('converts western digits to Arabic Indic numerals', () => {
@@ -19,5 +24,35 @@ describe('arabic-utils', () => {
     const text = '\u0625\u0650\u0644\u0651\u064e\u0627\u0653';
 
     expect(formatQuranArabicForDisplay(text)).toBe(text);
+  });
+
+  it('counts Arabic words and disconnected letters as recitation words', () => {
+    expect(isQuranRecitationWord('ٱللَّهُ')).toBe(true);
+    expect(isQuranRecitationWord('الٓمٓ')).toBe(true);
+  });
+
+  it('does not count standalone Quran pause and section marks', () => {
+    expect(isQuranRecitationWord('ۛ')).toBe(false);
+    expect(isQuranRecitationWord('ۚ')).toBe(false);
+    expect(isQuranRecitationWord('ۖ')).toBe(false);
+    expect(isQuranRecitationWord('۞')).toBe(false);
+  });
+
+  it('keeps pause marks visible without shifting timestamp word positions', () => {
+    const tokens = getQuranRecitationTokens(
+      'ذَٰلِكَ ٱلْكِتَـٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ'
+    );
+
+    expect(tokens.map(({ wordIndex }) => wordIndex)).toEqual([
+      1,
+      2,
+      3,
+      4,
+      null,
+      5,
+      null,
+      6,
+      7,
+    ]);
   });
 });

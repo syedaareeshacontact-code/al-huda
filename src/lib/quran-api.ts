@@ -28,7 +28,7 @@ async function fetchRecitationOptions(
 ): Promise<SurahAudioOption[]> {
   const requests = QURAN_COM_RECITATION_IDS.map(async (recitation) => {
     const response = await fetch(
-      `${QURAN_COM_API}/chapter_recitations/${recitation.id}/${surahId}?segments=true`,
+      `${QURAN_COM_API}/chapter_recitations/${recitation.id}/${surahId}`,
       {
         signal,
         cache: 'force-cache',

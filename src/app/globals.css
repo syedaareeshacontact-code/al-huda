@@ -341,6 +341,22 @@ select {
   text-rendering: optimizeLegibility;
 }
 
+.audio-synced-word {
+  transition: color 70ms linear;
+}
+
+.audio-synced-word[data-audio-active='true'] {
+  color: #dc2626;
+}
+
+.audio-synced-word[data-audio-active='true'] mark {
+  color: inherit;
+}
+
+.dark .audio-synced-word[data-audio-active='true'] {
+  color: #f87171;
+}
+
 @supports (content-visibility: auto) {
   .ayah-card-optimized {
     content-visibility: auto;
