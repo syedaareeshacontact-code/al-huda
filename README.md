@@ -1,77 +1,104 @@
-# Al-Quran
+# Read Al Quran
 
-A modern Islamic web app built with Next.js App Router, TypeScript, Tailwind CSS, and shadcn-style UI components.
+Read Al Quran is a full-stack Islamic web application for reading, listening to,
+studying, and downloading Quran content. It also includes Hadith, duas, azkar,
+prayer times, Qibla direction, a mosque finder, the 99 Names of Allah, and a
+Zakat calculator.
 
-## Features
-- Premium responsive UI (mobile-first, light/dark/system themes)
-- Quran Surah directory with search + sorting
-- Quran reader with:
-  - Ayah-by-ayah and continuous modes
-  - Debounced ayah search with highlighting
-  - Last-read auto-resume + highlighted state
-  - Surah favorites and ayah bookmarks
-  - Arabic font selector + font size controls
-- Bottom audio player with Arabic recitation / Urdu translation modes
-- Settings page for reading, theme, typography, and audio defaults
-- Offline-friendly service worker caching for app routes + Quran APIs
-- SEO basics: metadata, `sitemap.xml`, `robots.txt`
-- Unit tests for core Quran utility helpers
+## Main features
 
-## Environment
-Create `.env.local` using `.env.example`:
+- All 114 Surahs with Arabic text, Urdu translation, Urdu tafsir, search, audio,
+  bookmarks, favourites, last-read state, and reading preferences
+- Arabic recitation and Urdu audio with a global player
+- Arabic-only and Arabic-with-Urdu PDF downloads for every Surah
+- Hadith collections, books, individual Hadith pages, and search
+- Duas, azkar, prayer times, Qibla direction, nearby mosques, and Islamic tools
+- Email/password and Google sign-in with MongoDB-backed user data
+- Notifications, web-push Quran reminders, feedback, and protected admin pages
+- Responsive light/dark UI, installable PWA support, offline fallback, SEO
+  metadata, structured data, robots rules, and segmented sitemaps
+
+## Technology
+
+- Next.js 16 App Router and React 19
+- TypeScript 5 and Tailwind CSS 4
+- MongoDB with Mongoose
+- Vitest and ESLint
+- PDFKit for generated Surah downloads
+- Vercel deployment/cron support and a Bun-based Docker image
+
+## Local setup
+
+Requirements:
+
+- Node.js 20.9 or newer
+- npm 10 or newer
+- MongoDB locally or a remote MongoDB connection string
 
 ```bash
+git clone <repository-url>
+cd al-huda
+npm install
 cp .env.example .env.local
-```
-
-`NEXT_PUBLIC_SITE_URL` is used for sitemap, robots, and metadata base URL.
-`MONGODB_URI` is used for authentication, tracking, favorites, bookmarks, and admin data (database: `al-huda`).
-
-## Scripts
-```bash
 npm run dev
-npm run seo:generate
-npm run seo:generate-tafsir
-npm run build:seo
-npm run lint
-npm run test
-npm run build
-npm run start
 ```
 
-## SEO Setup
-- Canonical Quran content routes:
-  - Surah index: `/surah`
-  - Surah detail: `/surah/[surah-slug]`
-  - Ayah detail: `/surah/[surah-slug]/ayah/[ayah]`
-  - Urdu tafseer: `/tafsir/[surah-slug]/[ayah]`
-- Legacy `/quran/*` routes are permanently redirected to canonical `/surah/*`.
-- Dynamic metadata is generated per Surah/Ayah/Tafseer (title, description, canonical, OG, Twitter, hreflang).
-- Structured data:
-  - `WebSite` + `SearchAction` (site-wide)
-  - `BreadcrumbList` (Surah/Ayah/Tafseer)
-  - `CreativeWork` (tafseer pages)
-  - `AudioObject` (audio-enabled pages)
-- Sitemap architecture:
-  - `/sitemap.xml` (sitemap index)
-  - `/sitemaps/surah.xml`
-  - `/sitemaps/ayah-*.xml` (chunked)
-  - `/sitemaps/tafsir-*.xml` (chunked, only ayahs with tafseer availability)
+Open [http://localhost:3000](http://localhost:3000). If `MONGODB_URI` is not
+set, development uses `mongodb://127.0.0.1:27017/al-huda`.
 
-## How To Regenerate Sitemap
-Sitemaps are generated dynamically from `src/data/surah-index.json`.
+Never commit `.env` or `.env.local`. The repository tracks only
+`.env.example` with safe placeholders.
 
-1. Refresh surah and tafseer source data:
+## Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection for users, state, feedback, notifications, and admin data |
+| `NEXT_PUBLIC_SITE_URL` | Canonical public origin used by metadata, robots, sitemaps, and the manifest; production requires public HTTPS |
+| `AUTH_SECRET` | HMAC secret for signed login sessions; use a long random production value |
+| `GOOGLE_CLIENT_ID` | Server-side Google ID-token audience |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Browser-side Google Identity client ID |
+| `HADITH_API_KEY` | Server-side Hadith provider credential |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Optional Google Search Console verification value |
+| `NEXT_PUBLIC_GA_ID` | Optional Google Analytics measurement ID |
+| `NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY` | Public VAPID key for browser push subscriptions |
+| `WEB_PUSH_PRIVATE_KEY` | Private VAPID key; server only |
+| `WEB_PUSH_SUBJECT` | VAPID contact, normally a `mailto:` address |
+| `CRON_SECRET` | Bearer secret for the Quran reminder cron endpoint |
+
+Vercel supplies `VERCEL_ENV` and `VERCEL_GIT_COMMIT_SHA` automatically.
+`NEXT_PUBLIC_APP_VERSION` and `DEPLOYMENT_ENV` are optional deployment
+overrides.
+
+## Commands
+
+| Command | Use |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the Vitest suite |
+| `npm run build` | Create a production build |
+| `npm start` | Serve an existing production build |
+| `npm run security:check` | Check tracked files for common secret leakage |
+| `npm run seo:check` | Run the secret check and SEO regression tests |
+| `npm run seo:generate` | Refresh `src/data/surah-index.json` |
+| `npm run seo:generate-tafsir` | Refresh tafsir availability data |
+| `npm run generate:surah-pdfs` | Generate all protected Surah PDF assets |
+| `npm run build:seo` | Refresh SEO/PDF data and then build |
+
+To run the Bun-based development container:
+
 ```bash
-npm run seo:generate
-npm run seo:generate-tafsir
+docker compose up
 ```
-2. Rebuild app:
-```bash
-npm run build
-```
-3. Verify:
-```bash
-open http://localhost:3000/sitemap.xml
-open http://localhost:3000/sitemaps/surah.xml
-```
+
+## Documentation
+
+- `README.md` (this file): product overview, setup, environment, and daily
+  commands.
+- [`PROJECT.md`](PROJECT.md): the authoritative architecture, routes, data
+  sources, persistence, deployment, generated assets, and maintenance context
+  for developers and AI tools.
+
+Keep these two documents current instead of creating separate one-off status,
+SEO, performance, or implementation-summary Markdown files.

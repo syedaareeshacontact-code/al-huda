@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -29,6 +29,10 @@ const safeMarkers = [
 ];
 
 for (const relativePath of trackedFiles) {
+  if (!existsSync(path.join(root, relativePath))) {
+    continue;
+  }
+
   const basename = path.basename(relativePath);
   if (!basename.startsWith('.env')) {
     continue;
@@ -53,13 +57,19 @@ for (const relativePath of trackedFiles) {
 }
 
 const retiredAnalyticsId = ['G', 'HZJ0Z0MFBP'].join('-');
+const privateKeyMarker = ['-----BEGIN ', 'PRIVATE KEY-----'].join('');
 
 for (const relativePath of trackedFiles.filter((file) => /\.(?:ts|tsx|js|mjs)$/.test(file))) {
-  const contents = readFileSync(path.join(root, relativePath), 'utf8');
+  const absolutePath = path.join(root, relativePath);
+  if (!existsSync(absolutePath)) {
+    continue;
+  }
+
+  const contents = readFileSync(absolutePath, 'utf8');
   if (contents.includes(retiredAnalyticsId)) {
     problems.push(`${relativePath}: hard-coded Google Analytics ID found`);
   }
-  if (contents.includes('-----BEGIN PRIVATE KEY-----')) {
+  if (contents.includes(privateKeyMarker)) {
     problems.push(`${relativePath}: private key material found`);
   }
 }
