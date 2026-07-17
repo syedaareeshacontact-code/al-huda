@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookMarked,
@@ -15,6 +15,7 @@ import {
   Settings2,
   Sparkles,
   ScrollText,
+  X,
 } from 'lucide-react';
 
 import HomeFeatureTour from '@/components/home/home-feature-tour';
@@ -41,6 +42,7 @@ const POPULAR_SURAHS = [
   { label: 'Al-Waqiah', arabic: 'الواقعة', id: 56 },
 ];
 const ALL_SURAHS = getAllSurahs();
+type LibraryPanel = 'favorites' | 'bookmarks';
 
 export default function HomeRoot() {
   const router = useRouter();
@@ -49,6 +51,7 @@ export default function HomeRoot() {
   const [lastRead, setLastRead] = useState<LastReadEntry | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [surahSearch, setSurahSearch] = useState('');
+  const [activeLibraryPanel, setActiveLibraryPanel] = useState<LibraryPanel | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -103,8 +106,65 @@ export default function HomeRoot() {
   const lastReadPath = hasLastRead
     ? `${resolveSurahPath(lastRead?.surahId)}#ayah-${lastRead?.ayahNumber}`
     : '/surah';
-  const firstFavoriteId = favorites[0];
-  const latestBookmark = bookmarks[0];
+  const favoriteSurahs = useMemo(
+    () =>
+      favorites
+        .map((surahId) => getSurahById(surahId))
+        .filter((surah) => surah !== null),
+    [favorites]
+  );
+  const bookmarkItems = useMemo(
+    () =>
+      bookmarks.map((bookmark) => ({
+        bookmark,
+        surah: getSurahById(bookmark.surahId),
+        href: `${resolveSurahPath(bookmark.surahId)}#ayah-${bookmark.ayahNumber}`,
+      })),
+    [bookmarks]
+  );
+  const activeLibraryCount =
+    activeLibraryPanel === 'favorites'
+      ? favoriteSurahs.length
+      : activeLibraryPanel === 'bookmarks'
+        ? bookmarkItems.length
+        : 0;
+
+  useEffect(() => {
+    if (!activeLibraryPanel) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveLibraryPanel(null);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [activeLibraryPanel]);
+
+  const openLibraryPanel = (panel: LibraryPanel) => {
+    if (!isLoaded) {
+      return;
+    }
+
+    const hasItems =
+      panel === 'favorites' ? favoriteSurahs.length > 0 : bookmarkItems.length > 0;
+
+    if (!hasItems) {
+      router.push('/surah');
+      return;
+    }
+
+    setActiveLibraryPanel(panel);
+  };
 
   return (
     <div className="pb-20 pt-5 sm:pt-9">
@@ -253,33 +313,160 @@ export default function HomeRoot() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Link
-            href={firstFavoriteId ? resolveSurahPath(firstFavoriteId) : '/surah'}
-            prefetch={false}
+          <button
+            type="button"
+            disabled={!isLoaded}
+            onClick={() => openLibraryPanel('favorites')}
             className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)]"
           >
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_88%)] text-[var(--color-highlight)]"><Heart className="size-5" /></span>
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 flex-1 text-left">
               <span className="block font-semibold text-[var(--color-heading)]">Favorite Surahs</span>
               <span className="block text-sm text-[var(--color-muted-text)]">{isLoaded ? `${favorites.length} saved` : 'Loading…'}</span>
             </span>
             <ChevronRight className="size-5 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-1" />
-          </Link>
+          </button>
 
-          <Link
-            href={latestBookmark ? `${resolveSurahPath(latestBookmark.surahId)}#ayah-${latestBookmark.ayahNumber}` : '/surah'}
-            prefetch={false}
+          <button
+            type="button"
+            disabled={!isLoaded}
+            onClick={() => openLibraryPanel('bookmarks')}
             className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)]"
           >
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]"><BookMarked className="size-5" /></span>
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 flex-1 text-left">
               <span className="block font-semibold text-[var(--color-heading)]">Bookmarks</span>
               <span className="block text-sm text-[var(--color-muted-text)]">{isLoaded ? `${bookmarks.length} saved ayahs` : 'Loading…'}</span>
             </span>
             <ChevronRight className="size-5 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-1" />
-          </Link>
+          </button>
         </div>
       </section>
+
+      {activeLibraryPanel ? (
+        <div className="fixed inset-0 z-[130] flex items-end justify-center px-3 pb-3 pt-16 sm:items-center sm:p-6">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setActiveLibraryPanel(null)}
+            aria-label="Close Quran library"
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="library-panel-heading"
+            className="relative flex max-h-[min(82vh,38rem)] w-full max-w-2xl animate-fade-up flex-col overflow-hidden rounded-[1.25rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)] bg-[linear-gradient(155deg,color-mix(in_oklab,var(--color-surface),white_8%),var(--color-surface)_70%,color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%))] shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-[color-mix(in_oklab,var(--color-border),transparent_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_38%)] px-4 py-3.5 sm:px-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                  activeLibraryPanel === 'favorites'
+                    ? 'bg-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_86%)] text-[var(--color-highlight)]'
+                    : 'bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]'
+                }`}>
+                  {activeLibraryPanel === 'favorites' ? (
+                    <Heart className="size-4" />
+                  ) : (
+                    <BookMarked className="size-4" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
+                    {activeLibraryPanel === 'favorites' ? 'Favorite Surahs' : 'Saved Ayahs'}
+                  </p>
+                  <h3 id="library-panel-heading" className="mt-0.5 truncate font-display text-xl font-semibold text-[var(--color-heading)] sm:text-2xl">
+                    {activeLibraryPanel === 'favorites' ? 'Your Favorite Surahs' : 'Your Bookmarks'}
+                  </h3>
+                  <p className="mt-0.5 text-xs text-[var(--color-muted-text)]">
+                    {activeLibraryCount} {activeLibraryPanel === 'favorites' ? 'saved surahs' : 'saved ayahs'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveLibraryPanel(null)}
+                aria-label="Close"
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-muted-text)] transition hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-2.5 sm:p-3">
+              {activeLibraryPanel === 'favorites' ? (
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  {favoriteSurahs.map((surah) => (
+                    <Link
+                      key={surah.id}
+                      href={buildSurahPath(surah.id, surah.surahName)}
+                      prefetch={false}
+                      onClick={() => setActiveLibraryPanel(null)}
+                      className="group rounded-xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] px-3 py-2.5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%)]"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-highlight),var(--color-surface)_86%)] text-xs font-bold text-[var(--color-highlight)]">
+                          {surah.id}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-[var(--color-heading)]">
+                            Surah {surah.surahName}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-[var(--color-muted-text)]">
+                            {surah.surahNameTranslation} · {surah.totalAyah} ayahs
+                          </span>
+                          <span className="font-arabic mt-1 block truncate text-right text-base leading-snug text-[var(--color-accent-soft)]" dir="rtl" lang="ar">
+                            {surah.surahNameArabic}
+                          </span>
+                        </span>
+                        <ChevronRight className="size-4 shrink-0 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {bookmarkItems.map(({ bookmark, surah, href }) => (
+                    <Link
+                      key={bookmark.id}
+                      href={href}
+                      prefetch={false}
+                      onClick={() => setActiveLibraryPanel(null)}
+                      className="group block rounded-xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-elevated),transparent_4%)] px-3 py-2.5 shadow-[var(--shadow-soft)] transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%)]"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]">
+                          <BookMarked className="size-3.5" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="text-xs font-bold uppercase tracking-[0.13em] text-[var(--color-muted-text)]">
+                              Surah {bookmark.surahId}:{bookmark.ayahNumber}
+                            </span>
+                            <span className="truncate text-sm font-semibold text-[var(--color-heading)]">
+                              {surah ? surah.surahName : `Surah ${bookmark.surahId}`}
+                            </span>
+                          </span>
+                          {bookmark.text ? (
+                            <p
+                              className="arabic-font quran-script arabic-reading mt-1 max-h-[5.2rem] overflow-hidden text-[var(--color-heading)]"
+                              data-size="sm"
+                              dir="rtl"
+                              lang="ar"
+                            >
+                              {bookmark.text}
+                            </p>
+                          ) : null}
+                        </span>
+                        <ChevronRight className="mt-1 size-4 shrink-0 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <section className="mt-10 sm:mt-14" data-slot="page-shell" aria-labelledby="study-heading">
         <div className="rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-7">
