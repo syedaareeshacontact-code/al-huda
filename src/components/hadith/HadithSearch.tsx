@@ -189,10 +189,9 @@ export default function HadithSearch() {
         <label htmlFor="hadith-search" className="sr-only">
           Search Hadiths
         </label>
-        <Search
-          className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-[var(--color-muted-text)]"
-          aria-hidden="true"
-        />
+        <span className="pointer-events-none absolute inset-y-0 left-0 z-10 grid w-11 place-items-center text-[var(--color-muted-text)]">
+          <Search className="size-4" aria-hidden="true" />
+        </span>
         <input
           id="hadith-search"
           name="q"
@@ -234,7 +233,7 @@ export default function HadithSearch() {
               setSuggestions([]);
               setIsOpen(false);
             }}
-            className="absolute right-20 top-1/2 z-10 rounded-full p-1 text-[var(--color-muted-text)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
+            className="absolute right-20 top-1/2 z-10 -translate-y-1/2 rounded-full p-1 text-[var(--color-muted-text)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
             aria-label="Clear hadith search"
           >
             <X className="size-4" />

@@ -195,68 +195,111 @@ export default async function HadithDetailPage({
           </div>
         </header>
 
-        {hadith.hadithArabic ? (
-          <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft)]">
+        {hadith.hadithArabic || hadith.hadithUrdu ? (
+          <Card className="group relative overflow-hidden rounded-2xl border-[color-mix(in_oklab,var(--color-border),var(--color-accent)_12%)] bg-[var(--color-surface)] shadow-[0_18px_45px_-36px_rgb(0_0_0_/_0.55)] transition-[border-color,box-shadow,transform] duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)]">
+            <span
+              className="absolute inset-y-0 right-0 z-10 w-1 bg-[linear-gradient(to_bottom,transparent,var(--color-accent),transparent)] opacity-75"
+              aria-hidden="true"
+            />
             <CardContent className="p-0">
-              <div className="flex items-center gap-2.5 border-b border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_72%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%)] px-4 py-3 sm:px-6">
-                <span className="inline-flex size-7 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),transparent_86%)] text-[var(--color-accent)]">
-                  <Languages className="size-3.5" aria-hidden="true" />
-                </span>
-                <div>
-                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
-                    Arabic Text
-                  </h2>
-                  <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">Original narration</p>
-                </div>
-              </div>
-              <div className="border-r-2 border-r-[var(--color-accent)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_97%)] px-4 py-4 sm:px-6 sm:py-5 md:px-7">
-                <ArabicText text={hadith.hadithArabic} size="md" className="m-0 text-[var(--color-heading)]" />
-              </div>
+              {hadith.hadithArabic ? (
+                <section aria-labelledby="hadith-arabic-heading">
+                  <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[color-mix(in_oklab,var(--color-border),transparent_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_38%)] px-4 py-2 sm:px-5">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_84%)] text-[var(--color-accent-soft)]">
+                        <Languages className="size-3.5" aria-hidden="true" />
+                      </span>
+                      <h2
+                        id="hadith-arabic-heading"
+                        className="truncate text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]"
+                      >
+                        Arabic Text
+                      </h2>
+                    </div>
+                    <span
+                      dir="rtl"
+                      lang="ar"
+                      className="shrink-0 font-arabic text-base leading-none text-[var(--color-accent-soft)] sm:text-lg"
+                    >
+                      النص العربي
+                    </span>
+                  </div>
+
+                  <div className="relative bg-[linear-gradient(110deg,transparent,color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%))] px-4 py-4 sm:px-7 sm:py-5">
+                    <div
+                      className="pointer-events-none absolute right-0 top-0 size-32 rounded-full bg-[color-mix(in_oklab,var(--color-accent),transparent_92%)] blur-3xl"
+                      aria-hidden="true"
+                    />
+                    <ArabicText
+                      text={hadith.hadithArabic}
+                      size="md"
+                      className="quran-script relative m-0 ml-auto w-full max-w-[48rem] text-pretty text-[var(--color-heading)]"
+                    />
+                  </div>
+                </section>
+              ) : null}
+
+              {hadith.hadithUrdu ? (
+                <section
+                  aria-labelledby="hadith-urdu-heading"
+                  className={`${
+                    hadith.hadithArabic
+                      ? 'border-t border-[color-mix(in_oklab,var(--color-border),transparent_12%)]'
+                      : ''
+                  } relative overflow-hidden bg-[radial-gradient(circle_at_100%_0%,color-mix(in_oklab,var(--color-accent),transparent_91%),transparent_42%),color-mix(in_oklab,var(--color-surface-2),transparent_45%)] px-4 py-4 sm:px-7 sm:py-5`}
+                >
+                  <div className="relative mb-3 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[var(--color-accent)]">
+                        <Languages className="size-3.5" aria-hidden="true" />
+                      </span>
+                      <h2
+                        id="hadith-urdu-heading"
+                        className="truncate text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]"
+                      >
+                        Urdu Translation
+                      </h2>
+                    </div>
+                    <span
+                      dir="rtl"
+                      lang="ur"
+                      className="inline-flex min-h-8 shrink-0 items-center rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] px-3 py-1 font-urdu-nastaliq text-sm leading-loose text-[var(--color-accent-soft)]"
+                    >
+                      <span className="min-[380px]:hidden">اردو</span>
+                      <span className="hidden min-[380px]:inline">اردو ترجمہ</span>
+                    </span>
+                  </div>
+                  <p
+                    dir="rtl"
+                    lang="ur"
+                    className="urdu-font relative ml-auto max-w-[48rem] text-right text-[var(--color-text)]"
+                  >
+                    {hadith.hadithUrdu}
+                  </p>
+                </section>
+              ) : null}
             </CardContent>
           </Card>
         ) : null}
 
-        {hadith.hadithUrdu ? (
-          <Card className="hover:shadow-[var(--shadow-soft)]">
-            <CardContent className="p-5 sm:p-6 md:p-7">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
-                    Urdu Translation
-                  </h2>
-                  <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">اردو ترجمہ</p>
-                </div>
-                <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--color-surface-2)] font-urdu-nastaliq text-sm text-[var(--color-accent)]">
-                  اردو
-                </span>
-              </div>
-              <p
-                dir="rtl"
-                lang="ur"
-                className="text-right font-urdu-nastaliq text-lg leading-[2.15] text-[var(--color-text)] sm:text-xl"
-              >
-                {hadith.hadithUrdu}
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <Card className="hover:shadow-[var(--shadow-soft)]">
-          <CardContent className="p-5 sm:p-6 md:p-7">
-            <div className="mb-4 flex items-center gap-3">
-              <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-accent)]">
-                <Quote className="size-4" aria-hidden="true" />
+        <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-border),var(--color-accent)_8%)] bg-[var(--color-surface)] shadow-[0_18px_45px_-36px_rgb(0_0_0_/_0.5)]">
+          <CardContent className="p-0">
+            <div className="flex min-h-11 items-center gap-2.5 border-b border-[color-mix(in_oklab,var(--color-border),transparent_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_42%)] px-4 py-2 sm:px-5">
+              <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent)]">
+                <Quote className="size-3.5" aria-hidden="true" />
               </span>
-              <div>
-                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
+              <div className="min-w-0">
+                <h2 className="truncate text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
                   English Translation
                 </h2>
-                <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">Meaning of the narration</p>
+                <p className="text-[0.68rem] text-[var(--color-muted-text)]">Meaning of the narration</p>
               </div>
             </div>
-            <p className="text-base leading-7 text-[var(--color-text)] sm:text-[1.05rem] sm:leading-8">
-              {hadith.hadithEnglish}
-            </p>
+            <div className="px-4 py-4 sm:px-7 sm:py-5">
+              <p className="max-w-[68ch] text-base leading-7 text-[var(--color-text)] sm:text-[1.05rem] sm:leading-8">
+                {hadith.hadithEnglish}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
