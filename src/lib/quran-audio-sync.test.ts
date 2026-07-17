@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { findTimingAtMs, parseChapterTimings } from './quran-audio-sync';
+import {
+  findTimingAtMs,
+  getNextUrduAyahNumber,
+  parseChapterTimings,
+} from './quran-audio-sync';
+
+describe('Urdu ayah audio playlist', () => {
+  it('advances through a long Surah without passing its final ayah', () => {
+    expect(getNextUrduAyahNumber(1, 286)).toBe(2);
+    expect(getNextUrduAyahNumber(20, 286)).toBe(21);
+    expect(getNextUrduAyahNumber(285, 286)).toBe(286);
+    expect(getNextUrduAyahNumber(286, 286)).toBeNull();
+  });
+});
 
 describe('parseChapterTimings', () => {
   it('parses valid timing rows and skips boundary-only segments', () => {

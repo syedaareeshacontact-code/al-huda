@@ -20,6 +20,23 @@ export interface ParsedChapterTimings {
   words: WordTimingRange[];
 }
 
+export function getNextUrduAyahNumber(
+  currentAyahNumber: number,
+  totalAyahs: number
+): number | null {
+  if (
+    !Number.isInteger(currentAyahNumber) ||
+    !Number.isInteger(totalAyahs) ||
+    currentAyahNumber < 1 ||
+    totalAyahs < 1 ||
+    currentAyahNumber >= totalAyahs
+  ) {
+    return null;
+  }
+
+  return currentAyahNumber + 1;
+}
+
 function normalizeSegmentWordIndexes(segments: number[][]): number[][] {
   let highestSeenIndex = 0;
 

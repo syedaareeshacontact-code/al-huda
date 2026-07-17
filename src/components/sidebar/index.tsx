@@ -49,10 +49,15 @@ import {
   formatQuranArabicForDisplay,
   getQuranRecitationTokens,
 } from '@/lib/arabic-utils';
-import { buildSurahPath, parseSurahIdFromParam } from '@/lib/quran-routing';
+import {
+  buildSurahPath,
+  buildUrduAyahAudioUrl,
+  parseSurahIdFromParam,
+} from '@/lib/quran-routing';
 import AyahEndMarker from '@/components/quran/AyahEndMarker';
 import {
   findTimingAtMs,
+  getNextUrduAyahNumber,
   parseChapterTimings,
   type AyahTimingRange,
   type ChapterTimestampEntry,
@@ -87,6 +92,12 @@ interface ChapterRecitationPayload {
   audio_file?: {
     timestamps?: ChapterTimestampEntry[];
   };
+}
+
+interface UrduPlaylistSource {
+  surahId: number;
+  ayahNumber: number;
+  src: string;
 }
 
 function getQuranComRecitationId(reciterName: string | undefined) {
@@ -125,12 +136,6 @@ function reportUsageDelta(payload: { audioSeconds?: number }, beacon = false) {
     body: JSON.stringify(payload),
     keepalive: beacon,
   });
-}
-
-function getTranslationAudioUrl(surahNumber: number) {
-  return `https://ia801503.us.archive.org/28/items/quran_urdu_audio_only/${String(
-    surahNumber
-  ).padStart(3, '0')}.ogg`;
 }
 
 function getWeightedAyahIndex(progress: number, progressEnds: number[]) {
@@ -304,9 +309,19 @@ export default function QuranReaderPage({
   const [ayahTimings, setAyahTimings] = useState<AyahTimingRange[]>([]);
   const [wordTimings, setWordTimings] = useState<WordTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
+  const [urduAyahNumber, setUrduAyahNumber] = useState(1);
   const audioDurationRef = useRef(0);
   const activeAudioAyahNumberRef = useRef<number | null>(null);
   const activeAudioWordElementRef = useRef<HTMLElement | null>(null);
+  const urduAyahNumberRef = useRef(1);
+  const urduTotalAyahsRef = useRef(0);
+  const continueUrduPlaylistRef = useRef(false);
+  const urduPlaylistSourceRef = useRef<UrduPlaylistSource | null>(null);
+  const audioPlayRequestIdRef = useRef(0);
+  const autoPlayAudioRef = useRef(settings.autoPlayAudio);
+
+  urduTotalAyahsRef.current = surahDetail?.numberOfAyahs ?? surahMeta?.totalAyah ?? 0;
+  autoPlayAudioRef.current = settings.autoPlayAudio;
 
   useEffect(() => {
     if (!isValidSurahId(surahId)) {
@@ -636,11 +651,16 @@ export default function QuranReaderPage({
   }, [filteredNavigatorSurahs, isNavigatorOpen, surahId, surahListLoading]);
 
   useEffect(() => {
+    audioPlayRequestIdRef.current += 1;
     setAudioRequested(false);
     setAudioSrc('');
     setAudioReciters([]);
     setSelectedReciter(0);
     setAudioSourceError(null);
+    urduAyahNumberRef.current = 1;
+    setUrduAyahNumber(1);
+    continueUrduPlaylistRef.current = false;
+    urduPlaylistSourceRef.current = null;
   }, [settings.audioPreference, surahId]);
 
   useEffect(() => {
@@ -658,7 +678,15 @@ export default function QuranReaderPage({
       if (settings.audioPreference === 'tr') {
         setAudioReciters([]);
         setSelectedReciter(0);
-        setAudioSrc(getTranslationAudioUrl(surahId));
+        urduAyahNumberRef.current = 1;
+        setUrduAyahNumber(1);
+        const firstAyahSrc = buildUrduAyahAudioUrl(surahId, 1);
+        urduPlaylistSourceRef.current = {
+          surahId,
+          ayahNumber: 1,
+          src: firstAyahSrc,
+        };
+        setAudioSrc(firstAyahSrc);
         setLoadingAudioSource(false);
         return;
       }
@@ -771,6 +799,10 @@ export default function QuranReaderPage({
 
   useEffect(() => {
     const audio = audioRef.current;
+    const playRequestId = ++audioPlayRequestIdRef.current;
+    const shouldContinueUrduPlaylist = continueUrduPlaylistRef.current;
+    continueUrduPlaylistRef.current = false;
+
     if (!audio) {
       return;
     }
@@ -790,7 +822,7 @@ export default function QuranReaderPage({
     audio.load();
     audioDurationRef.current = 0;
 
-    if (!settings.autoPlayAudio) {
+    if (!autoPlayAudioRef.current && !shouldContinueUrduPlaylist) {
       setIsPlaying(false);
       setIsPlayPending(false);
       return;
@@ -799,11 +831,18 @@ export default function QuranReaderPage({
     audio.src = audioSrc;
     audio.load();
     setIsPlayPending(true);
+    const requestedSrc = audioSrc;
     audio.play().catch(() => {
+      if (
+        audioPlayRequestIdRef.current !== playRequestId ||
+        audio.src !== requestedSrc
+      ) {
+        return;
+      }
       setIsPlaying(false);
       setIsPlayPending(false);
     });
-  }, [audioRef, audioSrc, settings.autoPlayAudio]);
+  }, [audioRef, audioSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -852,6 +891,64 @@ export default function QuranReaderPage({
       setIsPlayPending(false);
     };
     const onEnd = () => {
+      if (settings.audioPreference === 'tr') {
+        const sourceOwner = urduPlaylistSourceRef.current;
+        const isCurrentUrduSource = Boolean(
+          sourceOwner &&
+          audio.ended &&
+          sourceOwner.surahId === surahId &&
+          sourceOwner.ayahNumber === urduAyahNumberRef.current &&
+          audio.src === sourceOwner.src
+        );
+
+        if (!isCurrentUrduSource) return;
+
+        const nextAyahNumber = getNextUrduAyahNumber(
+          urduAyahNumberRef.current,
+          urduTotalAyahsRef.current
+        );
+
+        if (nextAyahNumber) {
+          const nextAyahSrc = buildUrduAyahAudioUrl(surahId, nextAyahNumber);
+          setIsPlaying(false);
+          urduAyahNumberRef.current = nextAyahNumber;
+          setUrduAyahNumber(nextAyahNumber);
+          urduPlaylistSourceRef.current = {
+            surahId,
+            ayahNumber: nextAyahNumber,
+            src: nextAyahSrc,
+          };
+          continueUrduPlaylistRef.current = true;
+          setIsPlayPending(true);
+          setAudioSourceError(null);
+          setAudioSrc(nextAyahSrc);
+          return;
+        }
+      }
+
+      setIsPlaying(false);
+      setIsPlayPending(false);
+    };
+    const onError = () => {
+      if (settings.audioPreference === 'tr') {
+        const sourceOwner = urduPlaylistSourceRef.current;
+        const isCurrentUrduSource = Boolean(
+          sourceOwner &&
+          sourceOwner.surahId === surahId &&
+          sourceOwner.ayahNumber === urduAyahNumberRef.current &&
+          audio.src === sourceOwner.src
+        );
+
+        if (!isCurrentUrduSource) return;
+
+        setIsPlaying(false);
+        setIsPlayPending(false);
+        setAudioSourceError(
+          `Urdu audio failed to load for Ayah ${urduAyahNumberRef.current}.`
+        );
+        return;
+      }
+
       setIsPlaying(false);
       setIsPlayPending(false);
     };
@@ -866,7 +963,7 @@ export default function QuranReaderPage({
     audio.addEventListener('waiting', onWaiting);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('ended', onEnd);
-    audio.addEventListener('error', onEnd);
+    audio.addEventListener('error', onError);
 
     return () => {
       audio.removeEventListener('loadedmetadata', onLoaded);
@@ -879,9 +976,9 @@ export default function QuranReaderPage({
       audio.removeEventListener('waiting', onWaiting);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnd);
-      audio.removeEventListener('error', onEnd);
+      audio.removeEventListener('error', onError);
     };
-  }, [audioRef, loading]);
+  }, [audioRef, loading, settings.audioPreference, surahId]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -894,7 +991,7 @@ export default function QuranReaderPage({
       return;
     }
 
-    if (!audio.src) {
+    if (audio.src !== audioSrc) {
       audio.src = audioSrc;
       audio.load();
     }
@@ -904,7 +1001,15 @@ export default function QuranReaderPage({
     }
 
     setIsPlayPending(true);
+    const requestedSrc = audioSrc;
+    const playRequestId = ++audioPlayRequestIdRef.current;
     audio.play().catch(() => {
+      if (
+        audioPlayRequestIdRef.current !== playRequestId ||
+        audio.src !== requestedSrc
+      ) {
+        return;
+      }
       setIsPlaying(false);
       setIsPlayPending(false);
     });
@@ -1008,6 +1113,12 @@ export default function QuranReaderPage({
       return;
     }
 
+    if (settings.audioPreference === 'tr') {
+      clearActiveWord();
+      commitActiveAyah(urduAyahNumber);
+      return;
+    }
+
     const activateWord = (timing: WordTimingRange | null) => {
       const elementId = timing
         ? `audio-word-${timing.ayahNumber}-${timing.wordIndex}`
@@ -1047,11 +1158,7 @@ export default function QuranReaderPage({
       }
 
       commitActiveAyah(nextAyahNumber);
-      activateWord(
-        settings.audioPreference === 'ar'
-          ? findTimingAtMs(wordTimings, currentMs, 80)
-          : null
-      );
+      activateWord(findTimingAtMs(wordTimings, currentMs, 80));
 
       frameId = window.requestAnimationFrame(syncHighlight);
     };
@@ -1068,6 +1175,7 @@ export default function QuranReaderPage({
     ayahs,
     isPlaying,
     settings.audioPreference,
+    urduAyahNumber,
     weightedAyahProgressEnds,
     wordTimings,
   ]);
@@ -1096,7 +1204,7 @@ export default function QuranReaderPage({
   const likesCount = getSurahLikesCount(surahId);
   const activeReciterName =
     settings.audioPreference === 'tr'
-      ? 'Arabic + Urdu'
+      ? 'Urdu Translation · Shamshad Ali Khan'
       : audioReciters[selectedReciter]?.reciter ?? 'Arabic Recitation';
   const currentSurahPath = useMemo(() => {
     const targetSurah = surahs.find((entry) => entry.id === surahId);

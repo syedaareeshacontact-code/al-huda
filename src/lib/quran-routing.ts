@@ -68,3 +68,9 @@ export function buildUrduTranslationAudioUrl(surahId: number): string {
     surahId
   ).padStart(3, '0')}.ogg`;
 }
+
+export function buildUrduAyahAudioUrl(surahId: number, ayahNumber: number): string {
+  return `https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/${String(
+    surahId
+  ).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`;
+}

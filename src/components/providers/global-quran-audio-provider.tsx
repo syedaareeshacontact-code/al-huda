@@ -58,6 +58,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   const [volume, setVolumeState] = useState(1);
   const sessionRef = useRef<GlobalAudioSession | null>(null);
   const lastProgressSyncRef = useRef(0);
+  const playRequestIdRef = useRef(0);
 
   const patchSession = useCallback((patch: Partial<GlobalAudioSession>) => {
     setSession((current) => {
@@ -74,6 +75,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   }, []);
 
   const dismissSession = useCallback(() => {
+    playRequestIdRef.current += 1;
     const audio = audioRef.current;
     audio?.pause();
     if (audio) {
@@ -90,12 +92,14 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     if (!audio || !currentSession?.audioSrc) return;
 
     if (!audio.paused && !audio.ended) {
+      playRequestIdRef.current += 1;
       audio.pause();
       return;
     }
 
-    if (!audio.src) {
-      audio.src = currentSession.audioSrc;
+    const requestedSrc = currentSession.audioSrc;
+    if (audio.src !== requestedSrc) {
+      audio.src = requestedSrc;
       audio.load();
     }
     if (audio.ended) {
@@ -103,9 +107,17 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     }
 
     patchSession({ isPlayPending: true });
+    const playRequestId = ++playRequestIdRef.current;
     try {
       await audio.play();
     } catch {
+      if (
+        playRequestIdRef.current !== playRequestId ||
+        audio.src !== requestedSrc ||
+        sessionRef.current?.audioSrc !== requestedSrc
+      ) {
+        return;
+      }
       patchSession({ isPlaying: false, isPlayPending: false });
     }
   }, [patchSession]);
@@ -138,6 +150,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   }, []);
 
   const stopAudio = useCallback(() => {
+    playRequestIdRef.current += 1;
     const audio = audioRef.current;
     if (!audio) return;
     audio.pause();

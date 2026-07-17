@@ -4,6 +4,7 @@ import { cache } from 'react';
 
 import type { SurahDetail, SurahMeta, UrduTafsirEntry } from '@/types/quran';
 import { getSurahById } from '@/lib/quran-index';
+import { buildUrduAyahAudioUrl } from '@/lib/quran-routing';
 
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
@@ -156,25 +157,16 @@ export const getAyahContent = cache(async (surahId: number, ayahNumber: number) 
 });
 
 export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number) => {
-  const [arabicResult, urduResult] = await Promise.allSettled([
+  const [arabicResult] = await Promise.allSettled([
     fetch(`${QURAN_COM_API}/verses/by_key/${surahId}:${ayahNumber}?audio=7`, {
       ...PERMANENT_QURAN_FETCH,
       signal: AbortSignal.timeout(8_000),
     }),
-    fetch(
-      `https://ia801503.us.archive.org/28/items/quran_urdu_audio_only/${String(surahId).padStart(3, '0')}.json`,
-      {
-        ...PERMANENT_QURAN_FETCH,
-        signal: AbortSignal.timeout(8_000),
-      }
-    ),
   ]);
 
   const arabicResponse = arabicResult.status === 'fulfilled' ? arabicResult.value : null;
-  const urduResponse = urduResult.status === 'fulfilled' ? urduResult.value : null;
 
   let arabicAudio: string | null = null;
-  let urduAudio: string | null = null;
 
   if (arabicResponse?.ok) {
     try {
@@ -196,20 +188,9 @@ export const getAyahAudioUrls = cache(async (surahId: number, ayahNumber: number
     }
   }
 
-  if (urduResponse?.ok) {
-    try {
-      const urduData = (await urduResponse.json()) as {
-        [ayah: string]: string;
-      };
-      urduAudio = urduData[String(ayahNumber)] || null;
-    } catch {
-      urduAudio = null;
-    }
-  }
-
   return {
     arabic: arabicAudio,
-    urdu: urduAudio,
+    urdu: buildUrduAyahAudioUrl(surahId, ayahNumber),
   };
 });
 
