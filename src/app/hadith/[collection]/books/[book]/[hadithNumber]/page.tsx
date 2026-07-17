@@ -216,25 +216,6 @@ export default async function HadithDetailPage({
           </Card>
         ) : null}
 
-        <Card className="hover:shadow-[var(--shadow-soft)]">
-          <CardContent className="p-5 sm:p-6 md:p-7">
-            <div className="mb-4 flex items-center gap-3">
-              <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-accent)]">
-                <Quote className="size-4" aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
-                  English Translation
-                </h2>
-                <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">Meaning of the narration</p>
-              </div>
-            </div>
-            <p className="text-base leading-7 text-[var(--color-text)] sm:text-[1.05rem] sm:leading-8">
-              {hadith.hadithEnglish}
-            </p>
-          </CardContent>
-        </Card>
-
         {hadith.hadithUrdu ? (
           <Card className="hover:shadow-[var(--shadow-soft)]">
             <CardContent className="p-5 sm:p-6 md:p-7">
@@ -259,6 +240,25 @@ export default async function HadithDetailPage({
             </CardContent>
           </Card>
         ) : null}
+
+        <Card className="hover:shadow-[var(--shadow-soft)]">
+          <CardContent className="p-5 sm:p-6 md:p-7">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-accent)]">
+                <Quote className="size-4" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
+                  English Translation
+                </h2>
+                <p className="mt-0.5 text-[0.68rem] text-[var(--color-muted-text)]">Meaning of the narration</p>
+              </div>
+            </div>
+            <p className="text-base leading-7 text-[var(--color-text)] sm:text-[1.05rem] sm:leading-8">
+              {hadith.hadithEnglish}
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
