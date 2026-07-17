@@ -1,12 +1,15 @@
 import type { SurahAudioOption, SurahDetail, SurahMeta, UrduTafsirEntry } from '@/types/quran';
 import { isValidSurahId } from '@/lib/quran-utils';
+import type { SurahWordAudioPayload } from '@/lib/quran-word-audio';
 
 const surahMetaCache = new Map<number, SurahMeta>();
 const surahDetailCache = new Map<number, SurahDetail>();
 const urduTafsirCache = new Map<string, UrduTafsirEntry>();
+const surahWordAudioCache = new Map<number, SurahWordAudioPayload>();
 const surahMetaInFlight = new Map<number, Promise<SurahMeta>>();
 const surahDetailInFlight = new Map<number, Promise<SurahDetail>>();
 const urduTafsirInFlight = new Map<string, Promise<UrduTafsirEntry>>();
+const surahWordAudioInFlight = new Map<number, Promise<SurahWordAudioPayload>>();
 
 // Quran.com API configuration
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
@@ -269,6 +272,49 @@ export async function fetchCompleteSurahContent(
   }
 
   return { detail: payload.detail, meta: payload.meta };
+}
+
+export async function fetchSurahWordAudio(
+  surahId: number,
+  signal?: AbortSignal
+): Promise<SurahWordAudioPayload> {
+  if (!isValidSurahId(surahId)) {
+    throw new Error('Invalid surah number');
+  }
+
+  const cached = surahWordAudioCache.get(surahId);
+  if (cached) {
+    return cached;
+  }
+
+  const inFlight = surahWordAudioInFlight.get(surahId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = fetch(`/api/surah/${surahId}/word-audio`, {
+    signal,
+    cache: 'force-cache',
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Unable to load word audio (${response.status})`);
+      }
+
+      const payload = (await response.json()) as SurahWordAudioPayload;
+      if (payload?.surahId !== surahId || !Array.isArray(payload.ayahs)) {
+        throw new Error('Invalid word audio payload');
+      }
+
+      surahWordAudioCache.set(surahId, payload);
+      return payload;
+    })
+    .finally(() => {
+      surahWordAudioInFlight.delete(surahId);
+    });
+
+  surahWordAudioInFlight.set(surahId, request);
+  return request;
 }
 
 export async function fetchUrduTafsirByAyah(

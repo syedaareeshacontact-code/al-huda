@@ -342,7 +342,30 @@ select {
 }
 
 .audio-synced-word {
+  display: inline;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  margin: 0;
+  padding: 0;
+  text-align: inherit;
+  direction: inherit;
+  unicode-bidi: normal;
+  vertical-align: baseline;
   transition: color 70ms linear;
+}
+
+.audio-synced-word[data-word-audio='true'] {
+  cursor: pointer;
+}
+
+.audio-synced-word[data-word-audio='true']:hover,
+.audio-synced-word[data-word-audio='true']:focus-visible,
+.audio-synced-word[data-word-audio-active='true'] {
+  color: #dc2626;
+  outline: none;
 }
 
 .audio-synced-word[data-audio-active='true'] {
@@ -354,6 +377,12 @@ select {
 }
 
 .dark .audio-synced-word[data-audio-active='true'] {
+  color: #f87171;
+}
+
+.dark .audio-synced-word[data-word-audio='true']:hover,
+.dark .audio-synced-word[data-word-audio='true']:focus-visible,
+.dark .audio-synced-word[data-word-audio-active='true'] {
   color: #f87171;
 }
 
