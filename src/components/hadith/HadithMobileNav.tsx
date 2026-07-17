@@ -13,12 +13,17 @@ interface HadithMobileNavProps {
 
 export default function HadithMobileNav({ collections }: HadithMobileNavProps) {
   const pathname = usePathname();
+  const isHadithDetailPage = /^\/hadith\/[^/]+\/books\/[^/]+\/[^/]+\/?$/.test(pathname);
 
   const activeCollection = useMemo(() => {
     const match = pathname.match(/^\/hadith\/([^/]+)/);
     if (!match) return null;
     return collections.find((col) => col.bookSlug === match[1]) ?? null;
   }, [collections, pathname]);
+
+  if (isHadithDetailPage) {
+    return null;
+  }
 
   return (
     <div className="lg:hidden">
