@@ -267,7 +267,7 @@ export default function SmartAyahScrollNav({
           variant="default"
           size="icon"
           onClick={scrollBackToAudio}
-          className="hidden size-10 rounded-full shadow-lg md:inline-flex"
+          className="size-10 rounded-full shadow-lg"
           aria-label={`Back to playing ayah ${audioAnchorRef.current}`}
           title={`Back to Ayah ${audioAnchorRef.current}`}
         >
