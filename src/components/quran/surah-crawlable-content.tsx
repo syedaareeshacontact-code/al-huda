@@ -13,7 +13,7 @@ import {
 
 const INITIAL_VISIBLE_AYAH_LINKS = 18;
 const AYAH_LINKS_CLASS =
-  'flex flex-wrap gap-1.5 [&_a]:inline-flex [&_a]:min-w-10 [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[color-mix(in_oklab,var(--color-surface-2),transparent_45%)] [&_a]:px-2 [&_a]:py-1.5 [&_a]:text-xs [&_a]:font-semibold [&_a]:text-[var(--color-heading)] [&_a]:transition hover:[&_a]:border-[var(--color-accent-soft)] hover:[&_a]:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] hover:[&_a]:text-[var(--color-accent-soft)]';
+  'flex flex-nowrap snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:snap-none sm:overflow-visible sm:pb-0 [&_a]:inline-flex [&_a]:min-w-10 [&_a]:shrink-0 [&_a]:snap-start [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[color-mix(in_oklab,var(--color-surface-2),transparent_45%)] [&_a]:px-2 [&_a]:py-1.5 [&_a]:text-xs [&_a]:font-semibold [&_a]:text-[var(--color-heading)] [&_a]:transition hover:[&_a]:border-[var(--color-accent-soft)] hover:[&_a]:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] hover:[&_a]:text-[var(--color-accent-soft)]';
 
 function escapeHtml(value: string) {
   return value
