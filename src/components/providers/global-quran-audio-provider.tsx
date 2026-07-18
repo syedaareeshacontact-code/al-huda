@@ -53,6 +53,8 @@ interface GlobalQuranAudioControllerContextValue {
   showPlayer: () => void;
 }
 
+const QURAN_AUDIO_PREFERENCE_CHANGE_EVENT = 'alhuda:quran-audio-preference-change';
+
 const GlobalQuranAudioContext = createContext<GlobalQuranAudioContextValue | null>(null);
 const GlobalQuranAudioControllerContext =
   createContext<GlobalQuranAudioControllerContextValue | null>(null);
@@ -64,6 +66,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   const [isPlayerHidden, setIsPlayerHidden] = useState(false);
   const sessionRef = useRef<GlobalAudioSession | null>(null);
   const lastProgressSyncRef = useRef(0);
+  const resumeOnNextSourceRef = useRef(false);
 
   const patchSession = useCallback((patch: Partial<GlobalAudioSession>) => {
     setSession((current) => {
@@ -74,15 +77,42 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
-  const updateSession = useCallback((nextSession: GlobalAudioSession | null) => {
-    const previousAudioSrc = sessionRef.current?.audioSrc;
-    sessionRef.current = nextSession;
-    setSession(nextSession);
+  const updateSession = useCallback(
+    (nextSession: GlobalAudioSession | null) => {
+      const previousAudioSrc = sessionRef.current?.audioSrc;
+      const sourceChanged = Boolean(
+        nextSession?.audioSrc && nextSession.audioSrc !== previousAudioSrc
+      );
+      const shouldResumeWithNewSource = sourceChanged && resumeOnNextSourceRef.current;
 
-    if (!nextSession || nextSession.audioSrc !== previousAudioSrc) {
-      setIsPlayerHidden(false);
-    }
-  }, []);
+      sessionRef.current = nextSession;
+      setSession(nextSession);
+
+      if (!nextSession || sourceChanged) {
+        setIsPlayerHidden(false);
+      }
+
+      if (!nextSession?.audioSrc || !shouldResumeWithNewSource) {
+        return;
+      }
+
+      resumeOnNextSourceRef.current = false;
+      const audio = audioRef.current;
+      if (!audio) {
+        return;
+      }
+
+      audio.pause();
+      audio.src = nextSession.audioSrc;
+      audio.load();
+      patchSession({ isPlaying: false, isPlayPending: true, currentTime: 0 });
+
+      void audio.play().catch(() => {
+        patchSession({ isPlaying: false, isPlayPending: false });
+      });
+    },
+    [patchSession]
+  );
 
   const dismissSession = useCallback(() => {
     const audio = audioRef.current;
@@ -91,6 +121,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
       audio.removeAttribute('src');
       audio.load();
     }
+    resumeOnNextSourceRef.current = false;
     sessionRef.current = null;
     setIsPlayerHidden(false);
     setSession(null);
@@ -114,7 +145,7 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    if (!audio.src) {
+    if (!audio.src || audio.currentSrc !== currentSession.audioSrc) {
       audio.src = currentSession.audioSrc;
       audio.load();
     }
@@ -180,6 +211,24 @@ export function GlobalQuranAudioProvider({ children }: PropsWithChildren) {
   );
 
   const controls = globalControls;
+
+  useEffect(() => {
+    const handleAudioPreferenceChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ resume?: boolean }>).detail;
+      resumeOnNextSourceRef.current = Boolean(detail?.resume);
+    };
+
+    window.addEventListener(
+      QURAN_AUDIO_PREFERENCE_CHANGE_EVENT,
+      handleAudioPreferenceChange
+    );
+    return () => {
+      window.removeEventListener(
+        QURAN_AUDIO_PREFERENCE_CHANGE_EVENT,
+        handleAudioPreferenceChange
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
