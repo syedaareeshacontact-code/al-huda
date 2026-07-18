@@ -3,6 +3,12 @@ import { BookMarked, Compass, HeartHandshake, Sparkles } from 'lucide-react';
 
 import navLinks, { popularSurahLinks } from '@/lib/navLinks';
 
+const MOBILE_LINK_SLIDER_CLASS =
+  'flex flex-nowrap snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:snap-none sm:overflow-visible sm:pb-0';
+
+const FOOTER_PILL_LINK_CLASS =
+  'shrink-0 snap-start whitespace-nowrap rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]';
+
 export default function SiteFooter() {
   return (
     <footer className="relative overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -38,17 +44,17 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-[var(--color-muted-text)]">
             Explore
           </h3>
-          <div className="flex flex-wrap gap-2">
+          <div className={MOBILE_LINK_SLIDER_CLASS} aria-label="Explore links">
             {navLinks.map((item) => (
               <Link
                 key={item.id}
                 href={item.link}
                 prefetch={false}
-                className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]"
+                className={FOOTER_PILL_LINK_CLASS}
               >
                 {item.name}
               </Link>
@@ -56,17 +62,20 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="space-y-3 md:text-right">
+        <div className="min-w-0 space-y-3 md:text-right">
           <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-[var(--color-muted-text)]">
             Popular Surahs
           </h3>
-          <div className="flex flex-wrap gap-2 md:justify-end">
+          <div
+            className={`${MOBILE_LINK_SLIDER_CLASS} md:justify-end`}
+            aria-label="Popular Surahs"
+          >
             {popularSurahLinks.map((item) => (
               <Link
                 key={item.link}
                 href={item.link}
                 prefetch={false}
-                className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]"
+                className={FOOTER_PILL_LINK_CLASS}
               >
                 {item.name}
               </Link>
