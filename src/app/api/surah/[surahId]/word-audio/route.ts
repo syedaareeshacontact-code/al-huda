@@ -7,10 +7,11 @@ import {
 } from '@/lib/quran-word-audio';
 
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
-const WORD_AUDIO_PER_PAGE = 300;
+const WORD_AUDIO_PER_PAGE = 50;
 
 export const runtime = 'nodejs';
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface QuranComWordAudioPage {
   verses?: QuranComWordAudioVerse[];
@@ -23,14 +24,14 @@ async function fetchWordAudioPage(surahId: number, page: number) {
   const params = new URLSearchParams({
     language: 'en',
     words: 'true',
-    word_fields: 'text_uthmani,audio_url,position',
+    word_fields: 'text_uthmani,audio_url,position,char_type_name',
     fields: 'verse_key',
     per_page: String(WORD_AUDIO_PER_PAGE),
     page: String(page),
   });
 
   const response = await fetch(`${QURAN_COM_API}/verses/by_chapter/${surahId}?${params}`, {
-    cache: 'force-cache',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
     },
@@ -72,7 +73,7 @@ export async function GET(
 
     return NextResponse.json(payload, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+        'Cache-Control': 'no-store, max-age=0',
       },
     });
   } catch (error) {
