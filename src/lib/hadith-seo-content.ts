@@ -32,6 +32,12 @@ export function getHadithMetaTitle(hadith: HadithItem): string {
 }
 
 export function getHadithMetaDescription(hadith: HadithItem): string {
-  const snippet = hadith.hadithEnglish.slice(0, 120).trim();
-  return `${snippet}… From ${hadith.book.bookName} (${hadith.book.writerName}), chapter: ${hadith.chapter.chapterEnglish}. Read full Arabic text and Urdu translation.`;
+  const snippet = hadith.hadithEnglish?.trim().slice(0, 120) ?? '';
+  const source = `From ${hadith.book.bookName} (${hadith.book.writerName}), chapter: ${hadith.chapter.chapterEnglish}.`;
+
+  if (!snippet) {
+    return `Read Hadith ${hadith.hadithNumber} ${source} View the available Arabic text, English translation, and Urdu translation.`;
+  }
+
+  return `${snippet}… ${source} Read full Arabic text and Urdu translation.`;
 }

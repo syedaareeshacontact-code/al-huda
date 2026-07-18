@@ -86,7 +86,7 @@ interface HadithDetailSchemaProps {
   bookName: string;
   writerName: string;
   chapterEnglish: string;
-  content: string;
+  content: string | null;
   path: string;
   imageUrl?: string;
   datePublished?: string;
@@ -112,7 +112,9 @@ export function HadithDetailSchema({
   const pageUrl = toAbsoluteUrl(path);
   const siteName = getSiteName();
   const headline = `Hadith ${hadithNumber} – ${bookName}`;
-  const resolvedDescription = description || content.slice(0, 155).trim();
+  const normalizedContent = content?.trim() ?? '';
+  const resolvedDescription =
+    description?.trim() || normalizedContent.slice(0, 155) || headline;
 
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -121,7 +123,7 @@ export function HadithDetailSchema({
     url: pageUrl,
     headline: headline,
     description: resolvedDescription,
-    articleBody: content,
+    ...(normalizedContent && { articleBody: normalizedContent }),
     ...(datePublished && {
       datePublished,
       dateModified: datePublished,

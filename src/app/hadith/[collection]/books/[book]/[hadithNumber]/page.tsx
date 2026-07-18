@@ -297,7 +297,7 @@ export default async function HadithDetailPage({
             </div>
             <div className="px-4 py-4 sm:px-7 sm:py-5">
               <p className="max-w-[68ch] text-base leading-7 text-[var(--color-text)] sm:text-[1.05rem] sm:leading-8">
-                {hadith.hadithEnglish}
+                {hadith.hadithEnglish || 'English translation is not available for this narration.'}
               </p>
             </div>
           </CardContent>

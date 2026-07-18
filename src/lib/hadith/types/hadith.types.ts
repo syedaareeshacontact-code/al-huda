@@ -23,11 +23,11 @@ export interface HadithChapter {
 export interface HadithItem {
   id: number;
   hadithNumber: string;
-  englishNarrator: string;
-  hadithEnglish: string;
-  hadithUrdu: string;
-  hadithArabic: string;
-  urduNarrator: string;
+  englishNarrator: string | null;
+  hadithEnglish: string | null;
+  hadithUrdu: string | null;
+  hadithArabic: string | null;
+  urduNarrator: string | null;
   status: string;
   book: {
     bookName: string;

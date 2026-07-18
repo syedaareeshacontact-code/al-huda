@@ -47,9 +47,15 @@ export default function HadithActions({
         : detailPath;
 
     if (navigator.share) {
+      const shareText =
+        hadith.hadithEnglish?.slice(0, 200) ||
+        hadith.hadithUrdu?.slice(0, 200) ||
+        hadith.hadithArabic?.slice(0, 200) ||
+        `Hadith ${hadith.hadithNumber} from ${hadith.book.bookName}`;
+
       await navigator.share({
         title: `Hadith ${hadith.hadithNumber} — ${hadith.book.bookName}`,
-        text: hadith.hadithEnglish.slice(0, 200),
+        text: shareText,
         url: absoluteUrl,
       });
     }
