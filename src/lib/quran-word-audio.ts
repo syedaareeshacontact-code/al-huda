@@ -80,11 +80,11 @@ export function normalizeQuranWordAudioUrl(audioPath: string | null | undefined)
 export function buildQuranWordAudioFallbackUrl(
   surahId: number,
   ayahNumber: number,
-  wordIndex: number
+  wordPosition: number
 ) {
   return `${QURAN_WORD_AUDIO_BASE_URL}/wbw/${padQuranSegment(surahId)}_${padQuranSegment(
     ayahNumber
-  )}_${padQuranSegment(wordIndex)}.mp3`;
+  )}_${padQuranSegment(wordPosition)}.mp3`;
 }
 
 export function parseQuranComWordAudioPayload(
@@ -99,34 +99,45 @@ export function parseQuranComWordAudioPayload(
       continue;
     }
 
-    const recitationWords = (verse.words ?? [])
+    const spokenWords = (verse.words ?? [])
       .map((word, sourceOrder) => ({
         word,
         sourceOrder,
         sourcePosition: Number(word.position),
-        audioUrl: normalizeQuranWordAudioUrl(word.audio_url),
       }))
-      .filter(
-        (entry): entry is typeof entry & { audioUrl: string } =>
-          entry.word.char_type_name === 'word' && Boolean(entry.audioUrl)
-      )
+      .filter(({ word }) => word.char_type_name === 'word')
       .sort((left, right) => {
-        const leftHasPosition = Number.isInteger(left.sourcePosition);
-        const rightHasPosition = Number.isInteger(right.sourcePosition);
+        const leftHasPosition =
+          Number.isInteger(left.sourcePosition) && left.sourcePosition > 0;
+        const rightHasPosition =
+          Number.isInteger(right.sourcePosition) && right.sourcePosition > 0;
 
         if (leftHasPosition && rightHasPosition) {
           return left.sourcePosition - right.sourcePosition;
         }
 
         return left.sourceOrder - right.sourceOrder;
-      })
-      .map(({ word, audioUrl }, index) => ({
-        // Quran.com positions can include pause/end glyphs. The reader UI only
-        // indexes spoken words, so compress the filtered words to 1..N.
-        wordIndex: index + 1,
+      });
+
+    const recitationWords = spokenWords.map(({ word, sourcePosition }, index) => {
+      const displayedWordIndex = index + 1;
+      const audioFilePosition =
+        Number.isInteger(sourcePosition) && sourcePosition > 0
+          ? sourcePosition
+          : displayedWordIndex;
+      const audioUrl =
+        normalizeQuranWordAudioUrl(word.audio_url) ??
+        buildQuranWordAudioFallbackUrl(surahId, ayahNumber, audioFilePosition);
+
+      return {
+        // The reader numbers only spoken words. Keep every spoken word in this
+        // sequence even when Quran.com omits its audio_url, otherwise all later
+        // click targets shift to the next word.
+        wordIndex: displayedWordIndex,
         audioUrl,
         text: word.text_uthmani ?? word.text,
-      }));
+      };
+    });
 
     if (recitationWords.length > 0) {
       ayahs.set(ayahNumber, recitationWords);
