@@ -1,4 +1,4 @@
-export const QURAN_WORD_AUDIO_BASE_URL = 'https://verses.quran.foundation';
+export const QURAN_WORD_AUDIO_BASE_URL = 'https://audio.qurancdn.com';
 
 export interface SurahWordAudioWord {
   wordIndex: number;
@@ -62,6 +62,15 @@ export function normalizeQuranWordAudioUrl(audioPath: string | null | undefined)
   }
 
   if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      if (url.pathname.includes('/wbw/')) {
+        return `${QURAN_WORD_AUDIO_BASE_URL}${url.pathname}${url.search}`;
+      }
+    } catch {
+      return null;
+    }
+
     return value;
   }
 
@@ -90,26 +99,37 @@ export function parseQuranComWordAudioPayload(
       continue;
     }
 
-    for (const word of verse.words ?? []) {
-      const wordIndex = Number(word.position);
-      const audioUrl = normalizeQuranWordAudioUrl(word.audio_url);
+    const recitationWords = (verse.words ?? [])
+      .map((word, sourceOrder) => ({
+        word,
+        sourceOrder,
+        sourcePosition: Number(word.position),
+        audioUrl: normalizeQuranWordAudioUrl(word.audio_url),
+      }))
+      .filter(
+        (entry): entry is typeof entry & { audioUrl: string } =>
+          entry.word.char_type_name === 'word' && Boolean(entry.audioUrl)
+      )
+      .sort((left, right) => {
+        const leftHasPosition = Number.isInteger(left.sourcePosition);
+        const rightHasPosition = Number.isInteger(right.sourcePosition);
 
-      if (
-        word.char_type_name !== 'word' ||
-        !Number.isInteger(wordIndex) ||
-        wordIndex < 1 ||
-        !audioUrl
-      ) {
-        continue;
-      }
+        if (leftHasPosition && rightHasPosition) {
+          return left.sourcePosition - right.sourcePosition;
+        }
 
-      const words = ayahs.get(ayahNumber) ?? [];
-      words.push({
-        wordIndex,
+        return left.sourceOrder - right.sourceOrder;
+      })
+      .map(({ word, audioUrl }, index) => ({
+        // Quran.com positions can include pause/end glyphs. The reader UI only
+        // indexes spoken words, so compress the filtered words to 1..N.
+        wordIndex: index + 1,
         audioUrl,
         text: word.text_uthmani ?? word.text,
-      });
-      ayahs.set(ayahNumber, words);
+      }));
+
+    if (recitationWords.length > 0) {
+      ayahs.set(ayahNumber, recitationWords);
     }
   }
 
@@ -119,7 +139,7 @@ export function parseQuranComWordAudioPayload(
       .sort(([left], [right]) => left - right)
       .map(([ayahNumber, words]) => ({
         ayahNumber,
-        words: words.sort((left, right) => left.wordIndex - right.wordIndex),
+        words,
       })),
   };
 }
