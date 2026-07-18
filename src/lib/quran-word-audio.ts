@@ -119,15 +119,17 @@ export function parseQuranComWordAudioPayload(
         return left.sourceOrder - right.sourceOrder;
       });
 
-    const recitationWords = spokenWords.map(({ word, sourcePosition }, index) => {
+    const recitationWords = spokenWords.map(({ word }, index) => {
       const displayedWordIndex = index + 1;
-      const audioFilePosition =
-        Number.isInteger(sourcePosition) && sourcePosition > 0
-          ? sourcePosition
-          : displayedWordIndex;
-      const audioUrl =
-        normalizeQuranWordAudioUrl(word.audio_url) ??
-        buildQuranWordAudioFallbackUrl(surahId, ayahNumber, audioFilePosition);
+      // Quran.com's audio_url can retain standalone pause-glyph positions even
+      // though its spoken-word position is compact. After a pause this points
+      // at the next word and can make the final URL a 404. WBW CDN files use
+      // the compact spoken-word sequence, so always build the canonical URL.
+      const audioUrl = buildQuranWordAudioFallbackUrl(
+        surahId,
+        ayahNumber,
+        displayedWordIndex
+      );
 
       return {
         // The reader numbers only spoken words. Keep every spoken word in this

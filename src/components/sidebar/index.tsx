@@ -186,7 +186,14 @@ function buildWordAudioKey(ayahNumber: number, wordIndex: number) {
 function buildWordAudioLookup(payload: SurahWordAudioPayload): WordAudioLookup {
   return payload.ayahs.reduce<WordAudioLookup>((lookup, ayah) => {
     ayah.words.forEach((word) => {
-      lookup[buildWordAudioKey(ayah.ayahNumber, word.wordIndex)] = word.audioUrl;
+      // Rebuild canonical compact-word URLs in case an existing browser tab
+      // still has an older pause-mark-shifted API payload cached.
+      lookup[buildWordAudioKey(ayah.ayahNumber, word.wordIndex)] =
+        buildQuranWordAudioFallbackUrl(
+          payload.surahId,
+          ayah.ayahNumber,
+          word.wordIndex
+        );
     });
     return lookup;
   }, {});
