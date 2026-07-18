@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
+import { ChevronDown, FileText } from 'lucide-react';
 
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import {
@@ -11,6 +11,10 @@ import {
   getSurahUrduTitle,
 } from '@/lib/surah-seo-content';
 
+const INITIAL_VISIBLE_AYAH_LINKS = 18;
+const AYAH_LINKS_CLASS =
+  'flex flex-wrap gap-1.5 [&_a]:inline-flex [&_a]:min-w-10 [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:bg-[color-mix(in_oklab,var(--color-surface-2),transparent_45%)] [&_a]:px-2 [&_a]:py-1.5 [&_a]:text-xs [&_a]:font-semibold [&_a]:text-[var(--color-heading)] [&_a]:transition hover:[&_a]:border-[var(--color-accent-soft)] hover:[&_a]:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] hover:[&_a]:text-[var(--color-accent-soft)]';
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -20,12 +24,27 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#039;');
 }
 
-export default function SurahCrawlableContent({ surah }: { surah: SurahIndexEntry }) {
-  const ayahLinksHtml = Array.from({ length: surah.totalAyah }, (_, index) => {
-    const ayahNumber = index + 1;
+function buildAyahLinksHtml(
+  surah: SurahIndexEntry,
+  startIndex: number,
+  endIndex: number
+) {
+  return Array.from({ length: Math.max(endIndex - startIndex, 0) }, (_, offset) => {
+    const ayahNumber = startIndex + offset + 1;
     const ayahPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
-    return `<a href="${escapeHtml(ayahPath)}">${ayahNumber}</a>`;
+    return `<a href="${escapeHtml(ayahPath)}" aria-label="Open Ayah ${ayahNumber}">${ayahNumber}</a>`;
   }).join('');
+}
+
+export default function SurahCrawlableContent({ surah }: { surah: SurahIndexEntry }) {
+  const visibleAyahCount = Math.min(surah.totalAyah, INITIAL_VISIBLE_AYAH_LINKS);
+  const visibleAyahLinksHtml = buildAyahLinksHtml(surah, 0, visibleAyahCount);
+  const remainingAyahLinksHtml = buildAyahLinksHtml(
+    surah,
+    visibleAyahCount,
+    surah.totalAyah
+  );
+  const remainingAyahCount = Math.max(surah.totalAyah - visibleAyahCount, 0);
 
   return (
     <section
@@ -41,13 +60,41 @@ export default function SurahCrawlableContent({ surah }: { surah: SurahIndexEntr
         </p>
 
         <nav aria-label={`All ${surah.totalAyah} ayahs of Surah ${surah.surahName}`} className="mt-6">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-            All Ayahs
-          </h3>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              All Ayahs
+            </h3>
+            <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2.5 py-1 text-[0.65rem] font-semibold text-[var(--color-muted-text)]">
+              {surah.totalAyah} total
+            </span>
+          </div>
+
           <div
-            className="flex flex-wrap gap-1.5 [&_a]:inline-flex [&_a]:min-w-10 [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:border [&_a]:border-[var(--color-border)] [&_a]:px-2 [&_a]:py-1 [&_a]:text-xs [&_a]:font-semibold [&_a]:text-[var(--color-heading)] hover:[&_a]:border-[var(--color-accent-soft)] hover:[&_a]:bg-[var(--color-surface-2)]"
-            dangerouslySetInnerHTML={{ __html: ayahLinksHtml }}
+            className={AYAH_LINKS_CLASS}
+            dangerouslySetInnerHTML={{ __html: visibleAyahLinksHtml }}
           />
+
+          {remainingAyahCount > 0 ? (
+            <details className="group mt-3 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_55%)]">
+              <summary className="flex cursor-pointer list-none items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-[var(--color-accent)] transition hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">
+                  See {remainingAyahCount} more ayahs
+                </span>
+                <span className="hidden group-open:inline">Show fewer ayahs</span>
+                <ChevronDown
+                  className="size-4 transition-transform duration-200 group-open:rotate-180"
+                  aria-hidden="true"
+                />
+              </summary>
+
+              <div className="border-t border-[var(--color-border)] p-3 sm:p-4">
+                <div
+                  className={AYAH_LINKS_CLASS}
+                  dangerouslySetInnerHTML={{ __html: remainingAyahLinksHtml }}
+                />
+              </div>
+            </details>
+          ) : null}
         </nav>
 
         <div className="mt-6 flex flex-wrap gap-2">
