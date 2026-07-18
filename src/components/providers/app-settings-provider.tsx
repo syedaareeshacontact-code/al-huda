@@ -111,6 +111,40 @@ function requestSignin(reason: string) {
   );
 }
 
+function resumeAudioAfterPreferenceChange(activeAudio: HTMLAudioElement, previousSrc: string) {
+  let attempts = 0;
+  let preparedPlayer = false;
+
+  const syncAudio = () => {
+    attempts += 1;
+
+    if (!preparedPlayer) {
+      const prepareButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
+        (button) => button.textContent?.trim().includes('Prepare audio player')
+      );
+
+      if (prepareButton) {
+        prepareButton.click();
+        preparedPlayer = true;
+      }
+    }
+
+    const nextSrc = activeAudio.currentSrc || activeAudio.src;
+    if (nextSrc && nextSrc !== previousSrc) {
+      activeAudio.play().catch(() => {
+        // Browser media policy can still require a manual tap in rare cases.
+      });
+      return;
+    }
+
+    if (attempts < 40) {
+      window.setTimeout(syncAudio, 100);
+    }
+  };
+
+  window.setTimeout(syncAudio, 0);
+}
+
 export function AppSettingsProvider({ children }: PropsWithChildren) {
   const [userSettings, setUserSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -252,7 +286,16 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
 
   const setAudioPreference = useCallback(
     (value: AudioPreference) => {
+      const activeAudio = Array.from(document.querySelectorAll<HTMLAudioElement>('audio')).find(
+        (audio) => !audio.paused && !audio.ended && Boolean(audio.currentSrc || audio.src)
+      );
+      const previousSrc = activeAudio?.currentSrc || activeAudio?.src || '';
+
       updateSettings((prev) => ({ ...prev, audioPreference: value }));
+
+      if (activeAudio) {
+        resumeAudioAfterPreferenceChange(activeAudio, previousSrc);
+      }
     },
     [updateSettings]
   );
