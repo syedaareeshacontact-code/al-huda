@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { BookOpenText, Heart, Sparkles } from 'lucide-react';
 
@@ -23,7 +24,7 @@ const MOBILE_LINK_ROW_CLASS =
 const FOOTER_LINK_CLASS =
   'group relative shrink-0 whitespace-nowrap text-sm text-gray-300 transition-colors duration-200 hover:text-white focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950';
 
-function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link href={href} prefetch={false} className={FOOTER_LINK_CLASS}>
       {children}
