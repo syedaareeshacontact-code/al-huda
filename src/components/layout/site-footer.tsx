@@ -1,118 +1,96 @@
-import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { BookOpenText, Heart, Sparkles } from 'lucide-react';
+import { BookMarked, Compass, HeartHandshake, Sparkles } from 'lucide-react';
 
 import navLinks, { popularSurahLinks } from '@/lib/navLinks';
 
-const exploreLinks = navLinks.filter((item) =>
-  ['Home', 'Quran', 'Tafseer', 'Hadith', 'Read Online'].includes(item.name)
-);
+const MOBILE_LINK_SLIDER_CLASS =
+  'flex flex-nowrap snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:snap-none sm:overflow-visible sm:pb-0';
 
-const supportLinks = [
-  { name: 'About', link: '/about' },
-  { name: 'Contact', link: '/contact' },
-  { name: 'Feedback', link: '/feedback' },
-  { name: 'Sources', link: '/editorial-policy' },
-  { name: 'Corrections', link: '/corrections' },
-  { name: 'Privacy', link: '/privacy-policy' },
-  { name: 'Terms', link: '/terms' },
-];
-
-const MOBILE_LINK_ROW_CLASS =
-  'flex flex-nowrap gap-5 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] sm:flex-col sm:gap-2 sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden';
-
-const FOOTER_LINK_CLASS =
-  'group relative shrink-0 whitespace-nowrap text-sm text-gray-300 transition-colors duration-200 hover:text-white focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950';
-
-function FooterLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link href={href} prefetch={false} className={FOOTER_LINK_CLASS}>
-      {children}
-      <span
-        className="absolute -bottom-0.5 left-0 h-px w-0 bg-emerald-400 transition-all duration-200 group-hover:w-full"
-        aria-hidden="true"
-      />
-    </Link>
-  );
-}
+const FOOTER_PILL_LINK_CLASS =
+  'shrink-0 snap-start whitespace-nowrap rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-accent-soft)] hover:text-[var(--color-heading)]';
 
 export default function SiteFooter() {
   return (
-    <footer className="relative overflow-hidden border-t border-emerald-800/50 bg-gradient-to-br from-emerald-950 via-green-950 to-slate-950 text-white">
-      <div className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-emerald-400/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-28 right-0 size-80 rounded-full bg-teal-400/10 blur-3xl" />
+    <footer className="relative overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="pointer-events-none absolute -left-16 top-4 size-56 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-accent),transparent_92%)_0%,transparent_72%)] blur-2xl" />
+      <div className="pointer-events-none absolute -right-16 bottom-0 size-64 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-accent-soft),transparent_94%)_0%,transparent_74%)] blur-2xl" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-9">
-        <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_1fr_0.8fr] lg:gap-9">
-          <section aria-labelledby="footer-about-title" className="max-w-md">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-300 shadow-[0_10px_30px_rgba(16,185,129,0.08)]">
-                <BookOpenText className="size-5" aria-hidden="true" />
-              </span>
-              <div>
-                <p className="flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-emerald-300">
-                  <Sparkles className="size-3.5" aria-hidden="true" />
-                  Quranic Reflection
-                </p>
-                <h2 id="footer-about-title" className="mt-0.5 font-display text-xl font-bold text-white">
-                  Read al Quran
-                </h2>
-              </div>
-            </div>
-
-            <p className="mt-4 text-sm leading-6 text-gray-300">
-              Read, listen, understand, and reflect on the Quran through translations, tafseer,
-              recitation audio, and focused study tools.
-            </p>
-          </section>
-
-          <nav aria-labelledby="footer-explore-title" className="min-w-0">
-            <h3 id="footer-explore-title" className="mb-3 text-sm font-bold text-white">
-              Explore
-            </h3>
-            <div className={MOBILE_LINK_ROW_CLASS}>
-              {exploreLinks.map((item) => (
-                <FooterLink key={item.id} href={item.link}>
-                  {item.name}
-                </FooterLink>
-              ))}
-            </div>
-          </nav>
-
-          <nav aria-labelledby="footer-popular-title" className="min-w-0">
-            <h3 id="footer-popular-title" className="mb-3 text-sm font-bold text-white">
-              Popular Surahs
-            </h3>
-            <div className={MOBILE_LINK_ROW_CLASS}>
-              {popularSurahLinks.map((item) => (
-                <FooterLink key={item.link} href={item.link}>
-                  {item.name}
-                </FooterLink>
-              ))}
-            </div>
-          </nav>
-
-          <nav aria-labelledby="footer-support-title" className="min-w-0">
-            <h3 id="footer-support-title" className="mb-3 text-sm font-bold text-white">
-              Support
-            </h3>
-            <div className={MOBILE_LINK_ROW_CLASS}>
-              {supportLinks.map((item) => (
-                <FooterLink key={item.link} href={item.link}>
-                  {item.name}
-                </FooterLink>
-              ))}
-            </div>
-          </nav>
+      <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
+        <div className="space-y-3">
+          <p className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.28em] text-[var(--color-muted-text)]">
+            <Sparkles className="size-4 text-[var(--color-accent)]" />
+            Quranic Reflection
+          </p>
+          <h2 className="font-display text-2xl text-[var(--color-heading)]">
+            Read with Khushu, Learn with Clarity
+          </h2>
+          <p className="max-w-md text-sm text-[var(--color-muted-text)]">
+            Read al Quran provides Quran reading, Urdu translation, tafseer, hadith, recitation
+            audio, and study tools in a focused interface.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[var(--color-muted-text)]">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-2.5 py-1">
+              <BookMarked className="size-3.5 text-[var(--color-accent)]" />
+              Bookmark Ayahs
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-2.5 py-1">
+              <Compass className="size-3.5 text-[var(--color-info)]" />
+              Surah Navigator
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-2.5 py-1">
+              <HeartHandshake className="size-3.5 text-[var(--color-highlight)]" />
+              Daily Reflection
+            </span>
+          </div>
         </div>
 
-        <div className="mt-7 flex flex-col gap-2 border-t border-white/10 pt-4 text-xs text-gray-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Read al Quran. All rights reserved.</p>
-          <p className="inline-flex items-center gap-1.5">
-            Made with
-            <Heart className="size-3.5 fill-emerald-400 text-emerald-400" aria-hidden="true" />
-            for the Ummah
+        <div className="min-w-0 space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-[var(--color-muted-text)]">
+            Explore
+          </h3>
+          <div className={MOBILE_LINK_SLIDER_CLASS} aria-label="Explore links">
+            {navLinks.map((item) => (
+              <Link
+                key={item.id}
+                href={item.link}
+                prefetch={false}
+                className={FOOTER_PILL_LINK_CLASS}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-3 md:text-right">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-[var(--color-muted-text)]">
+            Popular Surahs
+          </h3>
+          <div
+            className={`${MOBILE_LINK_SLIDER_CLASS} md:justify-end`}
+            aria-label="Popular Surahs"
+          >
+            {popularSurahLinks.map((item) => (
+              <Link
+                key={item.link}
+                href={item.link}
+                prefetch={false}
+                className={FOOTER_PILL_LINK_CLASS}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+          <p className="text-xs text-[var(--color-muted-text)]">
+            © {new Date().getFullYear()} Read al Quran. All rights reserved.
           </p>
+          <nav aria-label="Trust and legal information" className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:justify-end">
+            <Link href="/editorial-policy" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Sources</Link>
+            <Link href="/corrections" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Corrections</Link>
+            <Link href="/privacy-policy" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Privacy</Link>
+            <Link href="/terms" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Terms</Link>
+            <Link href="/contact" className="text-[var(--color-muted-text)] hover:text-[var(--color-heading)]">Contact</Link>
+          </nav>
         </div>
       </div>
     </footer>
