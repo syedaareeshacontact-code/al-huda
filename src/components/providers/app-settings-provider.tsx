@@ -26,6 +26,7 @@ import {
 
 const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
 const THEME_MODE_STORAGE_KEY = 'alhuda:theme-mode';
+const QURAN_AUDIO_PREFERENCE_CHANGE_EVENT = 'alhuda:quran-audio-preference-change';
 
 const DEFAULT_SETTINGS: AppSettings = {
   readingMode: 'ayah',
@@ -111,38 +112,26 @@ function requestSignin(reason: string) {
   );
 }
 
-function resumeAudioAfterPreferenceChange(activeAudio: HTMLAudioElement, previousSrc: string) {
+function prepareAudioPlayerAfterPreferenceChange() {
   let attempts = 0;
-  let preparedPlayer = false;
 
-  const syncAudio = () => {
+  const preparePlayer = () => {
     attempts += 1;
+    const prepareButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
+      (button) => button.textContent?.trim().includes('Prepare audio player')
+    );
 
-    if (!preparedPlayer) {
-      const prepareButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-        (button) => button.textContent?.trim().includes('Prepare audio player')
-      );
-
-      if (prepareButton) {
-        prepareButton.click();
-        preparedPlayer = true;
-      }
-    }
-
-    const nextSrc = activeAudio.currentSrc || activeAudio.src;
-    if (nextSrc && nextSrc !== previousSrc) {
-      activeAudio.play().catch(() => {
-        // Browser media policy can still require a manual tap in rare cases.
-      });
+    if (prepareButton) {
+      prepareButton.click();
       return;
     }
 
     if (attempts < 40) {
-      window.setTimeout(syncAudio, 100);
+      window.setTimeout(preparePlayer, 100);
     }
   };
 
-  window.setTimeout(syncAudio, 0);
+  window.setTimeout(preparePlayer, 0);
 }
 
 export function AppSettingsProvider({ children }: PropsWithChildren) {
@@ -289,12 +278,20 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       const activeAudio = Array.from(document.querySelectorAll<HTMLAudioElement>('audio')).find(
         (audio) => !audio.paused && !audio.ended && Boolean(audio.currentSrc || audio.src)
       );
-      const previousSrc = activeAudio?.currentSrc || activeAudio?.src || '';
+      const shouldResume = Boolean(activeAudio);
+
+      if (shouldResume) {
+        window.dispatchEvent(
+          new CustomEvent(QURAN_AUDIO_PREFERENCE_CHANGE_EVENT, {
+            detail: { resume: true },
+          })
+        );
+      }
 
       updateSettings((prev) => ({ ...prev, audioPreference: value }));
 
-      if (activeAudio) {
-        resumeAudioAfterPreferenceChange(activeAudio, previousSrc);
+      if (shouldResume) {
+        prepareAudioPlayerAfterPreferenceChange();
       }
     },
     [updateSettings]
