@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import dynamic from 'next/dynamic';
-import Script from 'next/script';
 import {
 	Manrope,
 	Cormorant_Garamond,
@@ -100,6 +99,9 @@ export const metadata: Metadata = {
 	verification: {
 		google: googleSiteVerification || undefined,
 	},
+	other: {
+		'google-adsense-account': 'ca-pub-2876888675525619',
+	},
 	openGraph: {
 		title: 'Read al Quran',
 		description: siteDescription,
@@ -175,13 +177,6 @@ export default function RootLayout({
 		>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-				<Script
-					id="adsense-site-verification"
-					async
-					src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2876888675525619"
-					crossOrigin="anonymous"
-					strategy="beforeInteractive"
-				/>
 				{/* Resolve optional APIs cheaply; only the visible Quran font is preconnected. */}
 				<link rel="dns-prefetch" href="//api.quran.com" />
 				<link rel="preconnect" href="https://verses.quran.foundation" crossOrigin="anonymous" />
