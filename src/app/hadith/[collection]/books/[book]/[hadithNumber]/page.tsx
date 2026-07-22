@@ -7,6 +7,7 @@ import BreadcrumbNav from '@/components/hadith/BreadcrumbNav';
 import HadithActions from '@/components/hadith/HadithActions';
 import HadithGrade from '@/components/hadith/HadithGrade';
 import HadithNavigation from '@/components/hadith/HadithNavigation';
+import HadithQuranNudge from '@/components/hadith/HadithQuranNudge';
 import SuggestedHadiths from '@/components/hadith/SuggestedHadiths';
 import { HadithDetailSchema, HadithBreadcrumbsSchema } from '@/components/hadith/HadithSchema';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +24,31 @@ import {
   buildHadithDetailPath,
   buildHadithOgImagePath,
 } from '@/lib/hadith/hadith-routing';
+import { getSurahById } from '@/lib/quran-index';
+import { buildSurahPath } from '@/lib/quran-routing';
 import { buildHadithDetailKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 
 export const revalidate = false;
+
+const QURAN_NUDGE_SURAH_IDS = [18, 36, 67] as const;
+
+function getQuranNudgeLinks() {
+  return QURAN_NUDGE_SURAH_IDS.flatMap((surahId) => {
+    const surah = getSurahById(surahId);
+    if (!surah) {
+      return [];
+    }
+
+    return [
+      {
+        label: surah.surahName,
+        arabicLabel: surah.surahNameArabic,
+        href: buildSurahPath(surah.id, surah.surahName),
+      },
+    ];
+  });
+}
 
 export async function generateMetadata({
   params,
@@ -89,6 +111,7 @@ export default async function HadithDetailPage({
   const collectionPath = buildHadithCollectionPath(collection);
   const description = getHadithMetaDescription(hadith);
   const intro = getHadithSeoIntro(hadith);
+  const quranNudgeLinks = getQuranNudgeLinks();
 
   const navBreadcrumbs = [
     { label: 'Home', href: '/' },
@@ -122,6 +145,7 @@ export default async function HadithDetailPage({
           hadithNumber,
         })}
       />
+      <HadithQuranNudge links={quranNudgeLinks} />
 
       <article className="mx-auto max-w-4xl space-y-5 animate-fade-up">
         <BreadcrumbNav items={navBreadcrumbs} includeSchema={false} />
@@ -263,10 +287,10 @@ export default async function HadithDetailPage({
                     <span
                       dir="rtl"
                       lang="ur"
-                      className="inline-flex min-h-8 shrink-0 items-center rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] px-3 py-1 font-urdu-nastaliq text-sm leading-loose text-[var(--color-accent-soft)]"
+                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] px-3 font-urdu-nastaliq text-sm leading-none text-[var(--color-accent-soft)]"
                     >
-                      <span className="min-[380px]:hidden">اردو</span>
-                      <span className="hidden min-[380px]:inline">اردو ترجمہ</span>
+                      <span className="translate-y-0.5 min-[380px]:hidden">اردو</span>
+                      <span className="hidden translate-y-0.5 min-[380px]:inline">اردو ترجمہ</span>
                     </span>
                   </div>
                   <p

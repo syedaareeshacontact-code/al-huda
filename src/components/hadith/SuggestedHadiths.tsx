@@ -18,8 +18,16 @@ export default function SuggestedHadiths({ hadiths, bookSlug }: SuggestedHadiths
       aria-labelledby="suggested-hadiths-heading"
       className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]"
     >
-      <div className="border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_32%)] px-4 py-3.5 sm:px-5">
-        <div className="flex items-center gap-3">
+      <div className="relative overflow-hidden border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_32%)] px-4 py-3.5 sm:px-5">
+        <span
+          className="pointer-events-none absolute inset-y-0 right-0 w-36 bg-[linear-gradient(90deg,transparent,color-mix(in_oklab,var(--color-accent),transparent_82%))]"
+          aria-hidden="true"
+        />
+        <span
+          className="pointer-events-none absolute inset-y-0 right-0 w-px bg-[linear-gradient(180deg,transparent,var(--color-accent-soft),transparent)]"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 flex items-center gap-3">
           <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklab,var(--color-accent),transparent_88%)] text-[var(--color-accent)]">
             <BookOpenText className="size-4" aria-hidden="true" />
           </span>

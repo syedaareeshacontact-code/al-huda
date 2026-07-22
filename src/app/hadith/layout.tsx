@@ -46,7 +46,7 @@ export default async function HadithLayout({
 
       <div className="mx-auto flex max-w-7xl items-start gap-0 px-4 py-6 lg:gap-8 lg:py-8">
         <aside
-          className="sticky top-[calc(var(--site-header-height,4.25rem)_+_1rem)] hidden max-h-[calc(100dvh_-_var(--site-header-height,4.25rem)_-_2rem)] w-64 shrink-0 overflow-y-auto overscroll-contain lg:block"
+          className="sticky top-[calc(var(--site-header-visible-offset,0px)_+_var(--hadith-top-search-visible-offset,0px)_+_1rem)] hidden max-h-[calc(100dvh_-_var(--site-header-visible-offset,0px)_-_var(--hadith-top-search-visible-offset,0px)_-_2rem)] w-64 shrink-0 overflow-y-auto overscroll-contain lg:block"
           aria-label="Hadith collections sidebar"
         >
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-soft)]">

@@ -66,17 +66,57 @@ export default function HadithTopSearchShell({ children }: PropsWithChildren) {
     };
   }, [pathname, shouldStick]);
 
+  useEffect(() => {
+    if (!shouldStick) {
+      document.documentElement.style.removeProperty('--hadith-top-search-height');
+      document.documentElement.style.removeProperty('--hadith-top-search-visible-offset');
+      return;
+    }
+
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const syncShellOffset = () => {
+      const shellHeight = `${shell.offsetHeight}px`;
+      document.documentElement.style.setProperty('--hadith-top-search-height', shellHeight);
+      document.documentElement.style.setProperty(
+        '--hadith-top-search-visible-offset',
+        visible ? shellHeight : '0px'
+      );
+    };
+
+    syncShellOffset();
+    const observer = new ResizeObserver(syncShellOffset);
+    observer.observe(shell);
+
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--hadith-top-search-height');
+      document.documentElement.style.removeProperty('--hadith-top-search-visible-offset');
+    };
+  }, [shouldStick, visible]);
+
   return (
     <div
       ref={shellRef}
       className={cn(
-        'border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md',
+        'relative overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md',
         shouldStick &&
           'sticky top-[var(--site-header-visible-offset,0px)] z-[80] transform-gpu transition-transform duration-300 ease-out will-change-transform',
         shouldStick && !visible && '-translate-y-full pointer-events-none'
       )}
     >
-      {children}
+      <span
+        className="pointer-events-none absolute inset-y-0 right-0 block w-28 bg-[linear-gradient(90deg,transparent,color-mix(in_oklab,var(--color-accent-soft),transparent_78%))] lg:hidden"
+        aria-hidden="true"
+      />
+      <span
+        className="pointer-events-none absolute inset-y-2 right-0 block w-px bg-[linear-gradient(180deg,transparent,var(--color-accent-soft),transparent)] lg:hidden"
+        aria-hidden="true"
+      />
+      <div className="relative z-10">
+        {children}
+      </div>
     </div>
   );
 }
