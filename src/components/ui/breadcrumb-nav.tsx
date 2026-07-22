@@ -24,10 +24,13 @@ export default function BreadcrumbNav({ items, includeSchema = true }: Breadcrum
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex flex-wrap items-center gap-1.5 text-sm text-[var(--color-muted-text)]">
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-6 min-w-0 max-w-full overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <ol className="flex w-max flex-nowrap items-center gap-1.5 whitespace-nowrap text-sm text-[var(--color-muted-text)]">
           {items.map((item, index) => (
-            <li key={`${item.href}-${index}`} className="flex items-center gap-1.5">
+            <li key={`${item.href}-${index}`} className="flex shrink-0 items-center gap-1.5">
               {index > 0 && (
                 <svg
                   className="h-3.5 w-3.5 text-[var(--color-border)]"
@@ -45,9 +48,9 @@ export default function BreadcrumbNav({ items, includeSchema = true }: Breadcrum
                   {item.label}
                 </span>
               ) : (
-            <Link
-              href={item.href}
-              prefetch={false}
+                <Link
+                  href={item.href}
+                  prefetch={false}
                   className="transition-colors hover:text-[var(--color-accent-soft)]"
                 >
                   {item.label}
