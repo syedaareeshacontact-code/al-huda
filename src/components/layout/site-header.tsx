@@ -268,6 +268,7 @@ export default function SiteHeader() {
   const pathSegments = pathname.split('/').filter(Boolean);
   const isSurahReaderPage =
     pathSegments.length === 2 && pathSegments[0] === 'surah';
+  const isHadithDetailPage = /^\/hadith\/[^/]+\/books\/[^/]+\/[^/]+\/?$/.test(pathname);
   const isHadithScrollAwarePage = pathSegments[0] === 'hadith';
   const isScrollAwareHeaderPage =
     isSurahReaderPage ||
@@ -446,7 +447,11 @@ export default function SiteHeader() {
           isScrollAwareHeaderPage && !headerVisible && '-translate-y-full pointer-events-none'
         )}
       >
-        {!isSurahReaderPage ? <IslamicTopBanner /> : null}
+        {!isSurahReaderPage ? (
+          <div className={isHadithDetailPage ? 'hidden md:block' : undefined}>
+            <IslamicTopBanner />
+          </div>
+        ) : null}
 
         <div className="relative border-b border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-bg),transparent_6%)] backdrop-blur-xl">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent),transparent)] opacity-45" />

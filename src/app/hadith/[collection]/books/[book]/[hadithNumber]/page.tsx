@@ -287,7 +287,7 @@ export default async function HadithDetailPage({
                     <span
                       dir="rtl"
                       lang="ur"
-                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] px-3 font-urdu-nastaliq text-sm leading-none text-[var(--color-accent-soft)]"
+                      className="inline-flex h-9 pb-[10px] shrink-0 items-center justify-center rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] px-3 font-urdu-nastaliq text-sm leading-none text-[var(--color-accent-soft)]"
                     >
                       <span className="translate-y-0.5 min-[380px]:hidden">اردو</span>
                       <span className="hidden translate-y-0.5 min-[380px]:inline">اردو ترجمہ</span>
