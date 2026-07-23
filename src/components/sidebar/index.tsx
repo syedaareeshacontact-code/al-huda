@@ -334,6 +334,7 @@ export default function QuranReaderPage({
     hasInitialSurahContent ? initialSurahMeta : null
   );
   const [searchInput, setSearchInput] = useState('');
+  const [showContinuousTranslations, setShowContinuousTranslations] = useState(true);
   const [visibleAyahCount, setVisibleAyahCount] = useState(INITIAL_VISIBLE_AYAHS);
   const [pendingAyahScroll, setPendingAyahScroll] = useState<{
     ayahNumber: number;
@@ -350,6 +351,7 @@ export default function QuranReaderPage({
   const completeContentPromiseRef = useRef<
     Promise<{ detail: SurahDetail; meta: SurahMeta }> | null
   >(null);
+  const isRevealingAyahBatchRef = useRef(false);
   const activeSurahIdRef = useRef(surahId);
   activeSurahIdRef.current = surahId;
 
@@ -696,6 +698,35 @@ export default function QuranReaderPage({
     () => filteredAyahs.slice(0, visibleAyahCount),
     [filteredAyahs, visibleAyahCount]
   );
+
+  const handleLoadMoreAyahs = useCallback(() => {
+    if (loadingRemainingAyahs || isRevealingAyahBatchRef.current) {
+      return;
+    }
+
+    isRevealingAyahBatchRef.current = true;
+    const revealNextBatch = () => {
+      setVisibleAyahCount((count) => count + AYAH_RENDER_BATCH);
+    };
+
+    if (hasUnloadedAyahs) {
+      void loadCompleteSurahContent()
+        .then((loaded) => {
+          if (loaded) {
+            revealNextBatch();
+          }
+        })
+        .finally(() => {
+          isRevealingAyahBatchRef.current = false;
+        });
+      return;
+    }
+
+    revealNextBatch();
+    window.setTimeout(() => {
+      isRevealingAyahBatchRef.current = false;
+    }, 0);
+  }, [hasUnloadedAyahs, loadCompleteSurahContent, loadingRemainingAyahs]);
 
   useEffect(() => {
     if (!pendingAyahScroll) {
@@ -1347,6 +1378,71 @@ export default function QuranReaderPage({
   ]);
 
   const highlightQuery = debouncedSearch.trim();
+  const isContinuousReading = settings.readingMode === 'continuous';
+  const isArabicRecitationPlaying =
+    isPlaying && settings.audioPreference === 'ar';
+  const isUrduVoicePlaying = isPlaying && settings.audioPreference === 'tr';
+  const readingModeAyahs = visibleAyahs;
+  const readingModeTotalAyahs = highlightQuery
+    ? filteredAyahs.length
+    : (surahDetail?.numberOfAyahs ?? filteredAyahs.length);
+  const hasMoreReadingAyahs =
+    visibleAyahs.length < filteredAyahs.length || hasUnloadedAyahs;
+  const nextReadingBatchSize = Math.min(
+    AYAH_RENDER_BATCH,
+    Math.max(readingModeTotalAyahs - readingModeAyahs.length, 0)
+  );
+  const nextReadingAyahStart = readingModeAyahs.length + 1;
+  const nextReadingAyahEnd = Math.min(
+    readingModeAyahs.length + nextReadingBatchSize,
+    readingModeTotalAyahs
+  );
+  const translationLanguage = settings.audioPreference === 'tr' ? 'Urdu' : 'English';
+
+  useEffect(() => {
+    if (isContinuousReading && isUrduVoicePlaying) {
+      setShowContinuousTranslations(true);
+    }
+  }, [isContinuousReading, isUrduVoicePlaying]);
+
+  useEffect(() => {
+    if (
+      !isContinuousReading ||
+      !isPlaying ||
+      !activeAudioAyahNumber ||
+      highlightQuery
+    ) {
+      return;
+    }
+
+    const revealPlayingBatch = () => {
+      setVisibleAyahCount((count) =>
+        Math.max(count, getVisibleCountForAyah(activeAudioAyahNumber))
+      );
+    };
+
+    // Keep the current recitation visible without moving the reader's scroll
+    // position. Full backing data is only fetched after audio was requested.
+    if (hasUnloadedAyahs && activeAudioAyahNumber > ayahs.length) {
+      void loadCompleteSurahContent().then((loaded) => {
+        if (loaded) {
+          revealPlayingBatch();
+        }
+      });
+      return;
+    }
+
+    revealPlayingBatch();
+  }, [
+    activeAudioAyahNumber,
+    ayahs.length,
+    hasUnloadedAyahs,
+    highlightQuery,
+    isContinuousReading,
+    isPlaying,
+    loadCompleteSurahContent,
+  ]);
+
   const favorite = isFavoriteSurah(surahId);
   const likesCount = getSurahLikesCount(surahId);
   const activeReciterName =
@@ -1360,8 +1456,8 @@ export default function QuranReaderPage({
       : `/surah/${surahId}`;
   }, [surahId, surahs]);
   const filteredAyahNumbers = useMemo(
-    () => visibleAyahs.map(({ ayah }) => ayah.numberInSurah),
-    [visibleAyahs]
+    () => readingModeAyahs.map(({ ayah }) => ayah.numberInSurah),
+    [readingModeAyahs]
   );
 
   useEffect(() => {
@@ -1637,79 +1733,318 @@ export default function QuranReaderPage({
             </CardHeader>
           </Card>
 
-          <Card className="lux-light-card lux-light-card-soft z-20 animate-fade-up-delay-1 overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_55%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%))] shadow-[var(--shadow-card)] backdrop-blur">
-            <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-text)]">
-                  Read mode
-                </label>
-                <div className="flex gap-2">
+          <Card className="lux-light-card lux-light-card-soft z-20 animate-fade-up-delay-1 overflow-hidden rounded-2xl border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_55%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_12%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%))] shadow-[var(--shadow-soft)] backdrop-blur">
+            <CardContent className="flex flex-col gap-2.5 p-2.5 sm:flex-row sm:items-center sm:gap-3 sm:p-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="hidden shrink-0 text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[var(--color-muted-text)] sm:inline">
+                  View
+                </span>
+                <div
+                  role="group"
+                  aria-label="Reading mode"
+                  className="flex min-w-0 items-center gap-0.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_62%)] bg-[color-mix(in_oklab,var(--color-surface),transparent_12%)] p-0.5"
+                >
                   <Button
+                    type="button"
                     size="sm"
-                    variant={settings.readingMode === 'ayah' ? 'default' : 'outline'}
+                    variant={settings.readingMode === 'ayah' ? 'default' : 'ghost'}
                     onClick={() => setReadingMode('ayah')}
+                    aria-pressed={settings.readingMode === 'ayah'}
+                    className="h-9 shrink-0 gap-1.5 rounded-lg px-2.5 text-xs shadow-none sm:h-8 sm:px-3"
                   >
+                    <BookCheck className="size-3.5" aria-hidden="true" />
                     Ayah by ayah
                   </Button>
-                 
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={isContinuousReading ? 'default' : 'ghost'}
+                    onClick={() => setReadingMode('continuous')}
+                    aria-pressed={isContinuousReading}
+                    className="h-9 shrink-0 gap-1.5 rounded-lg px-2.5 text-xs shadow-none sm:h-8 sm:px-3"
+                  >
+                    <Sparkles className="size-3.5" aria-hidden="true" />
+                    Reading mode
+                  </Button>
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="reader-search" className="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-text)]">
+              <div className="relative min-w-0 flex-1">
+                <label htmlFor="reader-search" className="sr-only">
                   Search ayah
                 </label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--color-muted-text)]" />
-                  <Input
-                    id="reader-search"
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Arabic / translation"
-                    className="border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_65%)] bg-[color-mix(in_oklab,var(--color-surface),white_26%)] pl-9"
-                  />
-                </div>
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-muted-text)]" />
+                <Input
+                  id="reader-search"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder="Search Arabic or translation"
+                  className="h-9 rounded-xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_65%)] bg-[color-mix(in_oklab,var(--color-surface),white_22%)] pl-8 text-sm sm:h-8"
+                />
               </div>
+
+              <p className="sr-only" aria-live="polite">
+                {isContinuousReading
+                  ? 'Reading mode selected. Ayahs are shown in a continuous flow.'
+                  : 'Ayah by ayah mode selected.'}
+              </p>
             </CardContent>
           </Card>
 
-          {false ? (
-            <Card className="animate-fade-up border-[color-mix(in_oklab,var(--color-accent),var(--color-accent)_50%)] bg-[linear-gradient(140deg,color-mix(in_oklab,var(--color-surface),white_14%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_93%))]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Sparkles className="size-5 text-[var(--color-accent)]" />
-                  Continuous Reading
-                </CardTitle>
-                <CardDescription>
-                  Flow mode for uninterrupted recitation.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p
-                  dir="rtl"
-                  lang="ar"
-                  className="arabic-font quran-script arabic-mushaf text-[var(--color-heading)]"
-                >
-                  {visibleAyahs.map(({ ayah }, index) => {
-                    const isActive =
-                      isPlaying && activeAudioAyahNumber === ayah.numberInSurah;
-
-                    return (
-                      <span key={ayah.number}>
-                        <span
-                          id={`ayah-${ayah.numberInSurah}`}
-                          className={`ayah-phrase ${isActive ? 'is-active' : ''}`.trim()}
-                        >
-                          {formatQuranArabicForDisplay(ayah.text)}
+          {isContinuousReading ? (
+            <section className="animate-fade-up space-y-4" aria-labelledby="continuous-reading-title">
+              <Card className="continuous-reader-shell overflow-hidden rounded-3xl border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_50%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-surface),white_12%),color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%))] shadow-[var(--shadow-card)]">
+                <CardHeader className="border-b border-[color-mix(in_oklab,var(--color-border),transparent_20%)] p-5 sm:p-7">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="max-w-xl">
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <Badge className="gap-1.5 px-2.5 py-1 tracking-[0.12em]">
+                          <Sparkles className="size-3.5" aria-hidden="true" />
+                          Reading mode
+                        </Badge>
+                        <span className="rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_65%)] bg-[color-mix(in_oklab,var(--color-surface),white_10%)] px-2.5 py-1 text-[0.68rem] font-semibold tabular-nums text-[var(--color-muted-text)]">
+                          {highlightQuery && hasUnloadedAyahs
+                            ? `${readingModeAyahs.length} found so far`
+                            : `${readingModeAyahs.length} of ${readingModeTotalAyahs} ${
+                                highlightQuery ? 'matches' : 'ayahs'
+                              }`}
                         </span>
-                        <AyahEndMarker number={ayah.numberInSurah} />
-                        {index === visibleAyahs.length - 1 ? '' : ' '}
+                      </div>
+                      <CardTitle id="continuous-reading-title" className="font-display text-2xl text-[var(--color-heading)] sm:text-3xl">
+                        Focused Quran reading
+                      </CardTitle>
+                      <CardDescription className="mt-2 max-w-[62ch] leading-6">
+                        {highlightQuery
+                          ? `Showing ayahs matching “${highlightQuery}”.`
+                          : 'Read the full Surah in a calm, continuous flow. Select an ayah number for its details or tafseer.'}
+                      </CardDescription>
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={showContinuousTranslations ? 'default' : 'outline'}
+                      onClick={() => setShowContinuousTranslations((current) => !current)}
+                      aria-expanded={showContinuousTranslations}
+                      className="min-h-10 shrink-0 rounded-xl px-3"
+                    >
+                      <Languages className="size-4" aria-hidden="true" />
+                      {showContinuousTranslations ? 'Hide translation' : 'Show translation'}
+                    </Button>
+                  </div>
+                </CardHeader>
+
+                <CardContent id="continuous-reading-content" className="p-3 sm:p-5">
+                  {readingModeAyahs.length > 0 ? (
+                    <div className="continuous-reader-page relative overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_70%)] bg-[linear-gradient(155deg,color-mix(in_oklab,var(--color-surface),white_12%),color-mix(in_oklab,var(--color-surface-2),transparent_8%))] px-3 py-7 shadow-inner sm:px-7 sm:py-10">
+                      <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-accent)]/60 to-transparent" aria-hidden="true" />
+                      <p
+                        dir="rtl"
+                        lang="ar"
+                        className="arabic-font quran-script arabic-mushaf relative text-[var(--color-heading)]"
+                      >
+                        {readingModeAyahs.map(({ ayah }, index) => {
+                          const isArabicAudioActive =
+                            isArabicRecitationPlaying &&
+                            activeAudioAyahNumber === ayah.numberInSurah;
+
+                          return (
+                            <span
+                              key={ayah.number}
+                              id={`ayah-${ayah.numberInSurah}`}
+                              className={`ayah-phrase ${isArabicAudioActive ? 'is-active' : ''}`.trim()}
+                              data-active={isArabicAudioActive ? 'true' : undefined}
+                            >
+                              <HighlightText
+                                text={formatQuranArabicForDisplay(ayah.text)}
+                                query={highlightQuery}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openAyahDetails(ayah.numberInSurah)}
+                                className="continuous-ayah-marker"
+                                aria-label={`Open details for Ayah ${surahId}:${ayah.numberInSurah}`}
+                                title={`Open Ayah ${ayah.numberInSurah} details`}
+                              >
+                                <AyahEndMarker number={ayah.numberInSurah} />
+                              </button>
+                              {index === readingModeAyahs.length - 1 ? '' : ' '}
+                            </span>
+                          );
+                        })}
+                      </p>
+                    </div>
+                  ) : loadingRemainingAyahs || (hasUnloadedAyahs && !remainingAyahsError) ? (
+                    <div
+                      className="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_60%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_95%)] px-5 py-10 text-center"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <span className="flex size-10 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_76%)] text-[var(--color-accent-soft)]">
+                        <Sparkles className="size-4 animate-pulse" aria-hidden="true" />
                       </span>
-                    );
-                  })}
-                </p>
-              </CardContent>
-            </Card>
+                      <p className="mt-3 font-semibold text-[var(--color-heading)]">
+                        Preparing matching ayahs…
+                      </p>
+                      <p className="mt-1 max-w-md text-sm leading-6 text-[var(--color-muted-text)]">
+                        Reading Mode is loading the complete Surah so your search remains accurate.
+                      </p>
+                    </div>
+                  ) : remainingAyahsError ? (
+                    <div
+                      className="rounded-2xl border border-[color-mix(in_oklab,var(--color-danger),var(--color-border)_50%)] bg-[color-mix(in_oklab,var(--color-danger),var(--color-surface)_95%)] px-5 py-8 text-center"
+                      role="alert"
+                    >
+                      <p className="font-semibold text-[var(--color-heading)]">
+                        Unable to load the remaining ayahs.
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-[var(--color-muted-text)]">
+                        {remainingAyahsError}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => {
+                          void loadCompleteSurahContent();
+                        }}
+                      >
+                        Try again
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] px-5 py-10 text-center">
+                      <p className="font-semibold text-[var(--color-heading)]">No ayah matched this search.</p>
+                      <p className="mt-1 text-sm text-[var(--color-muted-text)]">
+                        Try a different Arabic word, translation phrase, or ayah number.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => setSearchInput('')}
+                      >
+                        Clear search
+                      </Button>
+                    </div>
+                  )}
+
+                  {showContinuousTranslations && readingModeAyahs.some(({ translation }) => translation) ? (
+                    <section
+                      id="continuous-translation-companion"
+                      className="mt-5 overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-border),var(--color-accent)_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_22%)]"
+                      aria-labelledby="continuous-translation-title"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[color-mix(in_oklab,var(--color-border),transparent_12%)] bg-[color-mix(in_oklab,var(--color-surface),white_9%)] px-4 py-3 sm:px-5">
+                        <div className="flex items-center gap-2">
+                          <Languages className="size-4 text-[var(--color-accent)]" aria-hidden="true" />
+                          <h3 id="continuous-translation-title" className="text-sm font-bold text-[var(--color-heading)]">
+                            {translationLanguage} translation companion
+                          </h3>
+                        </div>
+                        <span className="text-xs text-[var(--color-muted-text)]">
+                          Follow each ayah at your own pace
+                        </span>
+                      </div>
+                      <div className="grid gap-px bg-[color-mix(in_oklab,var(--color-border),transparent_22%)] sm:grid-cols-2">
+                        {readingModeAyahs.map(({ ayah, translation }) => {
+                          if (!translation) {
+                            return null;
+                          }
+
+                          const isUrduTranslation = settings.audioPreference === 'tr';
+                          const isUrduAudioActive =
+                            isUrduVoicePlaying &&
+                            activeAudioAyahNumber === ayah.numberInSurah;
+                          return (
+                            <article
+                              key={`translation-${ayah.number}`}
+                              aria-current={isUrduAudioActive ? 'true' : undefined}
+                              className={`continuous-translation-ayah relative px-4 py-4 sm:px-5 ${
+                                isUrduAudioActive ? 'is-active' : ''
+                              }`}
+                            >
+                              <div className={`mb-2 flex items-center gap-2 ${isUrduTranslation ? 'justify-end' : ''}`}>
+                                <span className="inline-flex size-6 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[0.68rem] font-bold tabular-nums text-[var(--color-accent-soft)]">
+                                  {ayah.numberInSurah}
+                                </span>
+                                <span className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-[var(--color-muted-text)]">
+                                  Ayah {ayah.numberInSurah}
+                                </span>
+                                {isUrduAudioActive ? (
+                                  <span className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
+                                    <AudioLines className="size-3.5" aria-hidden="true" />
+                                    Now playing
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p
+                                lang={isUrduTranslation ? 'ur' : 'en'}
+                                dir={isUrduTranslation ? 'rtl' : 'ltr'}
+                                className={`text-sm leading-7 text-[color-mix(in_oklab,var(--color-text),var(--color-muted-text)_16%)] ${
+                                  isUrduTranslation
+                                    ? 'urdu-font text-right text-[1.04rem] leading-loose'
+                                    : 'max-w-[66ch]'
+                                }`}
+                              >
+                                <HighlightText text={translation} query={highlightQuery} />
+                              </p>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {hasMoreReadingAyahs && readingModeAyahs.length > 0 ? (
+                    <div
+                      className="mt-5 flex flex-col gap-3 rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_20%)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      aria-live="polite"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[var(--color-heading)]">
+                          {highlightQuery && hasUnloadedAyahs
+                            ? `${readingModeAyahs.length} matching ayahs found so far`
+                            : `Showing ${readingModeAyahs.length} of ${readingModeTotalAyahs} ${
+                                highlightQuery ? 'matching ayahs' : 'ayahs'
+                              }`}
+                        </p>
+                        <p className="mt-0.5 text-xs leading-5 text-[var(--color-muted-text)]">
+                          {remainingAyahsError
+                            ? remainingAyahsError
+                            : highlightQuery && hasUnloadedAyahs
+                              ? 'Searching the remaining ayahs for more matches.'
+                              : highlightQuery
+                              ? `Load the next ${nextReadingBatchSize} matching ayahs.`
+                              : `Next: Ayahs ${nextReadingAyahStart}–${nextReadingAyahEnd}`}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant={remainingAyahsError ? 'outline' : 'default'}
+                        size="sm"
+                        aria-controls="continuous-reading-content"
+                        disabled={loadingRemainingAyahs}
+                        onClick={handleLoadMoreAyahs}
+                        className="h-9 shrink-0 rounded-xl px-3"
+                      >
+                        <Sparkles
+                          className={`size-3.5 ${loadingRemainingAyahs ? 'animate-pulse' : ''}`}
+                          aria-hidden="true"
+                        />
+                        {loadingRemainingAyahs
+                          ? 'Loading Ayahs...'
+                          : remainingAyahsError
+                            ? 'Try again'
+                            : 'Load more Ayahs'}
+                      </Button>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </section>
           ) : (
             <section id="ayah-list" className="space-y-4 sm:space-y-5" aria-label="Ayah list">
               {visibleAyahs.map(({ ayah, translation }) => {
@@ -1925,19 +2260,7 @@ export default function QuranReaderPage({
                       variant="outline"
                       aria-controls="ayah-list"
                       disabled={loadingRemainingAyahs}
-                      onClick={() => {
-                        const revealNextBatch = () =>
-                          setVisibleAyahCount((count) => count + AYAH_RENDER_BATCH);
-
-                        if (hasUnloadedAyahs) {
-                          void loadCompleteSurahContent().then((loaded) => {
-                            if (loaded) revealNextBatch();
-                          });
-                          return;
-                        }
-
-                        revealNextBatch();
-                      }}
+                      onClick={handleLoadMoreAyahs}
                     >
                       {loadingRemainingAyahs ? 'Loading Ayahs...' : 'Load more Ayahs'}
                     </Button>

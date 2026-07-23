@@ -8,13 +8,19 @@ import {
 
 const ANALYTICS_DELAY_MS = 60_000;
 
+function isLocalhost() {
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+
 export default function DeferredAnalytics({ gaId }: { gaId: string }) {
   const [Analytics, setAnalytics] = useState<ComponentType<{ gaId: string }> | null>(null);
   const [consented, setConsented] = useState(false);
 
   useEffect(() => {
     const syncConsent = () => {
-      setConsented(window.localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'accepted');
+      const stored = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
+
+      setConsented(isLocalhost() ? stored === 'accepted' : true);
     };
     syncConsent();
     window.addEventListener(ANALYTICS_CONSENT_EVENT, syncConsent);

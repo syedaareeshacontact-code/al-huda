@@ -7,11 +7,17 @@ export const ANALYTICS_CONSENT_EVENT = 'alhuda:analytics-consent-changed';
 
 type ConsentValue = 'accepted' | 'declined' | null;
 
+function isLocalhost() {
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+
 export default function AnalyticsConsent() {
   const [consent, setConsent] = useState<ConsentValue>(null);
+  const [localMode, setLocalMode] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    setLocalMode(isLocalhost());
     const stored = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
     setConsent(stored === 'accepted' || stored === 'declined' ? stored : null);
     setReady(true);
@@ -23,19 +29,19 @@ export default function AnalyticsConsent() {
     window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_EVENT, { detail: value }));
   };
 
-  if (!ready || consent) {
+  if (!ready || !localMode || consent) {
     return null;
   }
 
   return (
     <aside
       className="fixed inset-x-3 bottom-3 z-[120] mx-auto max-w-2xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-card)] sm:p-5"
-      aria-label="Analytics consent"
+      aria-label="Local analytics control"
     >
-      <p className="font-semibold text-[var(--color-heading)]">Optional analytics</p>
+      <p className="font-semibold text-[var(--color-heading)]">Local analytics control</p>
       <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted-text)]">
-        Allow anonymous usage analytics to help improve reading and performance. Core Quran,
-        account, and prayer features work without analytics.
+        Allow analytics only if you want localhost testing to appear in Google Analytics.
+        Decline to keep your development work out of tracking.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button

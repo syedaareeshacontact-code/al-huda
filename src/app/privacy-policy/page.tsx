@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
         {
           title: 'Usage and analytics',
           paragraphs: [
-            'Reading and audio activity may be recorded to synchronize progress and improve the product. Optional Google Analytics loads only after you choose “Allow analytics” and only when a valid analytics ID is configured. You can revoke the choice by clearing this site’s browser storage.',
+            'Reading and audio activity may be recorded to synchronize progress and improve the product. Google Analytics may collect anonymous usage and performance signals when a valid analytics ID is configured.',
           ],
         },
         {

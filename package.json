@@ -17,6 +17,7 @@
     "seo:check": "npm run security:check && vitest run src/lib/seo-regressions.test.ts src/lib/aladhan-api.test.ts"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.1.0",
     "@next/third-parties": "16.2.10",
     "@radix-ui/react-slot": "^1.2.4",
     "bidi-js": "^1.0.3",
