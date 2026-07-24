@@ -38,7 +38,7 @@ export default function SurahPageHero({
   surahPath,
   downloadPath,
 }: SurahPageHeroProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const featureItems = [
     {
@@ -71,6 +71,7 @@ export default function SurahPageHero({
   return (
     <section className="relative border-b border-[var(--color-border)] bg-[linear-gradient(145deg,var(--color-surface),color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%))]">
       <div
+        id="surah-page-hero-content"
         className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:grid-rows-[1fr] ${
           isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
         }`}
@@ -79,7 +80,7 @@ export default function SurahPageHero({
           <div
             className={`px-3 py-4 transition-[opacity,transform] duration-300 sm:px-5 lg:translate-y-0 lg:py-5 lg:opacity-100 ${
               isCollapsed
-                ? 'pointer-events-none -translate-y-3 opacity-0'
+                ? 'pointer-events-none -translate-y-3 opacity-0 lg:pointer-events-auto'
                 : 'translate-y-0 opacity-100'
             }`}
           >
