@@ -8,6 +8,15 @@ import {
   readGaMetric,
   secondsToMinutes,
 } from '@/lib/analytics/ga4';
+import {
+  getRealtimeActivity,
+  realtimeActivityWithFallback,
+  type RealtimeActivityRow,
+} from '@/lib/analytics/realtime-report';
+import {
+  listRecentRealtimeSnapshots,
+  saveRealtimeSnapshot,
+} from '@/lib/analytics/realtime-store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -64,6 +73,30 @@ function formatDateHour(value: string) {
 
   return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)} ${value.slice(8)}:00`;
 }
+
+function monthlyMetrics(row: unknown) {
+  return {
+    activeUsers: row ? readGaMetric(row, 0) : 0,
+    totalUsers: row ? readGaMetric(row, 1) : 0,
+    sessions: row ? readGaMetric(row, 2) : 0,
+    pageViews: row ? readGaMetric(row, 3) : 0,
+    engagementMinutes: row ? secondsToMinutes(readGaMetric(row, 4)) : 0,
+    averageSessionSeconds: row ? readGaMetric(row, 5) : 0,
+    engagedSessions: row ? readGaMetric(row, 6) : 0,
+    engagementRate: row ? readGaMetric(row, 7) : 0,
+  };
+}
+
+const MONTHLY_METRICS = [
+  { name: 'activeUsers' },
+  { name: 'totalUsers' },
+  { name: 'sessions' },
+  { name: 'screenPageViews' },
+  { name: 'userEngagementDuration' },
+  { name: 'averageSessionDuration' },
+  { name: 'engagedSessions' },
+  { name: 'engagementRate' },
+];
 
 function isIsoDate(value: string | null) {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -323,6 +356,96 @@ async function getTrafficLandingDetails(
   };
 }
 
+async function getTrafficQuality(
+  analyticsData: ReturnType<typeof getAnalyticsDataClient>,
+  property: string,
+  dateRange: { startDate: string; endDate: string }
+) {
+  const rows: unknown[] = [];
+  let offset = 0;
+  let rowCount = 0;
+
+  do {
+    const [response] = await analyticsData.runReport({
+      property,
+      dateRanges: [dateRange],
+      dimensions: [
+        { name: 'sessionDefaultChannelGroup' },
+        { name: 'sessionSourceMedium' },
+      ],
+      metrics: [
+        { name: 'sessions' },
+        { name: 'engagedSessions' },
+        { name: 'engagementRate' },
+        { name: 'averageSessionDuration' },
+        { name: 'screenPageViews' },
+        { name: 'activeUsers' },
+      ],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: Math.min(DETAIL_REPORT_PAGE_SIZE, MAX_DETAIL_REPORT_ROWS - offset),
+      offset,
+    });
+
+    const pageRows = response.rows || [];
+    rows.push(...pageRows);
+    rowCount = Number(response.rowCount || pageRows.length);
+    offset += pageRows.length;
+
+    if (pageRows.length === 0) {
+      break;
+    }
+  } while (offset < Math.min(rowCount, MAX_DETAIL_REPORT_ROWS));
+
+  return {
+    rows,
+    rowCount,
+    truncated: rowCount > MAX_DETAIL_REPORT_ROWS,
+  };
+}
+
+async function saveAndListRealtimeSnapshots(input: {
+  propertyId: string;
+  capturedAt: string;
+  activeUsers: number;
+  activity: RealtimeActivityRow[];
+}) {
+  const meta = {
+    days: 7,
+    saved: false,
+    error: null as string | null,
+  };
+
+  try {
+    await saveRealtimeSnapshot(input);
+    meta.saved = true;
+  } catch (snapshotSaveError) {
+    console.warn('[admin analytics] Unable to save realtime snapshot', snapshotSaveError);
+    meta.error = 'MongoDB realtime snapshot storage is unavailable.';
+  }
+
+  try {
+    const snapshots = await listRecentRealtimeSnapshots({
+      propertyId: input.propertyId,
+      days: meta.days,
+    });
+
+    return {
+      snapshots,
+      meta,
+    };
+  } catch (snapshotListError) {
+    console.warn('[admin analytics] Unable to list realtime snapshots', snapshotListError);
+
+    return {
+      snapshots: [],
+      meta: {
+        ...meta,
+        error: meta.error || 'MongoDB realtime snapshot history is unavailable.',
+      },
+    };
+  }
+}
+
 async function getPageEventDetails(
   analyticsData: ReturnType<typeof getAnalyticsDataClient>,
   property: string,
@@ -391,7 +514,12 @@ export async function GET(request: NextRequest) {
 
   const requestedStartDate = request.nextUrl.searchParams.get('startDate');
   const requestedEndDate = request.nextUrl.searchParams.get('endDate');
+  const requestedView = request.nextUrl.searchParams.get('view') || 'full';
   const hasCustomDateRange = Boolean(requestedStartDate || requestedEndDate);
+
+  if (!['full', 'live', 'traffic'].includes(requestedView)) {
+    return json(request, { message: 'Use a supported analytics view.' }, 400);
+  }
 
   if (
     hasCustomDateRange &&
@@ -414,6 +542,92 @@ export async function GET(request: NextRequest) {
   const property = `properties/${propertyId}`;
 
   try {
+    if (requestedView === 'live') {
+      const [[realtime], realtimeActivityRows] = await Promise.all([
+        analyticsData.runRealtimeReport({
+          property,
+          metrics: [{ name: 'activeUsers' }],
+        }),
+        getRealtimeActivity(analyticsData, property).catch((realtimeActivityError) => {
+          console.warn(
+            '[admin analytics] Unable to load detailed GA4 realtime activity',
+            realtimeActivityError
+          );
+
+          return [];
+        }),
+      ]);
+      const realtimeRow = realtime.rows?.[0];
+      const activeUsers = realtimeRow ? readGaMetric(realtimeRow, 0) : 0;
+      const activity = realtimeActivityWithFallback(realtimeActivityRows, activeUsers);
+      const generatedAt = new Date().toISOString();
+      const storedRealtime = await saveAndListRealtimeSnapshots({
+        propertyId,
+        capturedAt: generatedAt,
+        activeUsers,
+        activity,
+      });
+
+      return json(request, {
+        propertyId,
+        generatedAt,
+        realtime: {
+          activeUsers,
+          activity,
+        },
+        storedRealtime,
+      });
+    }
+
+    if (requestedView === 'traffic') {
+      const [[monthly], trafficQuality, trafficLandingDetails] = await Promise.all([
+        analyticsData.runReport({
+          property,
+          dateRanges: [selectedDateRange],
+          metrics: MONTHLY_METRICS,
+        }),
+        getTrafficQuality(analyticsData, property, selectedDateRange),
+        getTrafficLandingDetails(analyticsData, property, selectedDateRange),
+      ]);
+      const monthlyRow = monthly.rows?.[0];
+
+      return json(request, {
+        propertyId,
+        generatedAt: new Date().toISOString(),
+        dateRange: selectedDateRange,
+        monthly: monthlyMetrics(monthlyRow),
+        trafficQuality: trafficQuality.rows.map((row) => ({
+          channel: readGaDimension(row, 0) || '(not set)',
+          sourceMedium: readGaDimension(row, 1) || '(not set)',
+          sessions: readGaMetric(row, 0),
+          engagedSessions: readGaMetric(row, 1),
+          engagementRate: readGaMetric(row, 2),
+          averageSessionSeconds: readGaMetric(row, 3),
+          pageViews: readGaMetric(row, 4),
+          activeUsers: readGaMetric(row, 5),
+        })),
+        trafficQualityMeta: {
+          rowCount: trafficQuality.rowCount,
+          truncated: trafficQuality.truncated,
+        },
+        trafficLandingDetails: trafficLandingDetails.rows.map((row) => ({
+          channel: readGaDimension(row, 0) || '(not set)',
+          sourceMedium: readGaDimension(row, 1) || '(not set)',
+          landingPage: readGaDimension(row, 2) || '(not set)',
+          sessions: readGaMetric(row, 0),
+          engagedSessions: readGaMetric(row, 1),
+          engagementRate: readGaMetric(row, 2),
+          pageViews: readGaMetric(row, 3),
+          activeUsers: readGaMetric(row, 4),
+          engagementMinutes: secondsToMinutes(readGaMetric(row, 5)),
+        })),
+        trafficLandingDetailsMeta: {
+          rowCount: trafficLandingDetails.rowCount,
+          truncated: trafficLandingDetails.truncated,
+        },
+      });
+    }
+
     const [
       [monthly],
       [last24Hours],
@@ -426,14 +640,7 @@ export async function GET(request: NextRequest) {
       analyticsData.runReport({
         property,
         dateRanges: [selectedDateRange],
-        metrics: [
-          { name: 'activeUsers' },
-          { name: 'totalUsers' },
-          { name: 'sessions' },
-          { name: 'screenPageViews' },
-          { name: 'userEngagementDuration' },
-          { name: 'averageSessionDuration' },
-        ],
+        metrics: MONTHLY_METRICS,
       }),
       analyticsData.runReport({
         property,
@@ -521,27 +728,41 @@ export async function GET(request: NextRequest) {
       console.warn('[admin analytics] Unable to load GA4 audience landing pages', landingPagesError);
     }
 
-    const [trafficLandingDetails, pageEventDetails] = await Promise.all([
+    const [trafficLandingDetails, pageEventDetails, trafficQuality, realtimeActivityRows] = await Promise.all([
       getTrafficLandingDetails(analyticsData, property, selectedDateRange),
       getPageEventDetails(analyticsData, property, selectedDateRange),
+      getTrafficQuality(analyticsData, property, selectedDateRange),
+      getRealtimeActivity(analyticsData, property).catch((realtimeActivityError) => {
+        console.warn(
+          '[admin analytics] Unable to load detailed GA4 realtime activity',
+          realtimeActivityError
+        );
+
+        return [];
+      }),
     ]);
 
     const monthlyRow = monthly.rows?.[0];
     const realtimeRow = realtime.rows?.[0];
+    const activeUsersNow = realtimeRow ? readGaMetric(realtimeRow, 0) : 0;
+    const realtimeActivity = realtimeActivityWithFallback(
+      realtimeActivityRows,
+      activeUsersNow
+    );
+    const generatedAt = new Date().toISOString();
+    const storedRealtime = await saveAndListRealtimeSnapshots({
+      propertyId,
+      capturedAt: generatedAt,
+      activeUsers: activeUsersNow,
+      activity: realtimeActivity,
+    });
     const hourlyRows = last24Hours.rows || [];
 
     return json(request, {
       propertyId,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
       dateRange: selectedDateRange,
-      monthly: {
-        activeUsers: monthlyRow ? readGaMetric(monthlyRow, 0) : 0,
-        totalUsers: monthlyRow ? readGaMetric(monthlyRow, 1) : 0,
-        sessions: monthlyRow ? readGaMetric(monthlyRow, 2) : 0,
-        pageViews: monthlyRow ? readGaMetric(monthlyRow, 3) : 0,
-        engagementMinutes: monthlyRow ? secondsToMinutes(readGaMetric(monthlyRow, 4)) : 0,
-        averageSessionSeconds: monthlyRow ? readGaMetric(monthlyRow, 5) : 0,
-      },
+      monthly: monthlyMetrics(monthlyRow),
       last24Hours: {
         activeUsers: hourlyRows.reduce((total, row) => total + readGaMetric(row, 0), 0),
         sessions: hourlyRows.reduce((total, row) => total + readGaMetric(row, 1), 0),
@@ -557,8 +778,10 @@ export async function GET(request: NextRequest) {
         })),
       },
       realtime: {
-        activeUsers: realtimeRow ? readGaMetric(realtimeRow, 0) : 0,
+        activeUsers: activeUsersNow,
+        activity: realtimeActivity,
       },
+      storedRealtime,
       topPages: (topPages.rows || []).map((row) => ({
         path: readGaDimension(row, 0),
         title: readGaDimension(row, 1) || readGaDimension(row, 0),
@@ -615,6 +838,20 @@ export async function GET(request: NextRequest) {
       trafficLandingDetailsMeta: {
         rowCount: trafficLandingDetails.rowCount,
         truncated: trafficLandingDetails.truncated,
+      },
+      trafficQuality: trafficQuality.rows.map((row) => ({
+        channel: readGaDimension(row, 0) || '(not set)',
+        sourceMedium: readGaDimension(row, 1) || '(not set)',
+        sessions: readGaMetric(row, 0),
+        engagedSessions: readGaMetric(row, 1),
+        engagementRate: readGaMetric(row, 2),
+        averageSessionSeconds: readGaMetric(row, 3),
+        pageViews: readGaMetric(row, 4),
+        activeUsers: readGaMetric(row, 5),
+      })),
+      trafficQualityMeta: {
+        rowCount: trafficQuality.rowCount,
+        truncated: trafficQuality.truncated,
       },
       pageEventDetails: pageEventDetails.rows.map((row) => ({
         pagePath: readGaDimension(row, 0) || '(not set)',

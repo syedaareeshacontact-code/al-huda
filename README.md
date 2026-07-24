@@ -39,15 +39,14 @@ Requirements:
 git clone <repository-url>
 cd al-huda
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). If `MONGODB_URI` is not
 set, development uses `mongodb://127.0.0.1:27017/al-huda`.
 
-Never commit `.env` or `.env.local`. The repository tracks only
-`.env.example` with safe placeholders.
+Create a local `.env` from the variables table below, or pull environment
+variables from Vercel. Never commit `.env` or `.env.local`.
 
 ## Environment variables
 
@@ -61,10 +60,12 @@ Never commit `.env` or `.env.local`. The repository tracks only
 | `HADITH_API_KEY` | Server-side Hadith provider credential |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Optional Google Search Console verification value |
 | `NEXT_PUBLIC_GA_ID` | Optional Google Analytics measurement ID |
+| `GA4_PROPERTY_ID` | Google Analytics 4 property ID used by admin analytics APIs |
+| `ANALYTICS_DASHBOARD_ORIGINS` | Comma-separated dashboard origins allowed to call admin analytics APIs |
 | `NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY` | Public VAPID key for browser push subscriptions |
 | `WEB_PUSH_PRIVATE_KEY` | Private VAPID key; server only |
 | `WEB_PUSH_SUBJECT` | VAPID contact, normally a `mailto:` address |
-| `CRON_SECRET` | Bearer secret for the Quran reminder cron endpoint |
+| `CRON_SECRET` | Bearer secret for scheduled cron endpoints |
 
 Vercel supplies `VERCEL_ENV` and `VERCEL_GIT_COMMIT_SHA` automatically.
 `NEXT_PUBLIC_APP_VERSION` and `DEPLOYMENT_ENV` are optional deployment

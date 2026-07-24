@@ -72,12 +72,10 @@ describe('SEO regressions', () => {
     expect(nestedMainFiles).toEqual([]);
   });
 
-  it('keeps example credentials as placeholders and canonical origin public', () => {
-    const envExample = read('.env.example');
-    expect(envExample).toContain('USERNAME:PASSWORD');
-    expect(envExample).toContain('your-hadith-api-key');
-    expect(envExample).not.toContain('mongodb.net');
-    expect(envExample).toContain('NEXT_PUBLIC_SITE_URL=https://www.readalquran.online');
+  it('keeps local environment files untracked', () => {
+    const gitignore = read('.gitignore');
+    expect(gitignore).toContain('.env*');
+    expect(gitignore).not.toMatch(/^!\.env/m);
   });
 
   it('keeps trust pages and visible source policies in the product', () => {
