@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import type { NextResponse } from 'next/server';
 
 const SESSION_COOKIE_NAME = 'alhuda_session';
+const DASHBOARD_SESSION_COOKIE_NAME = 'alhuda_dashboard_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 export interface SessionUser {
@@ -70,21 +71,43 @@ export function verifySessionToken(token: string): SessionPayload | null {
 
 export function attachSessionCookie(response: NextResponse, user: SessionUser) {
   const token = createSessionToken(user);
+  const secure = process.env.NODE_ENV === 'production';
 
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure,
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
   });
+
+  if (secure) {
+    response.cookies.set(DASHBOARD_SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      path: '/',
+      maxAge: SESSION_TTL_SECONDS,
+    });
+  }
 }
 
 export function clearSessionCookie(response: NextResponse) {
+  const secure = process.env.NODE_ENV === 'production';
+
   response.cookies.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure,
+    path: '/',
+    expires: new Date(0),
+    maxAge: 0,
+  });
+
+  response.cookies.set(DASHBOARD_SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true,
     path: '/',
     expires: new Date(0),
     maxAge: 0,
@@ -93,4 +116,8 @@ export function clearSessionCookie(response: NextResponse) {
 
 export function getSessionCookieName() {
   return SESSION_COOKIE_NAME;
+}
+
+export function getDashboardSessionCookieName() {
+  return DASHBOARD_SESSION_COOKIE_NAME;
 }

@@ -43,6 +43,12 @@ function getAllowedOrigins() {
   ];
 }
 
+function isAllowedDashboardOrigin(request: NextRequest) {
+  const origin = request.headers.get('origin') || '';
+
+  return Boolean(origin && getAllowedOrigins().includes(origin));
+}
+
 function corsHeaders(request: NextRequest) {
   const origin = request.headers.get('origin') || '';
   const headers: Record<string, string> = {
@@ -500,7 +506,9 @@ export function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const adminUser = await getCurrentAdminUser();
+  const adminUser = await getCurrentAdminUser({
+    includeDashboardSession: isAllowedDashboardOrigin(request),
+  });
 
   if (!adminUser) {
     return json(request, { message: 'Forbidden' }, 403);
