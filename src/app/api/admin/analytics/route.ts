@@ -19,6 +19,11 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://127.0.0.1:3001',
 ];
 
+const AUDIENCE_DETAILS_PAGE_SIZE = 10_000;
+const MAX_AUDIENCE_DETAILS = 250_000;
+const DETAIL_REPORT_PAGE_SIZE = 10_000;
+const MAX_DETAIL_REPORT_ROWS = 250_000;
+
 function getAllowedOrigins() {
   return [
     ...DEFAULT_ALLOWED_ORIGINS,
@@ -60,6 +65,310 @@ function formatDateHour(value: string) {
   return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)} ${value.slice(8)}:00`;
 }
 
+function isIsoDate(value: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  return new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
+}
+
+function audienceTechnologyKey(row: unknown, offset = 0) {
+  return [
+    readGaDimension(row, offset),
+    readGaDimension(row, offset + 1),
+    readGaDimension(row, offset + 2),
+    readGaDimension(row, offset + 3),
+    readGaDimension(row, offset + 4),
+    readGaDimension(row, offset + 5),
+    readGaDimension(row, offset + 6),
+    readGaDimension(row, offset + 7),
+  ].join('||');
+}
+
+async function getAudienceDetails(
+  analyticsData: ReturnType<typeof getAnalyticsDataClient>,
+  property: string,
+  dateRange: { startDate: string; endDate: string }
+) {
+  const rows: unknown[] = [];
+  let offset = 0;
+  let rowCount = 0;
+
+  do {
+    const [response] = await analyticsData.runReport({
+      property,
+      dateRanges: [dateRange],
+      dimensions: [
+        { name: 'country' },
+        { name: 'city' },
+        { name: 'deviceCategory' },
+        { name: 'operatingSystemWithVersion' },
+        { name: 'browser' },
+        { name: 'browserVersion' },
+        { name: 'screenResolution' },
+        { name: 'language' },
+        { name: 'mobileDeviceMarketingName' },
+      ],
+      metrics: [
+        { name: 'activeUsers' },
+        { name: 'screenPageViews' },
+        { name: 'userEngagementDuration' },
+      ],
+      orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+      limit: Math.min(AUDIENCE_DETAILS_PAGE_SIZE, MAX_AUDIENCE_DETAILS - offset),
+      offset,
+    });
+
+    const pageRows = response.rows || [];
+    rows.push(...pageRows);
+    rowCount = Number(response.rowCount || pageRows.length);
+    offset += pageRows.length;
+
+    if (pageRows.length === 0) {
+      break;
+    }
+  } while (offset < Math.min(rowCount, MAX_AUDIENCE_DETAILS));
+
+  return {
+    rows,
+    rowCount,
+    truncated: rowCount > MAX_AUDIENCE_DETAILS,
+  };
+}
+
+async function getAudienceLastActivity(
+  analyticsData: ReturnType<typeof getAnalyticsDataClient>,
+  property: string,
+  dateRange: { startDate: string; endDate: string },
+  targetKeys: Set<string>
+) {
+  const latestActivity = new Map<string, string>();
+  let offset = 0;
+  let rowCount = 0;
+
+  if (targetKeys.size === 0) {
+    return latestActivity;
+  }
+
+  do {
+    const [response] = await analyticsData.runReport({
+      property,
+      dateRanges: [dateRange],
+      dimensions: [
+        { name: 'country' },
+        { name: 'city' },
+        { name: 'deviceCategory' },
+        { name: 'operatingSystemWithVersion' },
+        { name: 'browser' },
+        { name: 'browserVersion' },
+        { name: 'screenResolution' },
+        { name: 'language' },
+        { name: 'dateHourMinute' },
+      ],
+      metrics: [{ name: 'eventCount' }],
+      orderBys: [{ dimension: { dimensionName: 'dateHourMinute' }, desc: true }],
+      limit: Math.min(DETAIL_REPORT_PAGE_SIZE, MAX_DETAIL_REPORT_ROWS - offset),
+      offset,
+    });
+
+    const pageRows = response.rows || [];
+    rowCount = Number(response.rowCount || pageRows.length);
+
+    for (const row of pageRows) {
+      const key = audienceTechnologyKey(row);
+
+      if (targetKeys.has(key) && !latestActivity.has(key)) {
+        latestActivity.set(key, readGaDimension(row, 8));
+      }
+    }
+
+    offset += pageRows.length;
+
+    if (latestActivity.size >= targetKeys.size || pageRows.length === 0) {
+      break;
+    }
+  } while (offset < Math.min(rowCount, MAX_DETAIL_REPORT_ROWS));
+
+  return latestActivity;
+}
+
+async function getAudienceLandingPages(
+  analyticsData: ReturnType<typeof getAnalyticsDataClient>,
+  property: string,
+  dateRange: { startDate: string; endDate: string },
+  targetKeys: Set<string>
+) {
+  const landingPages = new Map<
+    string,
+    {
+      path: string;
+      sessions: number;
+      activeUsers: number;
+      pageViews: number;
+    }[]
+  >();
+  let offset = 0;
+  let rowCount = 0;
+
+  if (targetKeys.size === 0) {
+    return landingPages;
+  }
+
+  do {
+    const [response] = await analyticsData.runReport({
+      property,
+      dateRanges: [dateRange],
+      dimensions: [
+        { name: 'country' },
+        { name: 'city' },
+        { name: 'deviceCategory' },
+        { name: 'operatingSystemWithVersion' },
+        { name: 'browser' },
+        { name: 'browserVersion' },
+        { name: 'screenResolution' },
+        { name: 'language' },
+        { name: 'landingPagePlusQueryString' },
+      ],
+      metrics: [
+        { name: 'sessions' },
+        { name: 'activeUsers' },
+        { name: 'screenPageViews' },
+      ],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: Math.min(DETAIL_REPORT_PAGE_SIZE, MAX_DETAIL_REPORT_ROWS - offset),
+      offset,
+    });
+
+    const pageRows = response.rows || [];
+    rowCount = Number(response.rowCount || pageRows.length);
+
+    for (const row of pageRows) {
+      const key = audienceTechnologyKey(row);
+
+      if (!targetKeys.has(key)) {
+        continue;
+      }
+
+      const currentPages = landingPages.get(key) || [];
+
+      if (currentPages.length >= 4) {
+        continue;
+      }
+
+      currentPages.push({
+        path: readGaDimension(row, 8) || '(not set)',
+        sessions: readGaMetric(row, 0),
+        activeUsers: readGaMetric(row, 1),
+        pageViews: readGaMetric(row, 2),
+      });
+      landingPages.set(key, currentPages);
+    }
+
+    offset += pageRows.length;
+
+    if (pageRows.length === 0) {
+      break;
+    }
+  } while (offset < Math.min(rowCount, MAX_DETAIL_REPORT_ROWS));
+
+  return landingPages;
+}
+
+async function getTrafficLandingDetails(
+  analyticsData: ReturnType<typeof getAnalyticsDataClient>,
+  property: string,
+  dateRange: { startDate: string; endDate: string }
+) {
+  const rows: unknown[] = [];
+  let offset = 0;
+  let rowCount = 0;
+
+  do {
+    const [response] = await analyticsData.runReport({
+      property,
+      dateRanges: [dateRange],
+      dimensions: [
+        { name: 'sessionDefaultChannelGroup' },
+        { name: 'sessionSourceMedium' },
+        { name: 'landingPagePlusQueryString' },
+      ],
+      metrics: [
+        { name: 'sessions' },
+        { name: 'engagedSessions' },
+        { name: 'engagementRate' },
+        { name: 'screenPageViews' },
+        { name: 'activeUsers' },
+        { name: 'userEngagementDuration' },
+      ],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: Math.min(DETAIL_REPORT_PAGE_SIZE, MAX_DETAIL_REPORT_ROWS - offset),
+      offset,
+    });
+
+    const pageRows = response.rows || [];
+    rows.push(...pageRows);
+    rowCount = Number(response.rowCount || pageRows.length);
+    offset += pageRows.length;
+
+    if (pageRows.length === 0) {
+      break;
+    }
+  } while (offset < Math.min(rowCount, MAX_DETAIL_REPORT_ROWS));
+
+  return {
+    rows,
+    rowCount,
+    truncated: rowCount > MAX_DETAIL_REPORT_ROWS,
+  };
+}
+
+async function getPageEventDetails(
+  analyticsData: ReturnType<typeof getAnalyticsDataClient>,
+  property: string,
+  dateRange: { startDate: string; endDate: string }
+) {
+  const rows: unknown[] = [];
+  let offset = 0;
+  let rowCount = 0;
+
+  do {
+    const [response] = await analyticsData.runReport({
+      property,
+      dateRanges: [dateRange],
+      dimensions: [
+        { name: 'pagePathPlusQueryString' },
+        { name: 'pageTitle' },
+        { name: 'eventName' },
+      ],
+      metrics: [
+        { name: 'eventCount' },
+        { name: 'activeUsers' },
+        { name: 'screenPageViews' },
+        { name: 'userEngagementDuration' },
+      ],
+      orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+      limit: Math.min(DETAIL_REPORT_PAGE_SIZE, MAX_DETAIL_REPORT_ROWS - offset),
+      offset,
+    });
+
+    const pageRows = response.rows || [];
+    rows.push(...pageRows);
+    rowCount = Number(response.rowCount || pageRows.length);
+    offset += pageRows.length;
+
+    if (pageRows.length === 0) {
+      break;
+    }
+  } while (offset < Math.min(rowCount, MAX_DETAIL_REPORT_ROWS));
+
+  return {
+    rows,
+    rowCount,
+    truncated: rowCount > MAX_DETAIL_REPORT_ROWS,
+  };
+}
+
 export function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
@@ -80,6 +389,27 @@ export async function GET(request: NextRequest) {
     return json(request, { message: 'GA4_PROPERTY_ID is not configured.' }, 500);
   }
 
+  const requestedStartDate = request.nextUrl.searchParams.get('startDate');
+  const requestedEndDate = request.nextUrl.searchParams.get('endDate');
+  const hasCustomDateRange = Boolean(requestedStartDate || requestedEndDate);
+
+  if (
+    hasCustomDateRange &&
+    (!isIsoDate(requestedStartDate) ||
+      !isIsoDate(requestedEndDate) ||
+      requestedStartDate! > requestedEndDate!)
+  ) {
+    return json(
+      request,
+      { message: 'Use a valid startDate and endDate in YYYY-MM-DD format.' },
+      400
+    );
+  }
+
+  const selectedDateRange = hasCustomDateRange
+    ? { startDate: requestedStartDate!, endDate: requestedEndDate! }
+    : { startDate: '30daysAgo', endDate: 'today' };
+
   const analyticsData = getAnalyticsDataClient();
   const property = `properties/${propertyId}`;
 
@@ -95,7 +425,7 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       analyticsData.runReport({
         property,
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [selectedDateRange],
         metrics: [
           { name: 'activeUsers' },
           { name: 'totalUsers' },
@@ -120,7 +450,7 @@ export async function GET(request: NextRequest) {
       }),
       analyticsData.runReport({
         property,
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [selectedDateRange],
         dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
         metrics: [
           { name: 'screenPageViews' },
@@ -132,7 +462,7 @@ export async function GET(request: NextRequest) {
       }),
       analyticsData.runReport({
         property,
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [selectedDateRange],
         dimensions: [{ name: 'sessionDefaultChannelGroup' }],
         metrics: [{ name: 'sessions' }, { name: 'activeUsers' }],
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
@@ -140,7 +470,7 @@ export async function GET(request: NextRequest) {
       }),
       analyticsData.runReport({
         property,
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [selectedDateRange],
         dimensions: [{ name: 'country' }],
         metrics: [{ name: 'activeUsers' }, { name: 'screenPageViews' }],
         orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
@@ -148,7 +478,7 @@ export async function GET(request: NextRequest) {
       }),
       analyticsData.runReport({
         property,
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [selectedDateRange],
         dimensions: [{ name: 'deviceCategory' }],
         metrics: [{ name: 'activeUsers' }, { name: 'screenPageViews' }],
         orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
@@ -159,6 +489,43 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    const audienceDetails = await getAudienceDetails(
+      analyticsData,
+      property,
+      selectedDateRange
+    );
+    const audienceLastActivity = await getAudienceLastActivity(
+      analyticsData,
+      property,
+      selectedDateRange,
+      new Set(audienceDetails.rows.map((row) => audienceTechnologyKey(row)))
+    );
+    let audienceLandingPages = new Map<
+      string,
+      {
+        path: string;
+        sessions: number;
+        activeUsers: number;
+        pageViews: number;
+      }[]
+    >();
+
+    try {
+      audienceLandingPages = await getAudienceLandingPages(
+        analyticsData,
+        property,
+        selectedDateRange,
+        new Set(audienceDetails.rows.map((row) => audienceTechnologyKey(row)))
+      );
+    } catch (landingPagesError) {
+      console.warn('[admin analytics] Unable to load GA4 audience landing pages', landingPagesError);
+    }
+
+    const [trafficLandingDetails, pageEventDetails] = await Promise.all([
+      getTrafficLandingDetails(analyticsData, property, selectedDateRange),
+      getPageEventDetails(analyticsData, property, selectedDateRange),
+    ]);
+
     const monthlyRow = monthly.rows?.[0];
     const realtimeRow = realtime.rows?.[0];
     const hourlyRows = last24Hours.rows || [];
@@ -166,6 +533,7 @@ export async function GET(request: NextRequest) {
     return json(request, {
       propertyId,
       generatedAt: new Date().toISOString(),
+      dateRange: selectedDateRange,
       monthly: {
         activeUsers: monthlyRow ? readGaMetric(monthlyRow, 0) : 0,
         totalUsers: monthlyRow ? readGaMetric(monthlyRow, 1) : 0,
@@ -213,6 +581,54 @@ export async function GET(request: NextRequest) {
         activeUsers: readGaMetric(row, 0),
         pageViews: readGaMetric(row, 1),
       })),
+      audienceDetails: audienceDetails.rows.map((row) => ({
+        country: readGaDimension(row, 0) || '(not set)',
+        city: readGaDimension(row, 1) || '(not set)',
+        device: readGaDimension(row, 2) || '(not set)',
+        operatingSystem: readGaDimension(row, 3) || '(not set)',
+        browser: readGaDimension(row, 4) || '(not set)',
+        browserVersion: readGaDimension(row, 5) || '(not set)',
+        screenResolution: readGaDimension(row, 6) || '(not set)',
+        language: readGaDimension(row, 7) || '(not set)',
+        deviceModel: readGaDimension(row, 8) || '(not set)',
+        activeUsers: readGaMetric(row, 0),
+        pageViews: readGaMetric(row, 1),
+        engagementMinutes: secondsToMinutes(readGaMetric(row, 2)),
+        lastActivityAt: audienceLastActivity.get(audienceTechnologyKey(row)) || null,
+        landingPages: audienceLandingPages.get(audienceTechnologyKey(row)) || [],
+      })),
+      audienceDetailsMeta: {
+        rowCount: audienceDetails.rowCount,
+        truncated: audienceDetails.truncated,
+      },
+      trafficLandingDetails: trafficLandingDetails.rows.map((row) => ({
+        channel: readGaDimension(row, 0) || '(not set)',
+        sourceMedium: readGaDimension(row, 1) || '(not set)',
+        landingPage: readGaDimension(row, 2) || '(not set)',
+        sessions: readGaMetric(row, 0),
+        engagedSessions: readGaMetric(row, 1),
+        engagementRate: readGaMetric(row, 2),
+        pageViews: readGaMetric(row, 3),
+        activeUsers: readGaMetric(row, 4),
+        engagementMinutes: secondsToMinutes(readGaMetric(row, 5)),
+      })),
+      trafficLandingDetailsMeta: {
+        rowCount: trafficLandingDetails.rowCount,
+        truncated: trafficLandingDetails.truncated,
+      },
+      pageEventDetails: pageEventDetails.rows.map((row) => ({
+        pagePath: readGaDimension(row, 0) || '(not set)',
+        pageTitle: readGaDimension(row, 1) || readGaDimension(row, 0) || '(not set)',
+        eventName: readGaDimension(row, 2) || '(not set)',
+        eventCount: readGaMetric(row, 0),
+        activeUsers: readGaMetric(row, 1),
+        pageViews: readGaMetric(row, 2),
+        engagementMinutes: secondsToMinutes(readGaMetric(row, 3)),
+      })),
+      pageEventDetailsMeta: {
+        rowCount: pageEventDetails.rowCount,
+        truncated: pageEventDetails.truncated,
+      },
     });
   } catch (error) {
     console.error('[admin analytics] Unable to load GA4 report', error);
