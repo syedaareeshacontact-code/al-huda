@@ -8,7 +8,7 @@ type ServiceAccountCredentials = {
 let analyticsDataClient: BetaAnalyticsDataClient | null = null;
 
 function normalizePrivateKey(value: string) {
-  return value.trim().replace(/^"(.*)"$/s, '$1').replace(/\\n/g, '\n');
+  return value.trim().replace(/^"([\s\S]*)"$/, '$1').replace(/\\n/g, '\n');
 }
 
 function parseServiceAccountJson(rawValue: string) {
