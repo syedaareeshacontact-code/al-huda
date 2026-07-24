@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const STORAGE_KEY = 'hadith-quran-nudge-dismissed-v1';
-const SHOW_DELAY_MS = 1400;
+const SHOW_DELAY_MS = 6000;
 
 export interface HadithQuranNudgeLink {
   label: string;
