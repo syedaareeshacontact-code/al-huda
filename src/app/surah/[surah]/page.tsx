@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import QuranReaderPage from '@/components/sidebar';
+import SurahReader from '@/components/quran/surah-reader';
 import AyahDetailOverlay from '@/components/quran/ayah-detail-overlay';
 import SurahCrawlableContent from '@/components/quran/surah-crawlable-content';
 import SurahPageHero from '@/components/quran/surah-page-hero';
@@ -133,7 +133,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       />
 
       <SurhasListProvider>
-        <QuranReaderPage
+        <SurahReader
           initialSurahId={surah.id}
           initialSurahDetail={initialSurahDetail}
           initialSurahMeta={initialSurahMeta}
