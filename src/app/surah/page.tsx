@@ -51,7 +51,7 @@ export default function SurahIndexPage() {
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
             <Badge className="bg-gradient-to-r text-white from-[var(--color-accent)] to-[var(--color-accent-soft)]">
-              Al-Quran Al-Kareem
+              Read al Quran
             </Badge>
             <Badge variant="secondary" className="text-xs">
               114 Surahs
