@@ -56,6 +56,7 @@ import {
   buildUrduAyahAudioUrl,
   parseSurahIdFromParam,
 } from '@/lib/quran-routing';
+import { getSurahById } from '@/lib/quran-index';
 import AyahEndMarker from '@/components/quran/AyahEndMarker';
 import {
   findTimingAtMs,
@@ -769,6 +770,12 @@ export default function QuranReaderPage({
 
   const currentLastRead =
     lastRead?.surahId === surahId ? lastRead : null;
+  const currentSurahIndexEntry = getSurahById(surahId);
+  const currentSurahArabicTitle =
+    currentSurahIndexEntry?.surahNameArabicUthmani ||
+    surahDetail.name ||
+    currentSurahIndexEntry?.surahNameArabic ||
+    '';
 
   const revealAndScrollToAyah = useCallback(
     (ayahNumber: number, behavior: ScrollBehavior = 'smooth') => {
@@ -1629,8 +1636,8 @@ export default function QuranReaderPage({
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
-                  <p className="arabic-font text-2xl text-[var(--color-heading)] sm:text-3xl">
-                    {surahDetail.name}
+                  <p className="surah-arabic-name text-2xl text-[var(--color-heading)] sm:text-3xl" dir="rtl" lang="ar">
+                    {currentSurahArabicTitle}
                   </p>
                   <div className="sm:mt-3 sm:flex sm:justify-end">
                     <Button
@@ -2317,7 +2324,7 @@ export default function QuranReaderPage({
         targetRef={navigatorMenuButtonRef}
         isNavigatorOpen={isNavigatorOpen}
         surahName={`Surah ${surahDetail.englishName}`}
-        surahArabicName={surahDetail.name}
+        surahArabicName={currentSurahArabicTitle}
         surahMeta={`${surahDetail.numberOfAyahs} ayahs`}
         showAudioShortcut={isPlayerHidden || !audioSrc}
         audioShortcutPending={isPlayerHidden ? false : loadingAudioSource || isPlayPending}
@@ -2445,8 +2452,8 @@ export default function QuranReaderPage({
                               <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                                 {surah.surahNameTranslation}
                               </p>
-                              <p className="font-arabic mt-1 text-right text-base text-[var(--color-heading)]">
-                                {surah.surahNameArabic}
+                              <p className="surah-arabic-name mt-1 text-right text-base text-[var(--color-heading)]" dir="rtl" lang="ar">
+                                {surah.surahNameArabicUthmani || surah.surahNameArabic}
                               </p>
                             </button>
                             <Button

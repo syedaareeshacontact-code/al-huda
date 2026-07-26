@@ -127,7 +127,7 @@ export default function StickyNavigatorMenuButton({
         ) : null}
 
         {surahArabicName ? (
-          <p className="arabic-font min-w-0 max-w-[36vw] truncate text-left text-lg leading-none text-[var(--color-accent-soft)] sm:max-w-[18rem] sm:text-xl" dir="rtl" lang="ar">
+          <p className="surah-arabic-name min-w-0 max-w-[36vw] truncate text-left text-lg leading-none text-[var(--color-accent-soft)] sm:max-w-[18rem] sm:text-xl" dir="rtl" lang="ar">
             {surahArabicName}
           </p>
         ) : null}

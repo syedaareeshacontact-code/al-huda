@@ -9,6 +9,7 @@ export interface SurahListItem {
   id: number;
   surahName: string;
   surahNameArabic: string;
+  surahNameArabicUthmani?: string;
   surahNameArabicLong?: string;
   surahNameTranslation: string;
   revelationPlace: string;

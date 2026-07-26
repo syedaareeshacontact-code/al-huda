@@ -33,15 +33,11 @@ function resolveSurahPath(surahId: number | null | undefined) {
   return surah ? buildSurahPath(surah.id, surah.surahName) : `/surah/${surahId}`;
 }
 
-const POPULAR_SURAHS = [
-  { label: 'Al-Fatihah', arabic: 'الفاتحة', id: 1 },
-  { label: 'Ya-Sin', arabic: 'يس', id: 36 },
-  { label: 'Al-Kahf', arabic: 'الكهف', id: 18 },
-  { label: 'Ar-Rahman', arabic: 'الرحمن', id: 55 },
-  { label: 'Al-Mulk', arabic: 'الملك', id: 67 },
-  { label: 'Al-Waqiah', arabic: 'الواقعة', id: 56 },
-];
+const POPULAR_SURAH_IDS = [1, 36, 18, 55, 67, 56] as const;
 const ALL_SURAHS = getAllSurahs();
+const POPULAR_SURAHS = POPULAR_SURAH_IDS.map((id) => getSurahById(id)).filter(
+  (surah) => surah !== null
+);
 type LibraryPanel = 'favorites' | 'bookmarks';
 
 export default function HomeRoot() {
@@ -295,8 +291,10 @@ export default function HomeRoot() {
               prefetch={false}
               className="group min-w-[9.5rem] snap-start rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)] hover:border-[var(--color-accent-soft)] sm:min-w-0"
             >
-              <span className="font-arabic block text-right text-2xl leading-relaxed text-[var(--color-accent)]" dir="rtl">{surah.arabic}</span>
-              <span className="mt-3 block text-sm font-semibold text-[var(--color-heading)]">{surah.label}</span>
+              <span className="surah-arabic-name block text-right text-2xl leading-relaxed text-[var(--color-accent)]" dir="rtl" lang="ar">
+                {surah.surahNameArabicUthmani || surah.surahNameArabic}
+              </span>
+              <span className="mt-3 block text-sm font-semibold text-[var(--color-heading)]">{surah.surahName}</span>
               <span className="mt-1 flex items-center justify-between text-xs text-[var(--color-muted-text)]">
                 Surah {surah.id}
                 <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />

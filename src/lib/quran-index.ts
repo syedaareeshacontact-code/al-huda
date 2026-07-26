@@ -9,6 +9,7 @@ export interface SurahIndexEntry {
   id: number;
   surahName: string;
   surahNameArabic: string;
+  surahNameArabicUthmani?: string;
   surahNameArabicLong?: string;
   surahNameTranslation: string;
   revelationPlace: string;
@@ -27,6 +28,10 @@ export const SURAH_INDEX: SurahIndexEntry[] = (Array.isArray(surahIndexRaw)
       id,
       surahName: String(candidate.surahName ?? ''),
       surahNameArabic: String(candidate.surahNameArabic ?? ''),
+      surahNameArabicUthmani:
+        candidate.surahNameArabicUthmani !== undefined
+          ? String(candidate.surahNameArabicUthmani)
+          : undefined,
       surahNameArabicLong:
         candidate.surahNameArabicLong !== undefined
           ? String(candidate.surahNameArabicLong)

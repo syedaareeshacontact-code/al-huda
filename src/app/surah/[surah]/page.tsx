@@ -106,7 +106,11 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
   }
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
-  const urduTitle = getSurahUrduTitle(surah);
+  const surahArabicTitle = surah.surahNameArabicUthmani || surah.surahNameArabic;
+  const urduTitle = getSurahUrduTitle({
+    ...surah,
+    surahNameArabic: surahArabicTitle,
+  });
   const schemas = buildSurahPageSchemas(
     surah,
     getSurahMetaDescription(surah),
@@ -124,6 +128,7 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
         surahId={surah.id}
         surahName={surah.surahName}
         surahNameArabic={surah.surahNameArabic}
+        surahNameArabicUthmani={surah.surahNameArabicUthmani}
         surahNameTranslation={surah.surahNameTranslation}
         revelationPlace={surah.revelationPlace}
         totalAyah={surah.totalAyah}

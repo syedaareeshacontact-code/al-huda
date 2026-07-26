@@ -19,6 +19,7 @@ interface SurahPageHeroProps {
   surahId: number;
   surahName: string;
   surahNameArabic: string;
+  surahNameArabicUthmani?: string;
   surahNameTranslation: string;
   revelationPlace: string;
   totalAyah: number;
@@ -31,6 +32,7 @@ export default function SurahPageHero({
   surahId,
   surahName,
   surahNameArabic,
+  surahNameArabicUthmani,
   surahNameTranslation,
   revelationPlace,
   totalAyah,
@@ -39,6 +41,7 @@ export default function SurahPageHero({
   downloadPath,
 }: SurahPageHeroProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const arabicTitle = surahNameArabicUthmani || surahNameArabic;
 
   const featureItems = [
     {
@@ -108,14 +111,14 @@ export default function SurahPageHero({
 
                     <div className="shrink-0 sm:text-right">
                       <p
-                        className="arabic-font text-3xl leading-tight text-[var(--color-heading)] sm:text-4xl"
+                        className="surah-arabic-name text-3xl leading-tight text-[var(--color-heading)] sm:text-4xl"
                         dir="rtl"
                         lang="ar"
                       >
-                        {surahNameArabic}
+                        {arabicTitle}
                       </p>
                       <p
-                        className="font-arabic mt-1 text-lg text-[var(--color-accent-soft)] sm:text-xl"
+                        className="surah-arabic-name mt-1 text-lg text-[var(--color-accent-soft)] sm:text-xl"
                         dir="rtl"
                         lang="ur"
                       >

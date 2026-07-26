@@ -496,6 +496,7 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
           {visibleSurahs.map((surah, index) => {
             const surahPath = buildSurahPath(surah.id, surah.surahName);
             const isMeccan = surah.revelationPlace.toLowerCase() === 'mecca';
+            const arabicTitle = surah.surahNameArabicUthmani || surah.surahNameArabic;
 
             return (
               <Link
@@ -544,9 +545,9 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
                       <p
                         dir="rtl"
                         lang="ar"
-                        className="font-arabic-amiri text-2xl font-medium leading-relaxed text-[var(--color-heading)] transition-colors group-hover:text-[var(--color-accent)]"
+                        className="surah-index-arabic-name text-2xl leading-relaxed text-[var(--color-heading)] transition-colors group-hover:text-[var(--color-accent)]"
                       >
-                        {surah.surahNameArabic}
+                        {arabicTitle}
                       </p>
                     </div>
 
