@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-
-import { getCurrentAdminUser } from '@/lib/auth/current-user';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: {
@@ -19,14 +17,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminLayout({
-  children,
+  children: _children,
 }: {
   children: React.ReactNode;
 }) {
-  const adminUser = await getCurrentAdminUser();
-  if (!adminUser) {
-    notFound();
-  }
-
-  return <>{children}</>;
+  redirect(process.env.ANALYTICS_DASHBOARD_URL || '/');
 }

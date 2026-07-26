@@ -1,6 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import {
+  dashboardCorsHeaders,
+  isAllowedDashboardOrigin,
+  isTrustedDashboardMutation,
+} from '@/lib/auth/dashboard-access';
 import { getCurrentAdminUser } from '@/lib/auth/current-user';
 import {
   createUserNotification,
@@ -23,17 +28,36 @@ const broadcastSchema = z.object({
   push: z.boolean().default(true),
 });
 
-export async function POST(request: Request) {
-  const admin = await getCurrentAdminUser();
+export function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: dashboardCorsHeaders(request, 'POST, OPTIONS'),
+  });
+}
+
+export async function POST(request: NextRequest) {
+  if (!isTrustedDashboardMutation(request)) {
+    return NextResponse.json(
+      { message: 'Origin is not allowed.' },
+      { status: 403, headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
+    );
+  }
+
+  const admin = await getCurrentAdminUser({
+    includeDashboardSession: isAllowedDashboardOrigin(request),
+  });
   if (!admin) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { message: 'Unauthorized' },
+      { status: 401, headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
+    );
   }
 
   const parsed = broadcastSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(
       { message: parsed.error.issues[0]?.message ?? 'Invalid notification payload.' },
-      { status: 400 }
+      { status: 400, headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
     );
   }
 
@@ -80,11 +104,14 @@ export async function POST(request: Request) {
         unavailable: false,
       };
 
-  return NextResponse.json({
-    ok: true,
-    users: users.length,
-    inAppCreated,
-    pushTargets: pushSubscriptions.length,
-    push: pushResult,
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      users: users.length,
+      inAppCreated,
+      pushTargets: pushSubscriptions.length,
+      push: pushResult,
+    },
+    { headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
+  );
 }

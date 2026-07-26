@@ -61,7 +61,8 @@ variables from Vercel. Never commit `.env` or `.env.local`.
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Optional Google Search Console verification value |
 | `NEXT_PUBLIC_GA_ID` | Optional Google Analytics measurement ID |
 | `GA4_PROPERTY_ID` | Google Analytics 4 property ID used by admin analytics APIs |
-| `ANALYTICS_DASHBOARD_ORIGINS` | Comma-separated dashboard origins allowed to call admin analytics APIs |
+| `ANALYTICS_DASHBOARD_ORIGINS` | Comma-separated dashboard origins allowed to use the admin APIs and dashboard sign-in endpoint |
+| `ANALYTICS_DASHBOARD_URL` | Dashboard URL used to redirect legacy `/admin` paths; the admin UI lives in the dashboard |
 | `NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY` | Public VAPID key for browser push subscriptions |
 | `WEB_PUSH_PRIVATE_KEY` | Private VAPID key; server only |
 | `WEB_PUSH_SUBJECT` | VAPID contact, normally a `mailto:` address |

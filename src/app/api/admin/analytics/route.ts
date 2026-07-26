@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { dashboardCorsHeaders, isAllowedDashboardOrigin } from '@/lib/auth/dashboard-access';
 import { getCurrentAdminUser } from '@/lib/auth/current-user';
 import {
   getAnalyticsDataClient,
@@ -21,54 +22,15 @@ import {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const DEFAULT_ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-];
-
 const AUDIENCE_DETAILS_PAGE_SIZE = 10_000;
 const MAX_AUDIENCE_DETAILS = 250_000;
 const DETAIL_REPORT_PAGE_SIZE = 10_000;
 const MAX_DETAIL_REPORT_ROWS = 250_000;
 
-function getAllowedOrigins() {
-  return [
-    ...DEFAULT_ALLOWED_ORIGINS,
-    ...(process.env.ANALYTICS_DASHBOARD_ORIGINS || '')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean),
-  ];
-}
-
-function isAllowedDashboardOrigin(request: NextRequest) {
-  const origin = request.headers.get('origin') || '';
-
-  return Boolean(origin && getAllowedOrigins().includes(origin));
-}
-
-function corsHeaders(request: NextRequest) {
-  const origin = request.headers.get('origin') || '';
-  const headers: Record<string, string> = {
-    Vary: 'Origin',
-  };
-
-  if (origin && getAllowedOrigins().includes(origin)) {
-    headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Credentials'] = 'true';
-    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Content-Type';
-  }
-
-  return headers;
-}
-
 function json(request: NextRequest, body: unknown, status = 200) {
   return NextResponse.json(body, {
     status,
-    headers: corsHeaders(request),
+    headers: dashboardCorsHeaders(request),
   });
 }
 
@@ -501,7 +463,7 @@ async function getPageEventDetails(
 export function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders(request),
+    headers: dashboardCorsHeaders(request),
   });
 }
 
