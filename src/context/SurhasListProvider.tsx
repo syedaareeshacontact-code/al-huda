@@ -50,18 +50,18 @@ interface SurahListContext {
   resetFilters: () => void;
 
   favorites: number[];
-  toggleFavoriteSurah: (surahId: number) => void;
+  toggleFavoriteSurah: (surahId: number) => boolean;
   isFavoriteSurah: (surahId: number) => boolean;
 
   bookmarks: AyahBookmark[];
-  toggleBookmark: (bookmark: Omit<AyahBookmark, 'id' | 'createdAt'>) => void;
+  toggleBookmark: (bookmark: Omit<AyahBookmark, 'id' | 'createdAt'>) => boolean;
   isBookmarked: (surahId: number, ayahNumber: number) => boolean;
-  removeBookmark: (bookmarkId: string) => void;
+  removeBookmark: (bookmarkId: string) => boolean;
   surahLikes: Record<number, number>;
   getSurahLikesCount: (surahId: number) => number;
 
   lastRead: LastReadEntry | null;
-  setLastRead: (entry: LastReadEntry) => void;
+  setLastRead: (entry: LastReadEntry) => boolean;
 
   language: 'ar' | 'tr';
   addLanguage: (len: 'ar' | 'tr') => void;
@@ -426,7 +426,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
     (surahId: number) => {
       if (!isAuthenticated) {
         requestSignin('save favorites');
-        return;
+        return false;
       }
 
       setFavorites((prev) =>
@@ -434,6 +434,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
           ? prev.filter((id) => id !== surahId)
           : [...prev, surahId]
       );
+      return true;
     },
     [isAuthenticated, requestSignin, setFavorites]
   );
@@ -452,7 +453,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
     ({ surahId, ayahNumber, text }: Omit<AyahBookmark, 'id' | 'createdAt'>) => {
       if (!isAuthenticated) {
         requestSignin('save bookmarks');
-        return;
+        return false;
       }
 
       const id = buildBookmarkId(surahId, ayahNumber);
@@ -473,6 +474,7 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
           ...prev,
         ];
       });
+      return true;
     },
     [isAuthenticated, requestSignin, setBookmarks]
   );
@@ -490,10 +492,11 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
     (bookmarkId: string) => {
       if (!isAuthenticated) {
         requestSignin('save bookmarks');
-        return;
+        return false;
       }
 
       setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== bookmarkId));
+      return true;
     },
     [isAuthenticated, requestSignin, setBookmarks]
   );
@@ -501,13 +504,19 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
   const setLastRead = useCallback(
     (entry: LastReadEntry) => {
       const normalizedEntry = normalizeLastReadEntry(entry);
-      if (!normalizedEntry || !isAuthenticated) {
-        return;
+      if (!normalizedEntry) {
+        return false;
+      }
+
+      if (!isAuthenticated) {
+        requestSignin('save reading progress');
+        return false;
       }
 
       setLastReadState(normalizedEntry);
+      return true;
     },
-    [isAuthenticated]
+    [isAuthenticated, requestSignin]
   );
 
   useEffect(() => {

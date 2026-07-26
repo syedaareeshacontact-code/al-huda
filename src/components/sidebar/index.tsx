@@ -1554,7 +1554,11 @@ export default function QuranReaderPage({
   const favoriteActionKey = `favorite-${surahId}`;
   const handleFavoriteToggle = () => {
     const willFavorite = !favorite;
-    toggleFavoriteSurah(surahId);
+    const didToggle = toggleFavoriteSurah(surahId);
+    if (!didToggle) {
+      return;
+    }
+
     showReaderActivity(
       {
         title: willFavorite ? 'Surah added to favorites' : 'Surah removed from favorites',
@@ -2062,11 +2066,15 @@ export default function QuranReaderPage({
                 const lastReadActionKey = `last-read-${ayah.numberInSurah}`;
                 const handleBookmarkClick = () => {
                   const willBookmark = !bookmarked;
-                  toggleBookmark({
+                  const didToggle = toggleBookmark({
                     surahId,
                     ayahNumber: ayah.numberInSurah,
                     text: ayah.text,
                   });
+                  if (!didToggle) {
+                    return;
+                  }
+
                   showReaderActivity(
                     {
                       title: willBookmark ? 'Bookmark saved' : 'Bookmark removed',
@@ -2078,11 +2086,15 @@ export default function QuranReaderPage({
                   );
                 };
                 const handleMarkLastReadClick = () => {
-                  setLastRead({
+                  const didUpdate = setLastRead({
                     surahId,
                     ayahNumber: ayah.numberInSurah,
                     updatedAt: new Date().toISOString(),
                   });
+                  if (!didUpdate) {
+                    return;
+                  }
+
                   showReaderActivity(
                     {
                       title: isLastRead ? 'Last read refreshed' : 'Marked as last read',
