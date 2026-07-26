@@ -100,9 +100,9 @@ export default function HadithTopSearchShell({ children }: PropsWithChildren) {
     <div
       ref={shellRef}
       className={cn(
-        'relative overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md',
+        'relative overflow-visible border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md',
         shouldStick &&
-          'sticky top-[var(--site-header-visible-offset,0px)] z-[80] transform-gpu transition-transform duration-300 ease-out will-change-transform',
+          'sticky top-[var(--site-header-visible-offset,0px)] z-[90] transform-gpu transition-transform duration-300 ease-out will-change-transform',
         shouldStick && !visible && '-translate-y-full pointer-events-none'
       )}
     >
