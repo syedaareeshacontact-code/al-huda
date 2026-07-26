@@ -588,7 +588,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (requestedView === 'traffic') {
-      const [[monthly], trafficQuality, trafficLandingDetails] = await Promise.all([
+      const [[monthly], trafficQuality, trafficLandingDetails, pageEventDetails] = await Promise.all([
         analyticsData.runReport({
           property,
           dateRanges: [selectedDateRange],
@@ -596,6 +596,7 @@ export async function GET(request: NextRequest) {
         }),
         getTrafficQuality(analyticsData, property, selectedDateRange),
         getTrafficLandingDetails(analyticsData, property, selectedDateRange),
+        getPageEventDetails(analyticsData, property, selectedDateRange),
       ]);
       const monthlyRow = monthly.rows?.[0];
 
@@ -632,6 +633,19 @@ export async function GET(request: NextRequest) {
         trafficLandingDetailsMeta: {
           rowCount: trafficLandingDetails.rowCount,
           truncated: trafficLandingDetails.truncated,
+        },
+        pageEventDetails: pageEventDetails.rows.map((row) => ({
+          pagePath: readGaDimension(row, 0) || '(not set)',
+          pageTitle: readGaDimension(row, 1) || readGaDimension(row, 0) || '(not set)',
+          eventName: readGaDimension(row, 2) || '(not set)',
+          eventCount: readGaMetric(row, 0),
+          activeUsers: readGaMetric(row, 1),
+          pageViews: readGaMetric(row, 2),
+          engagementMinutes: secondsToMinutes(readGaMetric(row, 3)),
+        })),
+        pageEventDetailsMeta: {
+          rowCount: pageEventDetails.rowCount,
+          truncated: pageEventDetails.truncated,
         },
       });
     }
