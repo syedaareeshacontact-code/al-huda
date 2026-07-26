@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthDownloadLink from '@/components/quran/auth-download-link';
 import TafsirAyahBottomNav from '@/components/tafsir/TafsirAyahBottomNav';
 import StickyScrollNav from '@/components/ui/StickyScrollNav';
+import { buildAyahAudioDownloadUrl } from '@/lib/download-routes';
 import {
   getAyahAudioUrls,
   getAyahContent,
@@ -262,11 +263,20 @@ export default async function TafsirDetailPage({
           <CardContent className="space-y-3">
             {audioUrls.arabic ? (
               <>
-                <audio controls preload="none" className="w-full">
+                <audio
+                  controls
+                  controlsList="nodownload"
+                  preload="none"
+                  className="w-full"
+                >
                   <source src={audioUrls.arabic} />
                 </audio>
                 <AuthDownloadLink
-                  href={audioUrls.arabic}
+                  href={buildAyahAudioDownloadUrl(
+                    surah.id,
+                    ayahNumber,
+                    'arabic'
+                  )}
                   fileName={`surah-${surah.id}-ayah-${ayahNumber}-arabic-audio`}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
                 >
@@ -290,11 +300,20 @@ export default async function TafsirDetailPage({
           <CardContent className="space-y-3">
             {audioUrls.urdu ? (
               <>
-                <audio controls preload="none" className="w-full">
+                <audio
+                  controls
+                  controlsList="nodownload"
+                  preload="none"
+                  className="w-full"
+                >
                   <source src={audioUrls.urdu} />
                 </audio>
                 <AuthDownloadLink
-                  href={audioUrls.urdu}
+                  href={buildAyahAudioDownloadUrl(
+                    surah.id,
+                    ayahNumber,
+                    'urdu'
+                  )}
                   fileName={`surah-${surah.id}-ayah-${ayahNumber}-urdu-audio`}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
                 >

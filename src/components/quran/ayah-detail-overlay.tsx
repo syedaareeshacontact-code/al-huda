@@ -21,6 +21,7 @@ import {
 } from '@/components/quran/ayah-popup-navigation';
 import { Button } from '@/components/ui/button';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
+import { buildAyahAudioDownloadUrl } from '@/lib/download-routes';
 import {
   buildAyahPopupPath,
   buildSurahPath,
@@ -389,8 +390,18 @@ export default function AyahDetailOverlay({
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
-                    { label: 'Arabic Recitation', language: 'Arabic', url: payload.audio.arabic },
-                    { label: 'Urdu Audio', language: 'Urdu', url: payload.audio.urdu },
+                    {
+                      label: 'Arabic Recitation',
+                      language: 'Arabic',
+                      variant: 'arabic' as const,
+                      url: payload.audio.arabic,
+                    },
+                    {
+                      label: 'Urdu Audio',
+                      language: 'Urdu',
+                      variant: 'urdu' as const,
+                      url: payload.audio.urdu,
+                    },
                   ].map((item) => (
                     <div
                       key={item.label}
@@ -401,11 +412,20 @@ export default function AyahDetailOverlay({
                       </p>
                       {item.url ? (
                         <>
-                          <audio controls preload="none" className="w-full">
+                          <audio
+                            controls
+                            controlsList="nodownload"
+                            preload="none"
+                            className="w-full"
+                          >
                             <source src={item.url} />
                           </audio>
                           <AuthDownloadLink
-                            href={item.url}
+                            href={buildAyahAudioDownloadUrl(
+                              surahId,
+                              selectedAyah,
+                              item.variant
+                            )}
                             fileName={`surah-${surahId}-ayah-${selectedAyah}-${item.language.toLowerCase()}-audio`}
                             className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
                           >

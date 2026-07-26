@@ -11,6 +11,8 @@ import {
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { invalidateClientSession } from '@/lib/client-session';
+import { resumePendingProtectedDownload } from '@/lib/protected-download-client';
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +67,21 @@ export default function AuthModal({
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
+  const completeAuthentication = useCallback(
+    (user: SessionUser) => {
+      invalidateClientSession();
+      onAuthenticated(user);
+      const resumedDownload = resumePendingProtectedDownload();
+      onClose();
+      window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
+
+      if (!resumedDownload) {
+        window.location.reload();
+      }
+    },
+    [onAuthenticated, onClose]
+  );
+
   useEffect(() => {
     if (open) {
       setAuthTab(initialTab);
@@ -110,10 +127,7 @@ export default function AuthModal({
           return;
         }
         if (data.user) {
-          onAuthenticated(data.user);
-          onClose();
-          window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
-          window.location.reload();
+          completeAuthentication(data.user);
         }
       } catch {
         setAuthError('Unable to sign in with Google right now.');
@@ -122,7 +136,7 @@ export default function AuthModal({
         setGoogleLoading(false);
       }
     },
-    [onAuthenticated, onClose]
+    [completeAuthentication]
   );
 
   useEffect(() => {
@@ -176,10 +190,7 @@ export default function AuthModal({
         return;
       }
       if (data.user) {
-        onAuthenticated(data.user);
-        onClose();
-        window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
-        window.location.reload();
+        completeAuthentication(data.user);
       }
     } catch {
       setAuthError('Unable to sign in right now.');
@@ -204,10 +215,7 @@ export default function AuthModal({
         return;
       }
       if (data.user) {
-        onAuthenticated(data.user);
-        onClose();
-        window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
-        window.location.reload();
+        completeAuthentication(data.user);
       }
     } catch {
       setAuthError('Unable to create account right now.');

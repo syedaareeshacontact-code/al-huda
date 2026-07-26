@@ -1,9 +1,21 @@
-import { NextResponse } from 'next/server';
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Readable } from 'node:stream';
 
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { buildSurahPdfPublicPath, type SurahPdfVariant } from '@/lib/surah-download';
+import {
+  buildProtectedDownloadHeaders,
+  unauthorizedDownloadResponse,
+} from '@/lib/protected-download-response';
+import { getSurahById } from '@/lib/quran-index';
+import {
+  buildSurahPdfFileName,
+  type SurahPdfVariant,
+} from '@/lib/surah-download';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 function parseSurahId(value: string): number | null {
   const parsed = Number(value);
@@ -20,35 +32,64 @@ function parseVariant(value: string | null): SurahPdfVariant | null {
   return null;
 }
 
-/** Legacy API fallback — redirects to static /surah-pdfs/001-arabic.pdf files. */
 export async function GET(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ surahId: string }> }
 ) {
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthorizedDownloadResponse();
   }
 
   const { surahId: surahIdParam } = await context.params;
   const surahId = parseSurahId(surahIdParam);
 
   if (!surahId) {
-    return NextResponse.json({ error: 'Invalid surah ID' }, { status: 400 });
+    return Response.json({ error: 'Invalid surah ID' }, { status: 400 });
   }
 
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(_request.url);
   const variant = parseVariant(searchParams.get('variant'));
 
   if (!variant) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'Missing or invalid variant. Use variant=arabic or variant=arabic-urdu' },
       { status: 400 }
     );
   }
 
-  const staticPath = buildSurahPdfPublicPath(surahId, variant);
-  const response = NextResponse.redirect(new URL(staticPath, request.url), 302);
-  response.headers.set('Cache-Control', 'private, no-store');
-  return response;
+  const surah = getSurahById(surahId);
+  if (!surah) {
+    return Response.json({ error: 'Surah not found' }, { status: 404 });
+  }
+
+  const storedFileName = `${String(surahId).padStart(3, '0')}-${variant}.pdf`;
+  const filePath = join(
+    process.cwd(),
+    'public',
+    'surah-pdfs',
+    storedFileName
+  );
+
+  try {
+    const fileStats = await stat(filePath);
+    const fileStream = Readable.toWeb(createReadStream(filePath)) as ReadableStream;
+
+    return new Response(fileStream, {
+      headers: buildProtectedDownloadHeaders(
+        buildSurahPdfFileName(surah, variant),
+        'application/pdf',
+        fileStats.size
+      ),
+    });
+  } catch (error) {
+    const errorCode = (error as NodeJS.ErrnoException).code;
+
+    if (errorCode === 'ENOENT') {
+      return Response.json({ error: 'PDF unavailable' }, { status: 404 });
+    }
+
+    console.error('[surah-pdf-download]', error);
+    return Response.json({ error: 'PDF download failed' }, { status: 500 });
+  }
 }

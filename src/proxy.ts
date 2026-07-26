@@ -2,64 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { getCanonicalSurahSlugById } from '@/lib/quran-index';
 
-const SESSION_COOKIE_NAME = 'alhuda_session';
-
-function getAuthSecret() {
-  return process.env.AUTH_SECRET || 'development-auth-secret-change-me';
-}
-
-function base64UrlToBytes(value: string) {
-  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-  const binary = atob(padded);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
-}
-
-function bytesToBase64Url(bytes: Uint8Array) {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-async function signPayload(payload: string) {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(getAuthSecret()),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
-  return bytesToBase64Url(new Uint8Array(signature));
-}
-
-async function hasValidSession(token: string | undefined) {
-  if (!token) {
-    return false;
-  }
-
-  const [encodedPayload, signature] = token.split('.');
-  if (!encodedPayload || !signature) {
-    return false;
-  }
-
-  if ((await signPayload(encodedPayload)) !== signature) {
-    return false;
-  }
-
-  try {
-    const payload = JSON.parse(new TextDecoder().decode(base64UrlToBytes(encodedPayload))) as {
-      exp?: number;
-    };
-    return Boolean(payload.exp && payload.exp >= Math.floor(Date.now() / 1000));
-  } catch {
-    return false;
-  }
-}
-
 function redirectNumericQuranPath(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const surahMatch = /^\/surah\/(\d+)(?:\/(ayah\/\d+|download))?$/.exec(pathname);
@@ -83,22 +25,30 @@ function redirectNumericQuranPath(request: NextRequest) {
   return NextResponse.redirect(nextUrl, 308);
 }
 
-async function protectSurahPdf(request: NextRequest) {
-  if (await hasValidSession(request.cookies.get(SESSION_COOKIE_NAME)?.value)) {
-    return NextResponse.next();
+function rewriteSurahPdfDownload(request: NextRequest) {
+  const match =
+    /^\/surah-pdfs\/(\d{3})-(arabic|arabic-urdu)\.pdf$/.exec(
+      request.nextUrl.pathname
+    );
+
+  if (!match) {
+    return new NextResponse('Not Found', {
+      status: 404,
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
   }
 
-  return new NextResponse('Unauthorized', {
-    status: 401,
-    headers: {
-      'Cache-Control': 'no-store',
-    },
-  });
+  const nextUrl = request.nextUrl.clone();
+  nextUrl.pathname = `/api/surah/${Number(match[1])}/pdf`;
+  nextUrl.search = '';
+  nextUrl.searchParams.set('variant', match[2]);
+
+  return NextResponse.rewrite(nextUrl);
 }
 
-export async function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/surah-pdfs/')) {
-    return protectSurahPdf(request);
+    return rewriteSurahPdfDownload(request);
   }
 
   return redirectNumericQuranPath(request) ?? NextResponse.next();

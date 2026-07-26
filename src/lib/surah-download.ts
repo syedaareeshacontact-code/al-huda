@@ -1,5 +1,9 @@
 import 'server-only';
 
+import {
+  buildSurahAudioDownloadUrl,
+  buildSurahPdfDownloadUrl,
+} from '@/lib/download-routes';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import type { AyahContentEntry } from '@/lib/quran-server';
 import { buildSurahSlug, buildUrduTranslationAudioUrl } from '@/lib/quran-routing';
@@ -116,7 +120,7 @@ export function buildSurahDownloadOptions(
       label: 'Arabic PDF',
       labelUrdu: 'عربی PDF',
       description: `Complete Surah ${surah.surahName} in Arabic script (Uthmani) — printable PDF for offline reading and memorization.`,
-      href: buildSurahPdfPublicPath(surah.id, 'arabic'),
+      href: buildSurahPdfDownloadUrl(surah.id, 'arabic'),
       fileName: buildSurahPdfFileName(surah, 'arabic'),
       format: 'PDF',
       type: 'pdf',
@@ -126,7 +130,7 @@ export function buildSurahDownloadOptions(
       label: 'Arabic + Urdu PDF',
       labelUrdu: 'عربی + اردو PDF',
       description: `Surah ${surah.surahName} with Arabic text and Urdu tarjuma (Fatah Muhammad Jalandhari) — ideal for Pakistani readers.`,
-      href: buildSurahPdfPublicPath(surah.id, 'arabic-urdu'),
+      href: buildSurahPdfDownloadUrl(surah.id, 'arabic-urdu'),
       fileName: buildSurahPdfFileName(surah, 'arabic-urdu'),
       format: 'PDF',
       type: 'pdf',
@@ -139,7 +143,7 @@ export function buildSurahDownloadOptions(
       label: `Arabic Audio — ${source.name}`,
       labelUrdu: `عربی آڈیو — ${source.name}`,
       description: `Full surah tilawat by ${source.name}. Download MP3 for offline listening.`,
-      href: source.url,
+      href: buildSurahAudioDownloadUrl(surah.id, 'arabic', source.id),
       fileName: buildSurahAudioFileName(surah, 'arabic', source.name),
       format: 'MP3',
       type: 'audio',
@@ -151,7 +155,7 @@ export function buildSurahDownloadOptions(
     label: 'Urdu Translation Audio',
     labelUrdu: 'اردو ترجمہ آڈیو',
     description: `Complete Urdu tarjuma audio of Surah ${surah.surahName} — listen and download for offline use.`,
-    href: audioSources.urduUrl,
+    href: buildSurahAudioDownloadUrl(surah.id, 'urdu'),
     fileName: buildSurahAudioFileName(surah, 'urdu'),
     format: 'OGG',
     type: 'audio',

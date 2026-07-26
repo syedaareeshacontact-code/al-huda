@@ -114,7 +114,7 @@ export default async function SurahDownloadHub({
   return (
     <section aria-label={`Download Surah ${surah.surahName} PDF and audio`}>
       <div className="mb-6">
-        <Badge className="mb-2">Free Download</Badge>
+        <Badge className="mb-2">Free account required</Badge>
         <h1 className="font-display text-3xl font-bold text-[var(--color-heading)] sm:text-4xl">
           Download Surah {surah.surahName} — PDF & Audio
         </h1>

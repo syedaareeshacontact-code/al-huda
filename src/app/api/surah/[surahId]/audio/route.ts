@@ -1,16 +1,19 @@
-import { NextResponse } from 'next/server';
-
 import { getCurrentUser } from '@/lib/auth/current-user';
 import {
+  createRemoteDownloadResponse,
+  unauthorizedDownloadResponse,
+} from '@/lib/protected-download-response';
+import { getSurahById } from '@/lib/quran-index';
+import {
+  buildSurahAudioFileName,
   getSurahArabicAudioUrl,
   getSurahUrduAudioUrl,
   SURAH_RECITERS,
   type SurahAudioVariant,
-  type SurahReciterId,
 } from '@/lib/surah-download';
 
 export const runtime = 'nodejs';
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 function parseSurahId(value: string): number | null {
   const parsed = Number(value);
@@ -27,10 +30,9 @@ function parseVariant(value: string | null): SurahAudioVariant | null {
   return null;
 }
 
-function parseReciterId(value: string | null): SurahReciterId {
+function parseReciter(value: string | null) {
   const parsed = Number(value);
-  const valid = SURAH_RECITERS.find((r) => r.id === parsed);
-  return valid?.id ?? SURAH_RECITERS[0].id;
+  return SURAH_RECITERS.find((reciter) => reciter.id === parsed) ?? SURAH_RECITERS[0];
 }
 
 export async function GET(
@@ -39,45 +41,55 @@ export async function GET(
 ) {
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthorizedDownloadResponse();
   }
 
   const { surahId: surahIdParam } = await context.params;
   const surahId = parseSurahId(surahIdParam);
 
   if (!surahId) {
-    return NextResponse.json({ error: 'Invalid surah ID' }, { status: 400 });
+    return Response.json({ error: 'Invalid surah ID' }, { status: 400 });
   }
 
   const { searchParams } = new URL(request.url);
   const variant = parseVariant(searchParams.get('variant'));
 
   if (!variant) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'Missing or invalid variant. Use variant=arabic or variant=urdu' },
       { status: 400 }
     );
   }
 
+  const surah = getSurahById(surahId);
+  if (!surah) {
+    return Response.json({ error: 'Surah not found' }, { status: 404 });
+  }
+
   try {
     let sourceUrl: string | null = null;
+    let fileName: string;
 
     if (variant === 'arabic') {
-      const reciterId = parseReciterId(searchParams.get('reciter'));
-      sourceUrl = await getSurahArabicAudioUrl(surahId, reciterId);
+      const reciter = parseReciter(searchParams.get('reciter'));
+      sourceUrl = await getSurahArabicAudioUrl(surahId, reciter.id);
+      fileName = buildSurahAudioFileName(surah, variant, reciter.name);
     } else {
       sourceUrl = await getSurahUrduAudioUrl(surahId);
+      fileName = buildSurahAudioFileName(surah, variant);
     }
 
     if (!sourceUrl) {
-      return NextResponse.json({ error: 'Audio source unavailable' }, { status: 404 });
+      return Response.json({ error: 'Audio source unavailable' }, { status: 404 });
     }
 
-    const response = NextResponse.redirect(sourceUrl, 302);
-    response.headers.set('Cache-Control', 'private, no-store');
-    return response;
+    return createRemoteDownloadResponse({
+      sourceUrl,
+      fileName,
+      signal: request.signal,
+    });
   } catch (error) {
     console.error('[surah-audio]', error);
-    return NextResponse.json({ error: 'Audio download failed' }, { status: 500 });
+    return Response.json({ error: 'Audio download failed' }, { status: 502 });
   }
 }

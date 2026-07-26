@@ -36,6 +36,7 @@ import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/components/providers/app-settings-provider';
 import { getClientSession, invalidateClientSession } from '@/lib/client-session';
+import { clearPendingProtectedDownload } from '@/lib/protected-download-client';
 
 const AuthModal = dynamic(() => import('@/components/layout/auth-modal'), {
   ssr: false,
@@ -400,6 +401,11 @@ export default function SiteHeader() {
     setAuthModalOpen(true);
     setMobileOpen(false);
     setOpenMegaId(null);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    clearPendingProtectedDownload();
+    setAuthModalOpen(false);
   }, []);
 
   useEffect(() => {
@@ -770,7 +776,7 @@ export default function SiteHeader() {
       {authModalOpen ? (
         <AuthModal
           open
-          onClose={() => setAuthModalOpen(false)}
+          onClose={closeAuthModal}
           onAuthenticated={setSessionUser}
           initialTab={authTab}
           reason={authReason}

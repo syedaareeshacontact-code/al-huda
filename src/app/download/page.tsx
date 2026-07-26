@@ -62,7 +62,7 @@ export default function DownloadIndexPage() {
           <p className="mt-4 max-w-3xl text-base leading-relaxed text-[var(--color-muted-text)]">
             Download any surah as a free PDF (Arabic-only or Arabic with Urdu tarjuma) or MP3/OGG audio
             (Arabic tilawat by Mishari al-Afasy and other reciters, plus Urdu translation audio). All 114
-            surahs available. A free account may be requested to start a protected download.
+            surahs available. A free account is required to start a protected download.
           </p>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
