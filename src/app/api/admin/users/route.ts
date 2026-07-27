@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { dashboardCorsHeaders, isAllowedDashboardOrigin } from '@/lib/auth/dashboard-access';
+import {
+  dashboardCorsHeaders,
+  hasDashboardApiAccess,
+  isAllowedDashboardOrigin,
+} from '@/lib/auth/dashboard-access';
 import { getCurrentAdminUser } from '@/lib/auth/current-user';
 import { listUsersForAdmin } from '@/lib/auth/users-store';
 import { listFeedbackForAdmin } from '@/lib/feedback-store';
@@ -14,9 +18,11 @@ export function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const adminUser = await getCurrentAdminUser({
-      includeDashboardSession: isAllowedDashboardOrigin(request),
-    });
+    const adminUser = hasDashboardApiAccess(request)
+      ? { id: 'dashboard-service' }
+      : await getCurrentAdminUser({
+          includeDashboardSession: isAllowedDashboardOrigin(request),
+        });
     if (!adminUser) {
       return NextResponse.json(
         { message: 'Forbidden' },

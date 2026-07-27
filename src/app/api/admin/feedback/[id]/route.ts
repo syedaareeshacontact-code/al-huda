@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
   dashboardCorsHeaders,
+  hasDashboardApiAccess,
   isAllowedDashboardOrigin,
   isTrustedDashboardMutation,
 } from '@/lib/auth/dashboard-access';
@@ -23,16 +24,20 @@ export function OPTIONS(request: NextRequest) {
 
 export async function DELETE(request: NextRequest, context: FeedbackRouteContext) {
   try {
-    if (!isTrustedDashboardMutation(request)) {
+    const serviceAccess = hasDashboardApiAccess(request);
+
+    if (!serviceAccess && !isTrustedDashboardMutation(request)) {
       return NextResponse.json(
         { message: 'Origin is not allowed.' },
         { status: 403, headers: dashboardCorsHeaders(request, 'DELETE, OPTIONS') }
       );
     }
 
-    const adminUser = await getCurrentAdminUser({
-      includeDashboardSession: isAllowedDashboardOrigin(request),
-    });
+    const adminUser = serviceAccess
+      ? { id: 'dashboard-service' }
+      : await getCurrentAdminUser({
+          includeDashboardSession: isAllowedDashboardOrigin(request),
+        });
     if (!adminUser) {
       return NextResponse.json(
         { message: 'Forbidden' },

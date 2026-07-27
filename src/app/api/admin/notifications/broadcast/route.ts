@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   dashboardCorsHeaders,
+  hasDashboardApiAccess,
   isAllowedDashboardOrigin,
   isTrustedDashboardMutation,
 } from '@/lib/auth/dashboard-access';
@@ -36,16 +37,20 @@ export function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isTrustedDashboardMutation(request)) {
+  const serviceAccess = hasDashboardApiAccess(request);
+
+  if (!serviceAccess && !isTrustedDashboardMutation(request)) {
     return NextResponse.json(
       { message: 'Origin is not allowed.' },
       { status: 403, headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
     );
   }
 
-  const admin = await getCurrentAdminUser({
-    includeDashboardSession: isAllowedDashboardOrigin(request),
-  });
+  const admin = serviceAccess
+    ? { id: 'dashboard-service' }
+    : await getCurrentAdminUser({
+        includeDashboardSession: isAllowedDashboardOrigin(request),
+      });
   if (!admin) {
     return NextResponse.json(
       { message: 'Unauthorized' },
