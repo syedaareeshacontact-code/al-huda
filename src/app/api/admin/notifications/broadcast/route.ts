@@ -27,6 +27,7 @@ const broadcastSchema = z.object({
     .default('quran'),
   priority: z.enum(['low', 'normal', 'high']).default('normal'),
   push: z.boolean().default(true),
+  targetUserIds: z.array(z.string().trim().min(1)).max(500).optional(),
 });
 
 export function OPTIONS(request: NextRequest) {
@@ -66,7 +67,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const users = await listUsersForAdmin();
+  const allUsers = await listUsersForAdmin();
+  const targetUserIds = Array.from(new Set(parsed.data.targetUserIds ?? []));
+  const targetUserIdSet = new Set(targetUserIds);
+  const users =
+    targetUserIds.length > 0
+      ? allUsers.filter((user) => targetUserIdSet.has(user.id))
+      : allUsers;
+
+  if (parsed.data.targetUserIds && targetUserIds.length === 0) {
+    return NextResponse.json(
+      { message: 'Select at least one reader for a targeted notification.' },
+      { status: 400, headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
+    );
+  }
+
+  if (targetUserIds.length > 0 && users.length === 0) {
+    return NextResponse.json(
+      { message: 'Selected readers were not found.' },
+      { status: 400, headers: dashboardCorsHeaders(request, 'POST, OPTIONS') }
+    );
+  }
+
   let inAppCreated = 0;
 
   await Promise.all(
@@ -80,6 +102,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           broadcast: true,
           adminId: admin.id,
+          scope: targetUserIds.length > 0 ? 'selected' : 'all',
         },
       });
 
@@ -89,7 +112,11 @@ export async function POST(request: NextRequest) {
     })
   );
 
-  const pushSubscriptions = parsed.data.push ? await listEnabledPushSubscriptions() : [];
+  const pushSubscriptions = parsed.data.push
+    ? (await listEnabledPushSubscriptions()).filter(
+        (subscription) => targetUserIds.length === 0 || targetUserIdSet.has(subscription.userId)
+      )
+    : [];
   const pushResult = parsed.data.push
     ? await sendPushNotificationToSubscriptions(pushSubscriptions, {
         title: parsed.data.title,
@@ -113,6 +140,8 @@ export async function POST(request: NextRequest) {
     {
       ok: true,
       users: users.length,
+      totalUsers: allUsers.length,
+      targetUserIds,
       inAppCreated,
       pushTargets: pushSubscriptions.length,
       push: pushResult,
