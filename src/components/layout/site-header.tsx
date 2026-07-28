@@ -47,6 +47,11 @@ const NotificationCenter = dynamic(
   { ssr: false }
 );
 
+const GuestPushEnrollment = dynamic(
+  () => import('@/components/notifications/guest-push-enrollment'),
+  { ssr: false }
+);
+
 const NAV_LINK_BASE =
   'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]';
 
@@ -442,6 +447,10 @@ export default function SiteHeader() {
 
   return (
     <>
+      <GuestPushEnrollment
+        isAuthenticated={Boolean(sessionUser)}
+        sessionReady={!authLoading}
+      />
       <header
         ref={headerRef}
         data-site-header

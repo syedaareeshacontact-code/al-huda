@@ -1048,6 +1048,23 @@ export async function upsertUserPushSubscription(
     return null;
   }
 
+  await User.updateMany(
+    {
+      id: { $ne: userId },
+      'pushSubscriptions.endpoint': normalized.endpoint,
+    },
+    {
+      $pull: {
+        pushSubscriptions: {
+          endpoint: normalized.endpoint,
+        },
+      },
+      $set: {
+        updatedAt: nowIso,
+      },
+    }
+  ).exec();
+
   await User.findOneAndUpdate(
     { id: userId },
     {
@@ -1104,6 +1121,31 @@ export async function removeUserPushSubscription(userId: string, endpoint: strin
   )
     .lean()
     .exec();
+}
+
+export async function findUserByPushSubscriptionEndpoint(endpoint: string) {
+  const User = await ensureUsersModel();
+  const raw = await User.findOne(
+    { 'pushSubscriptions.endpoint': endpoint },
+    {
+      _id: 0,
+      id: 1,
+      name: 1,
+    }
+  )
+    .lean()
+    .exec();
+
+  const candidate = raw as { id?: unknown; name?: unknown } | null;
+  const userId = String(candidate?.id ?? '').trim();
+  if (!userId) {
+    return null;
+  }
+
+  return {
+    id: userId,
+    name: String(candidate?.name ?? 'Reader').trim() || 'Reader',
+  };
 }
 
 export async function listQuranReminderPushSubscriptions(): Promise<PushSubscriptionForDelivery[]> {

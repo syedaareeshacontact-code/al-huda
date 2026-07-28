@@ -4,6 +4,11 @@ import {
   markPushSubscriptionFailure,
   type PushSubscriptionForDelivery,
 } from '@/lib/auth/users-store';
+import {
+  markGuestPushSubscriptionFailure,
+  markGuestPushSubscriptionSent,
+  type GuestPushSubscriptionForDelivery,
+} from '@/lib/push/guest-push-store';
 import { getConfiguredWebPush } from '@/lib/push/web-push';
 
 export interface PushPayload {
@@ -25,8 +30,18 @@ export interface PushDeliveryResult {
   unavailable: boolean;
 }
 
+function isGuestPushSubscription(
+  subscription:
+    | PushSubscriptionForDelivery
+    | GuestPushSubscriptionForDelivery
+): subscription is GuestPushSubscriptionForDelivery {
+  return 'ownerType' in subscription && subscription.ownerType === 'guest';
+}
+
 export async function sendPushNotificationToSubscriptions(
-  subscriptions: PushSubscriptionForDelivery[],
+  subscriptions: Array<
+    PushSubscriptionForDelivery | GuestPushSubscriptionForDelivery
+  >,
   payload: PushPayload
 ): Promise<PushDeliveryResult> {
   const push = getConfiguredWebPush();
@@ -69,13 +84,30 @@ export async function sendPushNotificationToSubscriptions(
         }
       );
       sent += 1;
+      if (isGuestPushSubscription(subscription)) {
+        await markGuestPushSubscriptionSent(
+          subscription.endpoint,
+          new Date().toISOString()
+        );
+      }
     } catch (error) {
       const statusCode =
         error && typeof error === 'object' && 'statusCode' in error
           ? Number((error as { statusCode?: unknown }).statusCode)
           : 0;
       const shouldDisable = statusCode === 404 || statusCode === 410;
-      await markPushSubscriptionFailure(subscription.userId, subscription.endpoint, shouldDisable);
+      if (isGuestPushSubscription(subscription)) {
+        await markGuestPushSubscriptionFailure(
+          subscription.endpoint,
+          shouldDisable
+        );
+      } else {
+        await markPushSubscriptionFailure(
+          subscription.userId,
+          subscription.endpoint,
+          shouldDisable
+        );
+      }
       failed += 1;
       if (shouldDisable) {
         disabled += 1;
