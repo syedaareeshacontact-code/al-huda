@@ -50,6 +50,18 @@ function getQuranNudgeLinks() {
   });
 }
 
+function formatHadithUrdu(text: string) {
+  const withoutQuotes = text.replace(/["“”„‟«»]/g, '').trim();
+  const colonIndex = withoutQuotes.indexOf(':');
+
+  if (colonIndex === -1) return [withoutQuotes];
+
+  const intro = withoutQuotes.slice(0, colonIndex).trim();
+  const body = withoutQuotes.slice(colonIndex + 1).trim();
+
+  return body ? [`${intro} :`, body] : [`${intro} :`];
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -112,6 +124,7 @@ export default async function HadithDetailPage({
   const description = getHadithMetaDescription(hadith);
   const intro = getHadithSeoIntro(hadith);
   const quranNudgeLinks = getQuranNudgeLinks();
+  const formattedHadithUrdu = hadith.hadithUrdu ? formatHadithUrdu(hadith.hadithUrdu) : [];
 
   const navBreadcrumbs = [
     { label: 'Home', href: '/' },
@@ -298,7 +311,11 @@ export default async function HadithDetailPage({
                     lang="ur"
                     className="urdu-font relative ml-auto max-w-[48rem] text-right text-[var(--color-text)]"
                   >
-                    {hadith.hadithUrdu}
+                    {formattedHadithUrdu.map((line, index) => (
+                      <span key={`${index}-${line}`} className="block">
+                        {line}
+                      </span>
+                    ))}
                   </p>
                 </section>
               ) : null}
