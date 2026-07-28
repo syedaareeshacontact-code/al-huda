@@ -3,11 +3,15 @@ import { NextResponse } from 'next/server';
 import { searchHadiths } from '@/lib/hadith/hadith.service';
 import { buildHadithDetailPath } from '@/lib/hadith/hadith-routing';
 
+function isHadithNumberQuery(value: string) {
+  return /^#?\d+$/.test(value.trim());
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q')?.trim() ?? '';
 
-  if (query.length < 2) {
+  if (query.length < 2 && !isHadithNumberQuery(query)) {
     return NextResponse.json({ results: [] });
   }
 

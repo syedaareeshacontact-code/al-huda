@@ -46,6 +46,12 @@ export async function getHadithByNumber(
   }
 }
 
+export function getHadithNumberQuery(query: string): string | null {
+  const normalized = query.trim().replace(/^#+\s*/, '');
+
+  return /^\d+$/.test(normalized) ? normalized : null;
+}
+
 function resolveHadithSearchParams(query: string, perPage = 20): URLSearchParams {
   const trimmed = query.trim();
   const params = new URLSearchParams({
@@ -53,6 +59,13 @@ function resolveHadithSearchParams(query: string, perPage = 20): URLSearchParams
   });
 
   if (!trimmed) {
+    return params;
+  }
+
+  const hadithNumber = getHadithNumberQuery(trimmed);
+
+  if (hadithNumber) {
+    params.set('hadithNumber', hadithNumber);
     return params;
   }
 

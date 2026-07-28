@@ -42,6 +42,10 @@ function getSuggestionExcerpt(suggestion: HadithSuggestion, query: string) {
   return cleanText(preferred || suggestion.hadithEnglish || suggestion.hadithUrdu);
 }
 
+function isHadithNumberQuery(value: string) {
+  return /^#?\d+$/.test(value.trim());
+}
+
 export default function HadithSearch() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,7 +62,7 @@ export default function HadithSearch() {
 
   const normalizedQuery = query.trim();
   const canSearch = normalizedQuery.length > 0;
-  const canSuggest = normalizedQuery.length >= 2;
+  const canSuggest = normalizedQuery.length >= 2 || isHadithNumberQuery(normalizedQuery);
   const canShowDropdown = isOpen && canSuggest;
 
   useEffect(() => {
@@ -101,7 +105,7 @@ export default function HadithSearch() {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
 
-    if (trimmed.length < 2) {
+    if (trimmed.length < 2 && !isHadithNumberQuery(trimmed)) {
       setSuggestions([]);
       setSuggestionsLoading(false);
       return;
