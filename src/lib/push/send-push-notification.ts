@@ -1,6 +1,7 @@
 import type { PushSubscription } from 'web-push';
 
 import {
+  markPushSubscriptionSent,
   markPushSubscriptionFailure,
   type PushSubscriptionForDelivery,
 } from '@/lib/auth/users-store';
@@ -86,6 +87,12 @@ export async function sendPushNotificationToSubscriptions(
       sent += 1;
       if (isGuestPushSubscription(subscription)) {
         await markGuestPushSubscriptionSent(
+          subscription.endpoint,
+          new Date().toISOString()
+        );
+      } else {
+        await markPushSubscriptionSent(
+          subscription.userId,
           subscription.endpoint,
           new Date().toISOString()
         );

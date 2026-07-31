@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import mongoose, { Schema, type Model } from 'mongoose';
 
@@ -33,6 +33,7 @@ export interface StoredPushSubscription {
   quranReminderEnabled: boolean;
   intervalMinutes: number;
   lastReminderAt: string | null;
+  lastSentAt: string | null;
   failureCount: number;
   createdAt: string;
   updatedAt: string;
@@ -41,6 +42,23 @@ export interface StoredPushSubscription {
 export interface PushSubscriptionForDelivery extends StoredPushSubscription {
   userId: string;
   userName: string;
+}
+
+export interface AdminUserPushDevice {
+  id: string;
+  ownerType: 'user';
+  userId: string;
+  userName: string;
+  userEmail: string;
+  imageUrl: string | null;
+  userAgent: string | null;
+  enabled: boolean;
+  quranReminderEnabled: boolean;
+  failureCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string;
+  lastSentAt: string | null;
 }
 
 export interface StoredUser {
@@ -391,6 +409,10 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
       candidate.lastReminderAt === null || candidate.lastReminderAt === undefined
         ? null
         : String(candidate.lastReminderAt),
+    lastSentAt:
+      candidate.lastSentAt === null || candidate.lastSentAt === undefined
+        ? null
+        : String(candidate.lastSentAt),
     failureCount: Math.max(0, Math.floor(Number(candidate.failureCount ?? 0) || 0)),
     createdAt,
     updatedAt: String(candidate.updatedAt ?? createdAt),
@@ -524,6 +546,13 @@ function getLoggedInUsers(users: StoredUser[]) {
   return users.filter((user) => user.loginCount > 0 && Boolean(user.lastLoginAt));
 }
 
+function buildAdminPushDeviceId(userId: string, endpoint: string) {
+  return createHash('sha256')
+    .update(`${userId}:${endpoint}`)
+    .digest('hex')
+    .slice(0, 24);
+}
+
 const bookmarkedAyahSchema = new Schema<StoredAyahBookmark>(
   {
     id: { type: String, required: true },
@@ -599,6 +628,7 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
     quranReminderEnabled: { type: Boolean, default: true },
     intervalMinutes: { type: Number, min: 2, max: 1440, default: 2 },
     lastReminderAt: { type: String, default: null },
+    lastSentAt: { type: String, default: null },
     failureCount: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true },
     updatedAt: { type: String, required: true },
@@ -1245,6 +1275,75 @@ export async function listEnabledPushSubscriptions(): Promise<PushSubscriptionFo
   return subscriptions;
 }
 
+export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice[]> {
+  const User = await ensureUsersModel();
+  const rawUsers = await User.find(
+    {
+      pushSubscriptions: {
+        $elemMatch: {
+          enabled: true,
+        },
+      },
+    },
+    {
+      _id: 0,
+      id: 1,
+      name: 1,
+      email: 1,
+      imageUrl: 1,
+      pushSubscriptions: 1,
+    }
+  )
+    .lean()
+    .exec();
+
+  const devices: AdminUserPushDevice[] = [];
+
+  for (const rawUser of rawUsers) {
+    const candidate = rawUser as
+      | {
+          id?: unknown;
+          name?: unknown;
+          email?: unknown;
+          imageUrl?: unknown;
+          pushSubscriptions?: unknown;
+        }
+      | null;
+    const userId = String(candidate?.id ?? '').trim();
+    const userName = String(candidate?.name ?? 'Reader').trim() || 'Reader';
+    const userEmail = normalizeEmail(String(candidate?.email ?? ''));
+
+    if (!userId || !userEmail) {
+      continue;
+    }
+
+    for (const subscription of normalizePushSubscriptions(candidate?.pushSubscriptions)) {
+      if (!subscription.enabled) {
+        continue;
+      }
+
+      devices.push({
+        id: buildAdminPushDeviceId(userId, subscription.endpoint),
+        ownerType: 'user',
+        userId,
+        userName,
+        userEmail,
+        imageUrl: normalizeImageUrl(candidate?.imageUrl),
+        userAgent: subscription.userAgent,
+        enabled: subscription.enabled,
+        quranReminderEnabled: subscription.quranReminderEnabled,
+        failureCount: subscription.failureCount,
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt,
+        lastSeenAt: subscription.updatedAt,
+        lastSentAt: subscription.lastSentAt ?? subscription.lastReminderAt,
+      });
+    }
+  }
+
+  return devices.sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt));
+}
+
 export async function listEnabledPushSubscriptionsForUser(
   userId: string
 ): Promise<PushSubscriptionForDelivery[]> {
@@ -1295,6 +1394,23 @@ export async function markPushReminderSent(userId: string, endpoint: string, sen
     {
       $set: {
         'pushSubscriptions.$.lastReminderAt': sentAt,
+        'pushSubscriptions.$.updatedAt': sentAt,
+        'pushSubscriptions.$.failureCount': 0,
+        updatedAt: sentAt,
+      },
+    }
+  )
+    .lean()
+    .exec();
+}
+
+export async function markPushSubscriptionSent(userId: string, endpoint: string, sentAt: string) {
+  const User = await ensureUsersModel();
+  await User.findOneAndUpdate(
+    { id: userId, 'pushSubscriptions.endpoint': endpoint },
+    {
+      $set: {
+        'pushSubscriptions.$.lastSentAt': sentAt,
         'pushSubscriptions.$.updatedAt': sentAt,
         'pushSubscriptions.$.failureCount': 0,
         updatedAt: sentAt,
