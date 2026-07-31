@@ -82,6 +82,7 @@ interface NotificationSettings {
 
 const SETTINGS_KEY = 'alhuda-notification-settings';
 const PRAYER_SENT_KEY = 'alhuda-prayer-notifications-sent';
+const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
 const PUSH_PERMISSION_DENIED_MESSAGE = 'Notification permission was not allowed.';
 const PUSH_ENABLE_SUCCESS_MESSAGE = 'Notifications are on. Thanks.';
 const PUSH_SUCCESS_VISIBLE_MS = 5_000;
@@ -411,6 +412,34 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     }, PUSH_SUCCESS_VISIBLE_MS);
   }, [clearPushSuccessTimer]);
 
+  const removeCurrentBrowserPushSubscription = useCallback(
+    async (endpoint?: string) => {
+      const storedEndpoint =
+        typeof window !== 'undefined'
+          ? window.localStorage.getItem(PUSH_ENDPOINT_KEY) ?? undefined
+          : undefined;
+      const subscriptionEndpoint = endpoint ?? storedEndpoint;
+
+      if (!isAuthenticated && !subscriptionEndpoint) {
+        return;
+      }
+
+      await fetch('/api/push/subscribe', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentBrowser: true,
+          ...(subscriptionEndpoint ? { endpoint: subscriptionEndpoint } : {}),
+        }),
+      }).catch(() => undefined);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(PUSH_ENDPOINT_KEY);
+      }
+    },
+    [isAuthenticated]
+  );
+
   const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) {
       setNotifications([]);
@@ -475,12 +504,28 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
       const registration = await navigator.serviceWorker.getRegistration();
       const subscription = await registration?.pushManager.getSubscription();
+      if (Notification.permission !== 'granted') {
+        setPushEnabled(false);
+        const storedEndpoint = window.localStorage.getItem(PUSH_ENDPOINT_KEY);
+        if (subscription?.endpoint || storedEndpoint || Notification.permission === 'denied') {
+          await removeCurrentBrowserPushSubscription(subscription?.endpoint);
+        }
+        if (Notification.permission === 'denied') {
+          clearPushSuccessTimer();
+          setPushMessage(PUSH_PERMISSION_DENIED_MESSAGE);
+        }
+        return;
+      }
+
       setPushEnabled(Boolean(subscription));
+      if (subscription) {
+        window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
+      }
     } catch {
       setWebPushConfigured(false);
       setPushEnabled(false);
     }
-  }, [pushSupported]);
+  }, [clearPushSuccessTimer, pushSupported, removeCurrentBrowserPushSubscription]);
 
   const enableQuranPush = async () => {
     if (!pushSupported || !webPushConfigured || !webPushPublicKey) {
@@ -530,6 +575,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         return;
       }
 
+      window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
       setPushEnabled(true);
       showPushEnabledThanks();
     } catch {

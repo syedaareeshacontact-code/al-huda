@@ -4,9 +4,15 @@ import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import {
   findUserByPushSubscriptionEndpoint,
+  listEnabledPushSubscriptionsForUser,
   removeUserPushSubscription,
   upsertUserPushSubscription,
 } from '@/lib/auth/users-store';
+import {
+  getPushDeviceDetails,
+  hasKnownPushDeviceDetails,
+  samePushDeviceDetails,
+} from '@/lib/push/device-details';
 import {
   removeGuestPushSubscription,
   upsertGuestPushSubscription,
@@ -25,7 +31,34 @@ const subscriptionSchema = z.object({
 const removeSchema = z.object({
   deviceId: z.string().uuid(),
   endpoint: z.string().url().max(2048).optional(),
+  currentBrowser: z.boolean().optional(),
 });
+
+async function removeCurrentBrowserUserSubscriptions(
+  userId: string,
+  userAgent: string | null
+) {
+  const currentDevice = getPushDeviceDetails(userAgent);
+  if (!hasKnownPushDeviceDetails(currentDevice)) {
+    return 0;
+  }
+
+  const subscriptions = await listEnabledPushSubscriptionsForUser(userId);
+  const matchingSubscriptions = subscriptions.filter((subscription) =>
+    samePushDeviceDetails(
+      getPushDeviceDetails(subscription.userAgent),
+      currentDevice
+    )
+  );
+
+  await Promise.all(
+    matchingSubscriptions.map((subscription) =>
+      removeUserPushSubscription(userId, subscription.endpoint)
+    )
+  );
+
+  return matchingSubscriptions.length;
+}
 
 function forbiddenResponse() {
   return NextResponse.json({ message: 'Origin is not allowed.' }, { status: 403 });
@@ -145,14 +178,25 @@ export async function DELETE(request: Request) {
   }
 
   const user = await getCurrentUser();
+  let removedUserSubscriptions = 0;
   if (user && parsed.data.endpoint) {
     await removeUserPushSubscription(user.id, parsed.data.endpoint);
+    removedUserSubscriptions = 1;
+  } else if (user && parsed.data.currentBrowser) {
+    removedUserSubscriptions = await removeCurrentBrowserUserSubscriptions(
+      user.id,
+      request.headers.get('user-agent')
+    );
   }
 
-  await removeGuestPushSubscription({
+  const removedGuestDevice = await removeGuestPushSubscription({
     deviceId: parsed.data.deviceId,
     endpoint: parsed.data.endpoint,
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    removedUserSubscriptions,
+    removedGuestDevice,
+  });
 }

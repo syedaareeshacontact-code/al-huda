@@ -1,41 +1,24 @@
 import type { AdminUserPushDevice } from '@/lib/auth/users-store';
 import type { GuestPushDeviceForAdmin } from '@/lib/push/guest-push-store';
+import {
+  getPushDeviceDetails,
+  type PushDeviceDetails,
+} from './push/device-details';
 
 export type AdminNotificationDevice =
   | (GuestPushDeviceForAdmin & { ownerType: 'guest' })
   | AdminUserPushDevice;
 
-interface DeviceDetails {
-  browser: string;
-  platform: string;
-}
-
-export function getNotificationDeviceDetails(userAgent: string | null): DeviceDetails {
-  const value = String(userAgent ?? '');
-  let browser = 'Unknown browser';
-  let platform = 'Unknown platform';
-
-  if (/Edg\//i.test(value)) browser = 'Microsoft Edge';
-  else if (/Firefox\//i.test(value)) browser = 'Firefox';
-  else if (/CriOS\//i.test(value)) browser = 'Chrome iOS';
-  else if (/Chrome\//i.test(value)) browser = 'Chrome';
-  else if (/Safari\//i.test(value)) browser = 'Safari';
-
-  if (/Android/i.test(value)) platform = 'Android';
-  else if (/iPhone|iPad|iPod/i.test(value)) platform = 'iOS / iPadOS';
-  else if (/Windows/i.test(value)) platform = 'Windows';
-  else if (/Macintosh|Mac OS X/i.test(value)) platform = 'macOS';
-  else if (/Linux/i.test(value)) platform = 'Linux';
-
-  return { browser, platform };
-}
+export const getNotificationDeviceDetails: (
+  userAgent: string | null
+) => PushDeviceDetails = getPushDeviceDetails;
 
 function getLogicalDeviceKey(device: AdminNotificationDevice) {
   if (device.ownerType === 'guest') {
     return `guest:${device.deviceId || device.id}`;
   }
 
-  const details = getNotificationDeviceDetails(device.userAgent);
+  const details = getPushDeviceDetails(device.userAgent);
   return `user:${device.userId}:${details.browser}:${details.platform}`;
 }
 

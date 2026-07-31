@@ -3,9 +3,15 @@ import { z } from 'zod';
 
 import { getCurrentUser } from '@/lib/auth/current-user';
 import {
+  listEnabledPushSubscriptionsForUser,
   removeUserPushSubscription,
   upsertUserPushSubscription,
 } from '@/lib/auth/users-store';
+import {
+  getPushDeviceDetails,
+  hasKnownPushDeviceDetails,
+  samePushDeviceDetails,
+} from '@/lib/push/device-details';
 import { isWebPushConfigured } from '@/lib/push/web-push';
 
 const subscriptionSchema = z.object({
@@ -18,9 +24,37 @@ const subscriptionSchema = z.object({
   intervalMinutes: z.number().int().min(2).max(1440).optional(),
 });
 
-const removeSchema = z.object({
-  endpoint: z.string().url(),
-});
+const removeSchema = z
+  .object({
+    endpoint: z.string().url().optional(),
+    currentBrowser: z.boolean().optional(),
+  })
+  .refine((value) => Boolean(value.endpoint || value.currentBrowser), {
+    message: 'A subscription endpoint or current browser fallback is required.',
+  });
+
+async function removeCurrentBrowserSubscriptions(userId: string, userAgent: string | null) {
+  const currentDevice = getPushDeviceDetails(userAgent);
+  if (!hasKnownPushDeviceDetails(currentDevice)) {
+    return 0;
+  }
+
+  const subscriptions = await listEnabledPushSubscriptionsForUser(userId);
+  const matchingSubscriptions = subscriptions.filter((subscription) =>
+    samePushDeviceDetails(
+      getPushDeviceDetails(subscription.userAgent),
+      currentDevice
+    )
+  );
+
+  await Promise.all(
+    matchingSubscriptions.map((subscription) =>
+      removeUserPushSubscription(userId, subscription.endpoint)
+    )
+  );
+
+  return matchingSubscriptions.length;
+}
 
 export async function POST(request: Request) {
   if (!isWebPushConfigured()) {
@@ -63,6 +97,14 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: 'Invalid push subscription.' }, { status: 400 });
   }
 
-  await removeUserPushSubscription(user.id, parsed.data.endpoint);
-  return NextResponse.json({ ok: true });
+  if (parsed.data.endpoint) {
+    await removeUserPushSubscription(user.id, parsed.data.endpoint);
+    return NextResponse.json({ ok: true, removed: 1 });
+  }
+
+  const removed = await removeCurrentBrowserSubscriptions(
+    user.id,
+    request.headers.get('user-agent')
+  );
+  return NextResponse.json({ ok: true, removed });
 }

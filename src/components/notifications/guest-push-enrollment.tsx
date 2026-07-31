@@ -19,6 +19,7 @@ interface GuestSubscriptionResponse {
 const DEVICE_ID_KEY = 'alhuda:guest-push-device-id';
 const OWNER_KEY = 'alhuda:push-subscription-owner';
 const PROMPT_ATTEMPT_KEY = 'alhuda:guest-push-prompt-attempted';
+const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
 
 function createDeviceId() {
   if (typeof crypto.randomUUID === 'function') {
@@ -74,6 +75,8 @@ async function saveSubscription(
   subscription: PushSubscription,
   deviceId: string
 ) {
+  window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
+
   const response = await fetch('/api/push/guest-subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -95,14 +98,19 @@ async function saveSubscription(
 }
 
 async function removeGuestDevice(deviceId: string, endpoint?: string) {
+  const storedEndpoint = window.localStorage.getItem(PUSH_ENDPOINT_KEY) ?? undefined;
+  const subscriptionEndpoint = endpoint ?? storedEndpoint;
+
   await fetch('/api/push/guest-subscribe', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       deviceId,
-      ...(endpoint ? { endpoint } : {}),
+      currentBrowser: true,
+      ...(subscriptionEndpoint ? { endpoint: subscriptionEndpoint } : {}),
     }),
   }).catch(() => undefined);
+  window.localStorage.removeItem(PUSH_ENDPOINT_KEY);
 }
 
 export default function GuestPushEnrollment({
