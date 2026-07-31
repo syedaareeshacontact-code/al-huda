@@ -21,7 +21,7 @@ const footerLinkClass =
 
 export default function SiteFooter() {
   return (
-    <footer className="relative isolate overflow-hidden border-t border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_68%)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-[0_-16px_48px_-42px_color-mix(in_oklab,var(--color-accent),transparent_48%)] transition-colors duration-300">
+    <footer data-site-footer className="relative isolate overflow-hidden border-t border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_68%)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-[0_-16px_48px_-42px_color-mix(in_oklab,var(--color-accent),transparent_48%)] transition-colors duration-300">
       <div className="pointer-events-none absolute inset-0 -z-20 bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_96%)_0%,var(--color-surface)_48%,var(--color-bg-alt)_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-[linear-gradient(90deg,transparent_4%,var(--color-accent)_35%,var(--color-accent-soft)_50%,var(--color-accent)_65%,transparent_96%)] opacity-60" />
       <div className="pointer-events-none absolute -left-28 -top-28 -z-10 size-72 rounded-full bg-[color-mix(in_oklab,var(--color-accent),transparent_92%)] blur-3xl sm:size-80" />

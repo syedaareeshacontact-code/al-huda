@@ -11,6 +11,8 @@ import {
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import GoogleIcon from '@/components/icons/google-icon';
+import { GOOGLE_SIGNIN_SUCCESS_EVENT } from '@/lib/auth/events';
 import { invalidateClientSession } from '@/lib/client-session';
 import { resumePendingProtectedDownload } from '@/lib/protected-download-client';
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
@@ -44,6 +46,7 @@ interface AuthModalProps {
   onAuthenticated: (user: SessionUser) => void;
   initialTab?: AuthTab;
   reason?: string | null;
+  reloadOnAuthenticated?: boolean;
 }
 
 export default function AuthModal({
@@ -52,6 +55,7 @@ export default function AuthModal({
   onAuthenticated,
   initialTab = 'signin',
   reason = null,
+  reloadOnAuthenticated = true,
 }: AuthModalProps) {
   const [authTab, setAuthTab] = useState<AuthTab>(initialTab);
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -75,11 +79,11 @@ export default function AuthModal({
       onClose();
       window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
 
-      if (!resumedDownload) {
+      if (!resumedDownload && reloadOnAuthenticated) {
         window.location.reload();
       }
     },
-    [onAuthenticated, onClose]
+    [onAuthenticated, onClose, reloadOnAuthenticated]
   );
 
   useEffect(() => {
@@ -127,6 +131,11 @@ export default function AuthModal({
           return;
         }
         if (data.user) {
+          window.dispatchEvent(
+            new CustomEvent(GOOGLE_SIGNIN_SUCCESS_EVENT, {
+              detail: { user: data.user },
+            })
+          );
           completeAuthentication(data.user);
         }
       } catch {
@@ -316,8 +325,8 @@ export default function AuthModal({
             disabled={!googleReady || authSubmitting}
             className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm font-bold text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Mail className="h-4 w-4" />
-            {googleLoading ? 'Opening Google...' : 'Continue with Google'}
+            <GoogleIcon className="h-4 w-4" />
+            {googleLoading ? 'Opening Google...' : 'Sign in with Google'}
           </button>
 
           <div className="mb-4 flex items-center gap-3 text-xs text-[var(--color-muted-text)]">

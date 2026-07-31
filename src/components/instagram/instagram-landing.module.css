@@ -1,0 +1,335 @@
+.landing {
+  --ig-bg: var(--color-bg);
+  --ig-bg-deep: var(--color-bg-alt);
+  --ig-surface: color-mix(in oklab, var(--color-surface), transparent 14%);
+  --ig-surface-solid: var(--color-surface);
+  --ig-card: color-mix(in oklab, var(--color-surface-elevated), transparent 7%);
+  --ig-footer: color-mix(in oklab, var(--color-surface), transparent 6%);
+  --ig-heading: var(--color-heading);
+  --ig-text: var(--color-text);
+  --ig-muted: var(--color-muted-text);
+  --ig-accent: var(--color-accent-soft);
+  --ig-accent-deep: var(--color-accent);
+  --ig-border: var(--color-border);
+  --ig-border-strong: color-mix(in oklab, var(--color-accent), var(--color-border) 48%);
+  --ig-icon-bg: color-mix(in oklab, var(--color-accent), var(--color-surface) 91%);
+  --ig-ring: var(--color-ring);
+  --ig-card-shadow: var(--shadow-card);
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 4%, color-mix(in oklab, var(--color-accent-soft), transparent 82%), transparent 24rem),
+    radial-gradient(circle at 6% 40%, color-mix(in oklab, var(--color-accent), transparent 92%), transparent 28rem),
+    linear-gradient(155deg, var(--ig-bg), var(--ig-bg-deep));
+  color: var(--ig-text);
+}
+
+.ambientGlow {
+  position: absolute;
+  left: 50%;
+  top: -18rem;
+  z-index: -2;
+  width: 50rem;
+  height: 50rem;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-accent-soft), transparent 80%), transparent 65%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.pattern {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.15;
+  background-image:
+    linear-gradient(30deg, transparent 48%, color-mix(in oklab, var(--color-accent), transparent 80%) 49%, color-mix(in oklab, var(--color-accent), transparent 80%) 51%, transparent 52%),
+    linear-gradient(150deg, transparent 48%, color-mix(in oklab, var(--color-accent), transparent 80%) 49%, color-mix(in oklab, var(--color-accent), transparent 80%) 51%, transparent 52%);
+  background-size: 72px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+  pointer-events: none;
+}
+
+.brandMark {
+  display: inline-flex;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--ig-border-strong);
+  border-radius: 9999px;
+  background: var(--ig-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.heroPanel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--ig-border);
+  border-radius: 2rem;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.18), transparent 46%),
+    var(--ig-surface);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(18px);
+}
+
+.heroPanel::before {
+  content: '';
+  position: absolute;
+  right: -7rem;
+  top: -7rem;
+  width: 19rem;
+  height: 19rem;
+  border: 1px solid var(--ig-border-strong);
+  border-radius: 38% 62% 55% 45%;
+  box-shadow:
+    inset 0 0 0 2rem color-mix(in oklab, var(--color-accent), transparent 97%),
+    inset 0 0 0 4rem color-mix(in oklab, var(--color-accent), transparent 97%);
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+
+.identityGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 8.2rem;
+}
+
+.logoPortrait,
+.instagramPortrait {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 4.5rem;
+  height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 9999px;
+  box-shadow: var(--shadow-soft);
+}
+
+.logoPortrait {
+  padding: 3px;
+  border: 1px solid rgb(214 177 69 / 0.65);
+  background: #f8df82;
+}
+
+.instagramPortrait {
+  z-index: 3;
+  margin-left: -0.8rem;
+  border: 3px solid var(--ig-surface-solid);
+  background: var(--ig-surface-solid);
+  overflow: hidden;
+}
+
+.identityConnection {
+  position: absolute;
+  left: 3.7rem;
+  z-index: 1;
+  width: 2.4rem;
+  height: 1px;
+  background: linear-gradient(90deg, #d8b444, var(--ig-accent));
+}
+
+.identityConnection span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.35rem;
+  height: 0.35rem;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: var(--ig-surface-solid);
+  box-shadow: 0 0 0 1px var(--ig-accent);
+}
+
+.instagramBadge {
+  position: absolute;
+  right: -0.1rem;
+  bottom: -0.1rem;
+  z-index: 4;
+  display: flex;
+  width: 1.8rem;
+  height: 1.8rem;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--ig-surface-solid);
+  border-radius: 9999px;
+  background: linear-gradient(145deg, #d83173, #ee9440);
+  color: white;
+}
+
+.communityBadge {
+  display: inline-flex;
+  min-height: 1.9rem;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--ig-border-strong);
+  border-radius: 9999px;
+  background: var(--ig-icon-bg);
+  padding: 0.35rem 0.7rem;
+  color: var(--ig-accent);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.greetingTitle {
+  transform-origin: left center;
+  animation: greeting-in 760ms cubic-bezier(0.2, 0.75, 0.25, 1) 120ms both;
+}
+
+.wavingHand {
+  display: inline-block;
+  transform-origin: 72% 78%;
+  animation: hand-wave 1.8s ease-in-out 850ms 2;
+}
+
+.benefitCard {
+  position: relative;
+  min-height: 13rem;
+  overflow: hidden;
+  border: 1px solid var(--ig-border);
+  border-radius: 1.4rem;
+  background: var(--ig-surface);
+  padding: 1.35rem;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.benefitCard::after {
+  content: '';
+  position: absolute;
+  right: -2.5rem;
+  bottom: -3rem;
+  width: 7rem;
+  height: 7rem;
+  border: 1px solid var(--ig-border);
+  border-radius: 40%;
+  transform: rotate(22deg);
+}
+
+.benefitCard:hover {
+  transform: translateY(-3px);
+  border-color: var(--ig-border-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.benefitIcon {
+  display: flex;
+  width: 2.8rem;
+  height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ig-border-strong);
+  border-radius: 1rem;
+  background: var(--ig-icon-bg);
+  color: var(--ig-accent);
+}
+
+.trustCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid var(--ig-border);
+  border-radius: 1.6rem;
+  background: var(--ig-surface);
+  padding: 1.35rem;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
+}
+
+.revealOne,
+.revealTwo,
+.reveal3,
+.reveal4,
+.reveal5 {
+  animation: reveal-up 620ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.revealTwo { animation-delay: 100ms; }
+.reveal3 { animation-delay: 140ms; }
+.reveal4 { animation-delay: 210ms; }
+.reveal5 { animation-delay: 280ms; }
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes greeting-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes hand-wave {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(16deg); }
+  40% { transform: rotate(-9deg); }
+  60% { transform: rotate(13deg); }
+  80% { transform: rotate(-5deg); }
+}
+
+@media (min-width: 640px) {
+  .logoPortrait,
+  .instagramPortrait {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  .identityGroup {
+    min-width: 10rem;
+  }
+
+  .identityConnection {
+    left: 4.6rem;
+  }
+
+  .trustCard {
+    align-items: center;
+    padding: 1.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revealOne,
+  .revealTwo,
+  .reveal3,
+  .reveal4,
+  .reveal5 {
+    animation: none;
+  }
+
+  .greetingTitle,
+  .wavingHand {
+    animation: none;
+  }
+
+  .benefitCard,
+  .benefitCard:hover {
+    transform: none;
+  }
+}

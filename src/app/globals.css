@@ -707,6 +707,12 @@ a {
   color: var(--color-heading);
 }
 
+/* The Instagram route has its own focused sign-in header and compact footer. */
+body:has(.instagram-landing) [data-site-header],
+body:has(.instagram-landing) [data-site-footer] {
+  display: none;
+}
+
 [data-slot='page-shell'] {
   width: min(100%, 78rem);
   margin-inline: auto;

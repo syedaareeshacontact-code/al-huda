@@ -789,6 +789,7 @@ export default function SiteHeader() {
           onAuthenticated={setSessionUser}
           initialTab={authTab}
           reason={authReason}
+          reloadOnAuthenticated={pathname !== '/instagram'}
         />
       ) : null}
     </>
