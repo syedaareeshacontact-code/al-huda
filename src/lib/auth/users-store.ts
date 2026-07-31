@@ -1062,6 +1062,15 @@ export async function upsertUserPushSubscription(
 ): Promise<StoredPushSubscription | null> {
   const User = await ensureUsersModel();
   const nowIso = new Date().toISOString();
+  const existingUser = await User.findOne(
+    { id: userId, 'pushSubscriptions.endpoint': input.endpoint },
+    { _id: 0, pushSubscriptions: 1 }
+  )
+    .lean()
+    .exec();
+  const existingSubscription = normalizePushSubscriptions(
+    (existingUser as { pushSubscriptions?: unknown } | null)?.pushSubscriptions
+  ).find((subscription) => subscription.endpoint === input.endpoint);
   const normalized = normalizePushSubscription({
     endpoint: input.endpoint,
     keys: input.keys,
@@ -1070,8 +1079,12 @@ export async function upsertUserPushSubscription(
     quranReminderEnabled: input.quranReminderEnabled !== false,
     intervalMinutes: input.intervalMinutes ?? 2,
     failureCount: 0,
-    createdAt: nowIso,
+    // This is the opt-in time used by the admin activity bell. Keep it stable
+    // while a browser refreshes its existing subscription.
+    createdAt: existingSubscription?.createdAt ?? nowIso,
     updatedAt: nowIso,
+    lastReminderAt: existingSubscription?.lastReminderAt ?? null,
+    lastSentAt: existingSubscription?.lastSentAt ?? null,
   });
 
   if (!normalized) {
