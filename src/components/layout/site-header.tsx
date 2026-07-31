@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import {
   ChevronDown,
+  Heart,
   LogIn,
   LogOut,
   Menu,
@@ -13,7 +14,6 @@ import {
   ShieldCheck,
   Star,
   Sun,
-  UserPlus,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -521,6 +521,22 @@ export default function SiteHeader() {
             </nav>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link
+                href="/donate"
+                prefetch={false}
+                aria-label="Donate to Read al Quran"
+                aria-current={isActive('/donate', true) ? 'page' : undefined}
+                className={cn(
+                  'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold transition sm:px-3',
+                  isActive('/donate', true)
+                    ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]'
+                    : 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent-soft)] hover:bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] hover:text-[var(--color-accent-foreground)]'
+                )}
+              >
+                <Heart className="h-4 w-4" />
+                <span className="hidden min-[360px]:inline">Donate</span>
+              </Link>
+
               <div className="hidden items-center gap-2 lg:flex">
                 {authLoading ? (
                   <span className="text-xs text-[var(--color-muted-text)]">...</span>
@@ -543,24 +559,14 @@ export default function SiteHeader() {
                     </button>
                   </>
                 ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => openAuthModal('signin')}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-muted-text)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      Sign In
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openAuthModal('signup')}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-3 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] shadow-[0_4px_14px_-6px_color-mix(in_oklab,var(--color-accent),transparent_30%)]"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      Sign Up
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal('signin')}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-muted-text)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Sign In
+                  </button>
                 )}
               </div>
 
@@ -713,6 +719,16 @@ export default function SiteHeader() {
             </nav>
 
             <div className="border-t border-[var(--color-border)] p-4">
+              <Link
+                href="/donate"
+                prefetch={false}
+                onClick={() => setMobileOpen(false)}
+                className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-4 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]"
+              >
+                <Heart className="h-4 w-4" />
+                Donate to Read al Quran
+              </Link>
+
               {authLoading ? (
                 <p className="text-xs text-[var(--color-muted-text)]">Checking session...</p>
               ) : sessionUser ? (
@@ -757,24 +773,14 @@ export default function SiteHeader() {
                       Admin
                     </Link>
                   ) : null}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openAuthModal('signin')}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-sm font-semibold text-[var(--color-muted-text)]"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      Sign In
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openAuthModal('signup')}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-3 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)]"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      Sign Up
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal('signin')}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-sm font-semibold text-[var(--color-muted-text)]"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Sign In
+                  </button>
                 </div>
               )}
             </div>
