@@ -9,14 +9,13 @@ import { getCurrentAdminUser } from '@/lib/auth/current-user';
 import { listUserPushDevicesForAdmin } from '@/lib/auth/users-store';
 import {
   listGuestPushDevicesForAdmin,
-  type GuestPushDeviceForAdmin,
 } from '@/lib/push/guest-push-store';
+import {
+  dedupeAdminNotificationDevices,
+  type AdminNotificationDevice,
+} from '@/lib/admin-notification-devices';
 
 export const dynamic = 'force-dynamic';
-
-type AdminNotificationDevice =
-  | (GuestPushDeviceForAdmin & { ownerType: 'guest' })
-  | Awaited<ReturnType<typeof listUserPushDevicesForAdmin>>[number];
 
 export function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
@@ -48,10 +47,16 @@ export async function GET(request: NextRequest) {
       ...device,
       ownerType: 'guest' as const,
     }));
-    const devices: AdminNotificationDevice[] = [
+    const devices: AdminNotificationDevice[] = dedupeAdminNotificationDevices([
       ...userDevices,
       ...normalizedGuestDevices,
-    ].sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt));
+    ]);
+    const dedupedUserDevices = devices.filter(
+      (device) => device.ownerType === 'user'
+    );
+    const dedupedGuestDevices = devices.filter(
+      (device) => device.ownerType === 'guest'
+    );
     const summary = devices.reduce(
       (result, device) => {
         result.enabledDevices += 1;
@@ -80,8 +85,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         devices,
-        guestDevices: normalizedGuestDevices,
-        userDevices,
+        guestDevices: dedupedGuestDevices,
+        userDevices: dedupedUserDevices,
         summary,
       },
       { headers: dashboardCorsHeaders(request) }
