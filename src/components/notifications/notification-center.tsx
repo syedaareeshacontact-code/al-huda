@@ -7,19 +7,31 @@ import {
   BellRing,
   BookMarked,
   BookOpen,
+  Check,
   CheckCheck,
   Clock3,
   Headphones,
   Loader2,
+  MapPin,
   MoonStar,
+  Search,
   Settings2,
   ShieldCheck,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { NotificationType, UserNotification } from '@/types/notifications';
+import {
+  getCitiesForCountry,
+  getCountryOption,
+  PRAYER_LOCATION_OPTIONS,
+  sameLocationValue,
+  searchTextMatches,
+} from '@/lib/prayer-location-options';
 import { cn } from '@/lib/utils';
 
 interface NotificationCenterProps {
@@ -50,6 +62,9 @@ interface PrayerTimingsPayload {
         date?: string;
       };
     };
+    meta?: {
+      timezone?: string;
+    };
   };
 }
 
@@ -68,7 +83,7 @@ interface NotificationSettings {
 const SETTINGS_KEY = 'alhuda-notification-settings';
 const PRAYER_SENT_KEY = 'alhuda-prayer-notifications-sent';
 const PUSH_PERMISSION_DENIED_MESSAGE = 'Notification permission was not allowed.';
-const PUSH_ENABLE_SUCCESS_MESSAGE = 'Notifications on ho gayi. Thanks.';
+const PUSH_ENABLE_SUCCESS_MESSAGE = 'Notifications are on. Thanks.';
 const PUSH_SUCCESS_VISIBLE_MS = 5_000;
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 
@@ -187,6 +202,69 @@ function normalizePrayerTime(raw: string) {
   };
 }
 
+function getBrowserTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
+function formatDateInTimeZone(date: Date, timeZone: string) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const year = parts.find((part) => part.type === 'year')?.value;
+    const month = parts.find((part) => part.type === 'month')?.value;
+    const day = parts.find((part) => part.type === 'day')?.value;
+
+    if (year && month && day) {
+      return `${year}-${month}-${day}`;
+    }
+  } catch {
+    // Fall back to the browser timezone when a provider returns an unknown timezone.
+  }
+
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function readTimeInTimeZone(date: Date, timeZone: string) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+    const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+    const second = Number(parts.find((part) => part.type === 'second')?.value);
+
+    if ([hour, minute, second].every(Number.isFinite)) {
+      return { hour, minute, second };
+    }
+  } catch {
+    // Fall back below.
+  }
+
+  return {
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+    second: date.getSeconds(),
+  };
+}
+
+function toAladhanDate(dateKey: string) {
+  const [year, month, day] = dateKey.split('-');
+  return `${day}-${month}-${year}`;
+}
+
 function readSentPrayerKeys() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(PRAYER_SENT_KEY) ?? '[]');
@@ -200,22 +278,48 @@ function writeSentPrayerKeys(keys: Set<string>) {
   window.localStorage.setItem(PRAYER_SENT_KEY, JSON.stringify(Array.from(keys).slice(-80)));
 }
 
+function InlineSiteControlsIcon() {
+  return (
+    <span className="mx-0.5 inline-flex h-5 w-5 translate-y-1 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-accent)]">
+      <Settings2 className="h-3 w-3" aria-hidden="true" />
+    </span>
+  );
+}
+
 function PushPermissionResetHelp() {
   return (
     <div className="mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
       <p>{PUSH_PERMISSION_DENIED_MESSAGE}</p>
-      <div className="mt-2 flex items-start gap-2">
-        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-accent)]">
-          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
-        </span>
-        <div>
-          <p className="font-semibold text-[var(--color-heading)]">Or reset permission</p>
-          <ol className="mt-1 list-decimal space-y-0.5 pl-4">
-            <li>Address bar me site controls icon click karein.</li>
-            <li>Notifications ko Allow karein.</li>
-            <li>Bell icon me Enable dobara click karein.</li>
-          </ol>
-        </div>
+      <div className="mt-2 rounded-lg bg-[color-mix(in_oklab,var(--color-accent),transparent_94%)] p-2">
+        <p className="font-semibold text-[var(--color-heading)]">Or reset permission</p>
+        <ol className="mt-1 hidden list-decimal space-y-1 pl-4 sm:block">
+          <li>
+            Click the site controls icon <InlineSiteControlsIcon /> beside the website address.
+          </li>
+          <li>
+            Click <span className="font-semibold text-[var(--color-heading)]">Reset permission</span>.
+          </li>
+          <li>
+            Click <span className="font-semibold text-[var(--color-heading)]">Enable</span> again,
+            then choose <span className="font-semibold text-[var(--color-heading)]">Allow</span>.
+          </li>
+        </ol>
+        <ol className="mt-1 list-decimal space-y-1 pl-4 sm:hidden">
+          <li>
+            Tap the site controls icon <InlineSiteControlsIcon /> beside the website address.
+          </li>
+          <li>
+            Tap <span className="font-semibold text-[var(--color-heading)]">Permissions</span> or{' '}
+            <span className="font-semibold text-[var(--color-heading)]">Notifications blocked</span>.
+          </li>
+          <li>
+            Tap <span className="font-semibold text-[var(--color-heading)]">Reset permissions</span>.
+          </li>
+          <li>
+            Tap <span className="font-semibold text-[var(--color-heading)]">Enable</span> again,
+            then choose <span className="font-semibold text-[var(--color-heading)]">Allow</span>.
+          </li>
+        </ol>
       </div>
     </div>
   );
@@ -227,6 +331,11 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  const [draftCountry, setDraftCountry] = useState(DEFAULT_SETTINGS.prayerCountry);
+  const [draftCity, setDraftCity] = useState(DEFAULT_SETTINGS.prayerCity);
+  const [locationCountryQuery, setLocationCountryQuery] = useState('');
+  const [locationCityQuery, setLocationCityQuery] = useState('');
   const [webPushPublicKey, setWebPushPublicKey] = useState('');
   const [webPushConfigured, setWebPushConfigured] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -239,6 +348,44 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     () => notifications.filter((notification) => !notification.readAt).length,
     [notifications]
   );
+
+  const countryOptions = useMemo(() => {
+    const options = locationCountryQuery
+      ? PRAYER_LOCATION_OPTIONS.filter((option) =>
+          searchTextMatches([option.country, ...(option.aliases ?? [])].join(' '), locationCountryQuery)
+        )
+      : PRAYER_LOCATION_OPTIONS;
+
+    return options.slice(0, 18);
+  }, [locationCountryQuery]);
+
+  const selectedCountryCities = useMemo(() => getCitiesForCountry(draftCountry), [draftCountry]);
+
+  const cityOptions = useMemo(() => {
+    const options = locationCityQuery
+      ? selectedCountryCities.filter((city) => searchTextMatches(city, locationCityQuery))
+      : selectedCountryCities;
+
+    return options.slice(0, 18);
+  }, [locationCityQuery, selectedCountryCities]);
+
+  const typedCountry = locationCountryQuery.trim();
+  const typedCity = locationCityQuery.trim();
+  const pendingPrayerCity = draftCity.trim();
+  const canSavePrayerLocation = Boolean(draftCountry.trim() && pendingPrayerCity);
+  const showTypedCountryOption =
+    Boolean(typedCountry) &&
+    countryOptions.length === 0 &&
+    !PRAYER_LOCATION_OPTIONS.some(
+      (option) =>
+        sameLocationValue(option.country, typedCountry) ||
+        (option.aliases?.some((alias) => sameLocationValue(alias, typedCountry)) ?? false)
+    );
+  const showTypedCityOption =
+    Boolean(typedCity) &&
+    cityOptions.length === 0 &&
+    !selectedCountryCities.some((city) => sameLocationValue(city, typedCity));
+  const prayerLocationLabel = `${settings.prayerCity}, ${settings.prayerCountry}`;
 
   const pushSupported =
     typeof window !== 'undefined' &&
@@ -409,18 +556,34 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
   useEffect(() => {
     setOpen(false);
+    setLocationPickerOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      setLocationPickerOpen(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: MouseEvent) => {
+      if (locationPickerOpen) {
+        return;
+      }
+
       if (!panelRef.current?.contains(event.target as Node)) {
         setOpen(false);
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (locationPickerOpen) {
+          setLocationPickerOpen(false);
+          return;
+        }
+
         setOpen(false);
       }
     };
@@ -431,7 +594,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open]);
+  }, [locationPickerOpen, open]);
 
   useEffect(() => {
     if (!isAuthenticated || !settings.prayerEnabled) {
@@ -439,22 +602,16 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     }
 
     let ignore = false;
-    let todayDate = '';
-    let timings: Record<string, string> | null = null;
+    let cachedTimings:
+      | {
+          dateKey: string;
+          timeZone: string;
+          timings: Record<string, string>;
+        }
+      | null = null;
 
-    const loadPrayerTimings = async () => {
-      const today = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Karachi',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date());
-      const [year, month, day] = today.split('-');
-      const aladhanDate = `${day}-${month}-${year}`;
-      if (timings && todayDate === today) {
-        return timings;
-      }
-
+    const fetchPrayerTimings = async (dateKey: string, fallbackTimeZone: string) => {
+      const aladhanDate = toAladhanDate(dateKey);
       const response = await fetch(
         `https://api.aladhan.com/v1/timingsByCity/${aladhanDate}?city=${encodeURIComponent(
           settings.prayerCity
@@ -467,34 +624,69 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       if (payload.data?.date?.gregorian?.date !== aladhanDate) {
         return null;
       }
-      timings = payload.data?.timings ?? null;
-      todayDate = today;
-      return timings;
+      if (!payload.data?.timings) {
+        return null;
+      }
+
+      return {
+        dateKey,
+        timeZone: payload.data.meta?.timezone || fallbackTimeZone,
+        timings: payload.data.timings,
+      };
+    };
+
+    const loadPrayerTimings = async () => {
+      const now = new Date();
+      if (cachedTimings?.dateKey === formatDateInTimeZone(now, cachedTimings.timeZone)) {
+        return cachedTimings;
+      }
+
+      const fallbackTimeZone = cachedTimings?.timeZone || getBrowserTimeZone();
+      const guessedDate = formatDateInTimeZone(now, fallbackTimeZone);
+      let nextTimings = await fetchPrayerTimings(guessedDate, fallbackTimeZone);
+      if (!nextTimings) {
+        return null;
+      }
+
+      const targetDate = formatDateInTimeZone(now, nextTimings.timeZone);
+      if (targetDate !== nextTimings.dateKey) {
+        nextTimings = await fetchPrayerTimings(targetDate, nextTimings.timeZone);
+        if (!nextTimings) {
+          return null;
+        }
+      }
+
+      cachedTimings = nextTimings;
+      return cachedTimings;
     };
 
     const checkPrayerReminders = async () => {
       try {
-        const prayerTimings = await loadPrayerTimings();
-        if (ignore || !prayerTimings) {
+        const prayerTimingResult = await loadPrayerTimings();
+        if (ignore || !prayerTimingResult) {
           return;
         }
 
         const now = new Date();
-        const dateKey = now.toISOString().slice(0, 10);
+        const currentTime = readTimeInTimeZone(now, prayerTimingResult.timeZone);
+        const currentSeconds =
+          currentTime.hour * 60 * 60 + currentTime.minute * 60 + currentTime.second;
+        const dateKey = prayerTimingResult.dateKey;
         const sentKeys = readSentPrayerKeys();
+        const locationLabel = `${settings.prayerCity}, ${settings.prayerCountry}`;
 
         for (const prayer of PRAYER_NAMES) {
-          const parsed = normalizePrayerTime(prayerTimings[prayer] ?? '');
+          const parsed = normalizePrayerTime(prayerTimingResult.timings[prayer] ?? '');
           if (!parsed) {
             continue;
           }
 
-          const reminderAt = new Date(now);
-          reminderAt.setHours(parsed.hour, parsed.minute - settings.reminderMinutes, 0, 0);
-          const diffMs = now.getTime() - reminderAt.getTime();
-          const key = `${dateKey}:${settings.prayerCity}:${prayer}:${settings.reminderMinutes}`;
+          const reminderSeconds =
+            (parsed.hour * 60 + parsed.minute - settings.reminderMinutes) * 60;
+          const diffSeconds = currentSeconds - reminderSeconds;
+          const key = `${dateKey}:${settings.prayerCountry}:${settings.prayerCity}:${prayer}:${settings.reminderMinutes}`;
 
-          if (diffMs >= 0 && diffMs < 45_000 && !sentKeys.has(key)) {
+          if (diffSeconds >= 0 && diffSeconds < 45 && !sentKeys.has(key)) {
             sentKeys.add(key);
             writeSentPrayerKeys(sentKeys);
             await createNotification({
@@ -503,8 +695,8 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
               title: `${prayer} reminder`,
               message:
                 settings.reminderMinutes > 0
-                  ? `${prayer} prayer starts in ${settings.reminderMinutes} minutes in ${settings.prayerCity}.`
-                  : `${prayer} prayer time has started in ${settings.prayerCity}.`,
+                  ? `${prayer} prayer starts in ${settings.reminderMinutes} minutes in ${locationLabel}.`
+                  : `${prayer} prayer time has started in ${locationLabel}.`,
               href: '/prayer-times',
               metadata: {
                 prayer,
@@ -538,6 +730,46 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   const updateSettings = (next: NotificationSettings) => {
     setSettings(next);
     writeSettings(next);
+  };
+
+  const openPrayerLocationPicker = () => {
+    setDraftCountry(settings.prayerCountry.trim() || DEFAULT_SETTINGS.prayerCountry);
+    setDraftCity(settings.prayerCity.trim() || DEFAULT_SETTINGS.prayerCity);
+    setLocationCountryQuery('');
+    setLocationCityQuery('');
+    setLocationPickerOpen(true);
+  };
+
+  const selectPrayerCountry = (country: string) => {
+    const countryOption = getCountryOption(country);
+    const nextCountry = countryOption?.country ?? country.trim();
+    const cities = countryOption?.cities ?? [];
+    setDraftCountry(nextCountry);
+    setDraftCity(cities[0] ?? '');
+    setLocationCountryQuery('');
+    setLocationCityQuery('');
+  };
+
+  const selectPrayerCity = (city: string) => {
+    setDraftCity(city.trim());
+    setLocationCityQuery('');
+  };
+
+  const savePrayerLocation = () => {
+    const nextCountry = draftCountry.trim();
+    const nextCity = pendingPrayerCity.trim();
+    if (!nextCountry || !nextCity) {
+      return;
+    }
+
+    updateSettings({
+      ...settings,
+      prayerCountry: nextCountry,
+      prayerCity: nextCity,
+    });
+    setLocationPickerOpen(false);
+    setLocationCountryQuery('');
+    setLocationCityQuery('');
   };
 
   const markRead = async (notificationId: string) => {
@@ -597,6 +829,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       </button>
 
       {open ? (
+        <>
         <div className="fixed left-1/2 top-4 z-[160] flex max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(0,0,0,0.38)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:max-h-[min(38rem,calc(100dvh-7rem))] sm:translate-x-0">
           <div className="shrink-0 border-b border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),transparent_86%),transparent)] p-4">
             <div className="flex items-start justify-between gap-3">
@@ -617,16 +850,22 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
           <div className="shrink-0 border-b border-[var(--color-border)] p-3">
             <div className="grid grid-cols-[1fr_auto] gap-2">
-              <label className="min-w-0">
+              <div className="min-w-0">
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
-                  Prayer city
+                  Prayer location
                 </span>
-                <input
-                  value={settings.prayerCity}
-                  onChange={(event) => updateSettings({ ...settings, prayerCity: event.target.value })}
-                  className="h-9 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-accent-soft)]"
-                />
-              </label>
+                <button
+                  type="button"
+                  onClick={openPrayerLocationPicker}
+                  className="flex h-9 w-full items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-left text-xs text-[var(--color-text)] outline-none transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),transparent_92%)] focus:border-[var(--color-accent-soft)]"
+                >
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate">{prayerLocationLabel}</span>
+                  <span className="shrink-0 text-[10px] font-semibold text-[var(--color-accent-soft)]">
+                    Change
+                  </span>
+                </button>
+              </div>
               <label>
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
                   Before
@@ -805,6 +1044,229 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
             </div>
           </div>
         </div>
+        {locationPickerOpen && typeof document !== 'undefined'
+          ? createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="prayer-location-title"
+            className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/55 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setLocationPickerOpen(false);
+              }
+            }}
+          >
+            <div
+              className="my-auto flex max-h-[calc(100dvh-1.5rem)] w-[min(42rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:max-h-[min(38rem,calc(100dvh-3rem))]"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),transparent_88%),transparent)] p-3 sm:p-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-accent)]">
+                    <MapPin className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3
+                      id="prayer-location-title"
+                      className="text-sm font-semibold text-[var(--color-heading)]"
+                    >
+                      Prayer location
+                    </h3>
+                    <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted-text)]">
+                      Select country, then choose or type city for local prayer reminders.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close prayer location"
+                  onClick={() => setLocationPickerOpen(false)}
+                  className="h-8 w-8 shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="grid min-h-0 flex-1 gap-2 overflow-y-auto p-2 sm:grid-cols-2 sm:gap-3 sm:p-3">
+                <section className="min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-2">
+                  <label
+                    htmlFor="notification-prayer-country"
+                    className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]"
+                  >
+                    Country
+                  </label>
+                  <div className="relative">
+                    <Search
+                      className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-muted-text)]"
+                      aria-hidden="true"
+                    />
+                    <input
+                      id="notification-prayer-country"
+                      value={locationCountryQuery}
+                      onChange={(event) => setLocationCountryQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && typedCountry) {
+                          event.preventDefault();
+                          const nextCountry = countryOptions[0]?.country ?? (showTypedCountryOption ? typedCountry : '');
+                          if (nextCountry) {
+                            selectPrayerCountry(nextCountry);
+                          }
+                        }
+                      }}
+                      placeholder="Search country"
+                      className="h-9 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-8 pr-3 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-accent-soft)]"
+                    />
+                  </div>
+                  <div className="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 sm:max-h-56">
+                    {countryOptions.map((option) => {
+                      const selected = sameLocationValue(option.country, draftCountry);
+
+                      return (
+                        <button
+                          key={option.country}
+                          type="button"
+                          onClick={() => selectPrayerCountry(option.country)}
+                          className={cn(
+                            'flex h-9 w-full items-center justify-between gap-2 rounded-lg px-2 text-left text-xs transition',
+                            selected
+                              ? 'bg-[color-mix(in_oklab,var(--color-accent),transparent_84%)] text-[var(--color-heading)]'
+                              : 'text-[var(--color-muted-text)] hover:bg-[var(--color-surface)] hover:text-[var(--color-heading)]'
+                          )}
+                        >
+                          <span className="truncate">{option.country}</span>
+                          {selected ? (
+                            <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                    {showTypedCountryOption ? (
+                      <button
+                        type="button"
+                        onClick={() => selectPrayerCountry(typedCountry)}
+                        className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-dashed border-[var(--color-border)] px-2 text-left text-xs font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
+                      >
+                        <span className="truncate">Use &quot;{typedCountry}&quot;</span>
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />
+                      </button>
+                    ) : null}
+                    {countryOptions.length === 0 && !showTypedCountryOption ? (
+                      <p className="px-2 py-4 text-center text-xs text-[var(--color-muted-text)]">
+                        No country found.
+                      </p>
+                    ) : null}
+                  </div>
+                </section>
+
+                <section className="min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-2">
+                  <label
+                    htmlFor="notification-prayer-city"
+                    className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]"
+                  >
+                    City
+                  </label>
+                  <div className="relative">
+                    <Search
+                      className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-muted-text)]"
+                      aria-hidden="true"
+                    />
+                    <input
+                      id="notification-prayer-city"
+                      value={locationCityQuery}
+                      onChange={(event) => setLocationCityQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && typedCity) {
+                          event.preventDefault();
+                          const nextCity = cityOptions[0] ?? (showTypedCityOption ? typedCity : '');
+                          if (nextCity) {
+                            selectPrayerCity(nextCity);
+                          }
+                        }
+                      }}
+                      placeholder={selectedCountryCities.length > 0 ? 'Search city' : 'Type city name'}
+                      className="h-9 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-8 pr-3 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-accent-soft)]"
+                    />
+                  </div>
+                  <div className="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 sm:max-h-56">
+                    {cityOptions.map((city) => {
+                      const selected = sameLocationValue(city, pendingPrayerCity);
+
+                      return (
+                        <button
+                          key={city}
+                          type="button"
+                          onClick={() => selectPrayerCity(city)}
+                          className={cn(
+                            'flex h-9 w-full items-center justify-between gap-2 rounded-lg px-2 text-left text-xs transition',
+                            selected
+                              ? 'bg-[color-mix(in_oklab,var(--color-accent),transparent_84%)] text-[var(--color-heading)]'
+                              : 'text-[var(--color-muted-text)] hover:bg-[var(--color-surface)] hover:text-[var(--color-heading)]'
+                          )}
+                        >
+                          <span className="truncate">{city}</span>
+                          {selected ? (
+                            <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                    {showTypedCityOption ? (
+                      <button
+                        type="button"
+                        onClick={() => selectPrayerCity(typedCity)}
+                        className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-dashed border-[var(--color-border)] px-2 text-left text-xs font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
+                      >
+                        <span className="truncate">Use &quot;{typedCity}&quot;</span>
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />
+                      </button>
+                    ) : null}
+                    {cityOptions.length === 0 && !showTypedCityOption ? (
+                      <p className="px-2 py-4 text-center text-xs text-[var(--color-muted-text)]">
+                        Type city name above.
+                      </p>
+                    ) : null}
+                  </div>
+                </section>
+              </div>
+
+              <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="min-w-0 text-xs text-[var(--color-muted-text)]">
+                    Selected:{' '}
+                    <span className="font-semibold text-[var(--color-heading)]">
+                      {pendingPrayerCity || 'City'}, {draftCountry || 'Country'}
+                    </span>
+                  </p>
+                  <div className="flex shrink-0 items-center justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLocationPickerOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!canSavePrayerLocation}
+                      onClick={savePrayerLocation}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>,
+              document.body
+            )
+          : null}
+        </>
       ) : null}
     </div>
   );
