@@ -2,9 +2,18 @@ import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 
 import { attachSessionCookie } from '@/lib/auth/session';
-import { createUser, findUserByEmail, markUserLogin } from '@/lib/auth/users-store';
+import {
+  createUser,
+  findUserByEmail,
+  markUserLogin,
+  type UserTrafficSource,
+} from '@/lib/auth/users-store';
 import { hashPassword } from '@/lib/auth/password';
 import { verifyGoogleIdToken } from '@/lib/auth/google';
+
+function normalizeTrafficSource(value: unknown): UserTrafficSource | null {
+  return value === 'instagram' ? 'instagram' : null;
+}
 
 export async function POST(request: Request) {
   console.log('[Google Auth API] POST request received at', new Date().toISOString());
@@ -23,6 +32,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const idToken = String(body?.idToken ?? '').trim();
+    const trafficSource = normalizeTrafficSource(body?.source);
     console.log('[Google Auth API] Received idToken. Length:', idToken.length, 'Has dots:', idToken.split('.').length - 1);
 
     if (!idToken) {
@@ -85,7 +95,7 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       console.log('[Google Auth API] Marking user login for existing user:', existingUser.id);
-      user = await markUserLogin(existingUser.id, { name, imageUrl });
+      user = await markUserLogin(existingUser.id, { name, imageUrl, trafficSource });
       console.log('[Google Auth API] ✅ User login marked.');
     } else {
       console.log('[Google Auth API] Creating new user for email:', email);
@@ -99,6 +109,7 @@ export async function POST(request: Request) {
         imageUrl,
         passwordHash: digest.hash,
         passwordSalt: digest.salt,
+        trafficSource,
       });
       console.log('[Google Auth API] ✅ New user created. id=', user?.id);
     }

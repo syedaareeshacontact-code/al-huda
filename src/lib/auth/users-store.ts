@@ -39,6 +39,8 @@ export interface StoredPushSubscription {
   updatedAt: string;
 }
 
+export type UserTrafficSource = 'instagram';
+
 export interface PushSubscriptionForDelivery extends StoredPushSubscription {
   userId: string;
   userName: string;
@@ -72,6 +74,9 @@ export interface StoredUser {
   updatedAt: string;
   loginCount: number;
   lastLoginAt: string | null;
+  acquisitionSource: UserTrafficSource | null;
+  lastLoginSource: UserTrafficSource | null;
+  trafficSources: UserTrafficSource[];
   totalSessionSeconds: number;
   totalAudioSeconds: number;
   favoriteSurahIds: number[];
@@ -91,6 +96,9 @@ export interface AdminUserSummary {
   updatedAt: string;
   loginCount: number;
   lastLoginAt: string | null;
+  acquisitionSource: UserTrafficSource | null;
+  lastLoginSource: UserTrafficSource | null;
+  trafficSources: UserTrafficSource[];
   totalSessionSeconds: number;
   totalAudioSeconds: number;
   favoriteSurahIds: number[];
@@ -141,6 +149,24 @@ function normalizeImageUrl(value: unknown) {
 
 function normalizeThemeMode(value: unknown): ThemeMode {
   return value === 'light' || value === 'system' ? value : 'dark';
+}
+
+function normalizeUserTrafficSource(value: unknown): UserTrafficSource | null {
+  return value === 'instagram' ? 'instagram' : null;
+}
+
+function normalizeUserTrafficSources(value: unknown): UserTrafficSource[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((entry) => normalizeUserTrafficSource(entry))
+        .filter((entry): entry is UserTrafficSource => entry !== null)
+    )
+  );
 }
 
 function clampArabicFontScale(value: unknown) {
@@ -509,6 +535,9 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
       candidate.lastLoginAt === null || candidate.lastLoginAt === undefined
         ? null
         : String(candidate.lastLoginAt),
+    acquisitionSource: normalizeUserTrafficSource(candidate.acquisitionSource),
+    lastLoginSource: normalizeUserTrafficSource(candidate.lastLoginSource),
+    trafficSources: normalizeUserTrafficSources(candidate.trafficSources),
     totalSessionSeconds: Number(candidate.totalSessionSeconds ?? 0) || 0,
     totalAudioSeconds: Number(candidate.totalAudioSeconds ?? 0) || 0,
     favoriteSurahIds: normalizeFavoriteSurahIds(candidate.favoriteSurahIds),
@@ -532,6 +561,9 @@ function toAdminSummary(user: StoredUser): AdminUserSummary {
     updatedAt: user.updatedAt,
     loginCount: user.loginCount,
     lastLoginAt: user.lastLoginAt,
+    acquisitionSource: user.acquisitionSource,
+    lastLoginSource: user.lastLoginSource,
+    trafficSources: user.trafficSources,
     totalSessionSeconds: user.totalSessionSeconds,
     totalAudioSeconds: user.totalAudioSeconds,
     favoriteSurahIds: user.favoriteSurahIds,
@@ -650,6 +682,9 @@ const userSchema = new Schema<StoredUser>(
     updatedAt: { type: String, required: true },
     loginCount: { type: Number, default: 0 },
     lastLoginAt: { type: String, default: null },
+    acquisitionSource: { type: String, enum: ['instagram', null], default: null },
+    lastLoginSource: { type: String, enum: ['instagram', null], default: null },
+    trafficSources: { type: [String], enum: ['instagram'], default: [] },
     totalSessionSeconds: { type: Number, default: 0 },
     totalAudioSeconds: { type: Number, default: 0 },
     favoriteSurahIds: { type: [Number], default: [] },
@@ -719,10 +754,12 @@ export async function createUser(input: {
   imageUrl?: string | null;
   passwordHash: string;
   passwordSalt: string;
+  trafficSource?: UserTrafficSource | null;
 }): Promise<StoredUser> {
   const User = await ensureUsersModel();
   const normalizedEmail = normalizeEmail(input.email);
   const nowIso = new Date().toISOString();
+  const trafficSource = normalizeUserTrafficSource(input.trafficSource);
 
   const user: StoredUser = {
     id: randomUUID(),
@@ -735,6 +772,9 @@ export async function createUser(input: {
     updatedAt: nowIso,
     loginCount: 1,
     lastLoginAt: nowIso,
+    acquisitionSource: trafficSource,
+    lastLoginSource: trafficSource,
+    trafficSources: trafficSource ? [trafficSource] : [],
     totalSessionSeconds: 0,
     totalAudioSeconds: 0,
     favoriteSurahIds: [],
@@ -762,6 +802,7 @@ export async function findOrCreateGoogleUser(input: {
   name: string;
   email: string;
   imageUrl?: string | null;
+  trafficSource?: UserTrafficSource | null;
 }): Promise<StoredUser> {
   const normalizedEmail = normalizeEmail(input.email);
   const existingUser = await findUserByEmail(normalizedEmail);
@@ -769,6 +810,7 @@ export async function findOrCreateGoogleUser(input: {
     const updatedUser = await markUserLogin(existingUser.id, {
       imageUrl: input.imageUrl,
       name: input.name,
+      trafficSource: input.trafficSource,
     });
     return updatedUser ?? existingUser;
   }
@@ -781,12 +823,13 @@ export async function findOrCreateGoogleUser(input: {
     imageUrl: input.imageUrl,
     passwordHash: digest.hash,
     passwordSalt: digest.salt,
+    trafficSource: input.trafficSource,
   });
 }
 
 export async function markUserLogin(
   userId: string,
-  profile?: { name?: string; imageUrl?: string | null }
+  profile?: { name?: string; imageUrl?: string | null; trafficSource?: UserTrafficSource | null }
 ): Promise<StoredUser | null> {
   const User = await ensureUsersModel();
   const nowIso = new Date().toISOString();
@@ -802,15 +845,27 @@ export async function markUserLogin(
   if (name) {
     $set.name = name;
   }
+  const trafficSource = normalizeUserTrafficSource(profile?.trafficSource);
+  $set.lastLoginSource = trafficSource;
+
+  const update: {
+    $inc: { loginCount: number };
+    $set: Record<string, unknown>;
+    $addToSet?: { trafficSources: UserTrafficSource };
+  } = {
+    $inc: {
+      loginCount: 1,
+    },
+    $set,
+  };
+
+  if (trafficSource) {
+    update.$addToSet = { trafficSources: trafficSource };
+  }
 
   const raw = await User.findOneAndUpdate(
     { id: userId },
-    {
-      $inc: {
-        loginCount: 1,
-      },
-      $set,
-    },
+    update,
     {
       new: true,
     }

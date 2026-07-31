@@ -69,7 +69,7 @@ export default function InstagramGoogleSignin({ onSigninStart }: { onSigninStart
       const authResponse = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: response.credential }),
+        body: JSON.stringify({ idToken: response.credential, source: 'instagram' }),
       });
       const payload = (await authResponse.json()) as AuthPayload;
 
