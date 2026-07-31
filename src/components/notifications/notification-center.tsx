@@ -14,8 +14,6 @@ import {
   MoonStar,
   Settings2,
   ShieldCheck,
-  Volume2,
-  VolumeX,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -30,7 +28,6 @@ interface NotificationCenterProps {
 
 interface NotificationResponse {
   notifications?: UserNotification[];
-  unreadCount?: number;
 }
 
 interface NotificationCreateResponse {
@@ -62,8 +59,6 @@ interface WebPushPublicKeyResponse {
 }
 
 interface NotificationSettings {
-  soundEnabled: boolean;
-  desktopEnabled: boolean;
   prayerEnabled: boolean;
   prayerCity: string;
   prayerCountry: string;
@@ -72,11 +67,12 @@ interface NotificationSettings {
 
 const SETTINGS_KEY = 'alhuda-notification-settings';
 const PRAYER_SENT_KEY = 'alhuda-prayer-notifications-sent';
+const PUSH_PERMISSION_DENIED_MESSAGE = 'Notification permission was not allowed.';
+const PUSH_ENABLE_SUCCESS_MESSAGE = 'Notifications on ho gayi. Thanks.';
+const PUSH_SUCCESS_VISIBLE_MS = 5_000;
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 
 const DEFAULT_SETTINGS: NotificationSettings = {
-  soundEnabled: false,
-  desktopEnabled: false,
   prayerEnabled: true,
   prayerCity: 'Karachi',
   prayerCountry: 'Pakistan',
@@ -144,8 +140,6 @@ function readSettings(): NotificationSettings {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SETTINGS_KEY) ?? '{}') as Partial<NotificationSettings>;
     return {
-      soundEnabled: Boolean(parsed.soundEnabled),
-      desktopEnabled: Boolean(parsed.desktopEnabled),
       prayerEnabled: parsed.prayerEnabled !== false,
       prayerCity: String(parsed.prayerCity ?? DEFAULT_SETTINGS.prayerCity).trim() || DEFAULT_SETTINGS.prayerCity,
       prayerCountry:
@@ -206,22 +200,40 @@ function writeSentPrayerKeys(keys: Set<string>) {
   window.localStorage.setItem(PRAYER_SENT_KEY, JSON.stringify(Array.from(keys).slice(-80)));
 }
 
+function PushPermissionResetHelp() {
+  return (
+    <div className="mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+      <p>{PUSH_PERMISSION_DENIED_MESSAGE}</p>
+      <div className="mt-2 flex items-start gap-2">
+        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-accent)]">
+          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
+        <div>
+          <p className="font-semibold text-[var(--color-heading)]">Or reset permission</p>
+          <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+            <li>Address bar me site controls icon click karein.</li>
+            <li>Notifications ko Allow karein.</li>
+            <li>Bell icon me Enable dobara click karein.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NotificationCenter({ isAuthenticated }: NotificationCenterProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
-  const [desktopPermission, setDesktopPermission] = useState<NotificationPermission>('default');
   const [webPushPublicKey, setWebPushPublicKey] = useState('');
   const [webPushConfigured, setWebPushConfigured] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState('');
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const didLoadInitialRef = useRef(false);
-  const lastUnreadCountRef = useRef(0);
+  const pushSuccessTimeoutRef = useRef<number | null>(null);
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.readAt).length,
@@ -234,60 +246,23 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     'PushManager' in window &&
     'Notification' in window;
 
-  const playNotificationSound = useCallback(() => {
-    if (!settings.soundEnabled || typeof window === 'undefined') {
-      return;
+  const clearPushSuccessTimer = useCallback(() => {
+    if (pushSuccessTimeoutRef.current !== null) {
+      window.clearTimeout(pushSuccessTimeoutRef.current);
+      pushSuccessTimeoutRef.current = null;
     }
+  }, []);
 
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) {
-      return;
-    }
-
-    const context = audioContextRef.current ?? new AudioContextClass();
-    audioContextRef.current = context;
-    void context.resume();
-
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(740, context.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(980, context.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.34);
-  }, [settings.soundEnabled]);
-
-  const sendDesktopNotification = useCallback(
-    (notification: UserNotification) => {
-      if (
-        !settings.desktopEnabled ||
-        typeof window === 'undefined' ||
-        !('Notification' in window) ||
-        Notification.permission !== 'granted'
-      ) {
-        return;
-      }
-
-      const desktopNotification = new Notification(notification.title, {
-        body: notification.message,
-        icon: '/logos/logo1.png',
-        tag: notification.id,
-      });
-
-      if (notification.href) {
-        desktopNotification.onclick = () => {
-          window.focus();
-          window.location.href = notification.href ?? '/';
-        };
-      }
-    },
-    [settings.desktopEnabled]
-  );
+  const showPushEnabledThanks = useCallback(() => {
+    clearPushSuccessTimer();
+    setPushMessage(PUSH_ENABLE_SUCCESS_MESSAGE);
+    pushSuccessTimeoutRef.current = window.setTimeout(() => {
+      setPushMessage((current) =>
+        current === PUSH_ENABLE_SUCCESS_MESSAGE ? '' : current
+      );
+      pushSuccessTimeoutRef.current = null;
+    }, PUSH_SUCCESS_VISIBLE_MS);
+  }, [clearPushSuccessTimer]);
 
   const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) {
@@ -305,20 +280,11 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
       const payload = (await response.json()) as NotificationResponse;
       const nextNotifications = payload.notifications ?? [];
-      const nextUnreadCount =
-        payload.unreadCount ?? nextNotifications.filter((notification) => !notification.readAt).length;
-
-      if (didLoadInitialRef.current && nextUnreadCount > lastUnreadCountRef.current) {
-        playNotificationSound();
-      }
-
-      didLoadInitialRef.current = true;
-      lastUnreadCountRef.current = nextUnreadCount;
       setNotifications(nextNotifications);
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, playNotificationSound]);
+  }, [isAuthenticated]);
 
   const createNotification = useCallback(
     async (input: Omit<UserNotification, 'id' | 'createdAt' | 'readAt'>) => {
@@ -339,16 +305,11 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       const payload = (await response.json()) as NotificationCreateResponse;
       if (payload.notification) {
         setNotifications((prev) => [payload.notification!, ...prev].slice(0, 80));
-        lastUnreadCountRef.current += 1;
-        playNotificationSound();
-        if (!payload.push || Number(payload.push.sent ?? 0) <= 0) {
-          sendDesktopNotification(payload.notification);
-        }
       }
 
       return payload.notification ?? null;
     },
-    [isAuthenticated, playNotificationSound, sendDesktopNotification]
+    [isAuthenticated]
   );
 
   const refreshPushStatus = useCallback(async () => {
@@ -376,22 +337,24 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
   const enableQuranPush = async () => {
     if (!pushSupported || !webPushConfigured || !webPushPublicKey) {
+      clearPushSuccessTimer();
       setPushMessage('Push reminders need HTTPS, service worker, and VAPID keys.');
       return;
     }
 
     try {
       setPushBusy(true);
+      clearPushSuccessTimer();
       setPushMessage('');
 
       const permission =
         Notification.permission === 'granted'
           ? 'granted'
           : await Notification.requestPermission();
-      setDesktopPermission(permission);
 
       if (permission !== 'granted') {
-        setPushMessage('Notification permission was not allowed.');
+        clearPushSuccessTimer();
+        setPushMessage(PUSH_PERMISSION_DENIED_MESSAGE);
         return;
       }
 
@@ -415,44 +378,16 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       });
 
       if (!response.ok) {
+        clearPushSuccessTimer();
         setPushMessage('Unable to save this device for push reminders.');
         return;
       }
 
       setPushEnabled(true);
-      updateSettings({ ...settings, desktopEnabled: true });
-      setPushMessage('Website push notifications are enabled for this device.');
+      showPushEnabledThanks();
     } catch {
+      clearPushSuccessTimer();
       setPushMessage('Push reminders could not be enabled on this browser.');
-    } finally {
-      setPushBusy(false);
-    }
-  };
-
-  const disableQuranPush = async () => {
-    if (!pushSupported) {
-      return;
-    }
-
-    try {
-      setPushBusy(true);
-      setPushMessage('');
-      const registration = await navigator.serviceWorker.getRegistration();
-      const subscription = await registration?.pushManager.getSubscription();
-
-      if (subscription) {
-        await fetch('/api/push/subscribe', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: subscription.endpoint }),
-        });
-        await subscription.unsubscribe();
-      }
-
-      setPushEnabled(false);
-      setPushMessage('Website push notifications are off for this device.');
-    } catch {
-      setPushMessage('Unable to disable push reminders right now.');
     } finally {
       setPushBusy(false);
     }
@@ -460,10 +395,9 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
   useEffect(() => {
     setSettings(readSettings());
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setDesktopPermission(Notification.permission);
-    }
   }, []);
+
+  useEffect(() => () => clearPushSuccessTimer(), [clearPushSuccessTimer]);
 
   useEffect(() => {
     void refreshPushStatus();
@@ -606,23 +540,6 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     writeSettings(next);
   };
 
-  const enableSound = async () => {
-    updateSettings({ ...settings, soundEnabled: !settings.soundEnabled });
-    if (!settings.soundEnabled) {
-      playNotificationSound();
-    }
-  };
-
-  const requestDesktopPermission = async () => {
-    if (!('Notification' in window)) {
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    setDesktopPermission(permission);
-    updateSettings({ ...settings, desktopEnabled: permission === 'granted' });
-  };
-
   const markRead = async (notificationId: string) => {
     setNotifications((prev) =>
       prev.map((notification) =>
@@ -643,13 +560,15 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     setNotifications((prev) =>
       prev.map((notification) => ({ ...notification, readAt: notification.readAt ?? nowIso }))
     );
-    lastUnreadCountRef.current = 0;
     await fetch('/api/auth/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'mark-all-read' }),
     });
   };
+
+  const isPushSuccessMessage = pushMessage === PUSH_ENABLE_SUCCESS_MESSAGE;
+  const shouldShowPushCard = !pushEnabled || Boolean(pushMessage);
 
   if (!isAuthenticated) {
     return null;
@@ -694,16 +613,6 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
               </Badge>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={enableSound}>
-                {settings.soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-                {settings.soundEnabled ? 'Sound on' : 'Sound off'}
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={requestDesktopPermission}>
-                <Settings2 className="h-3.5 w-3.5" />
-                {desktopPermission === 'granted' ? 'Desktop on' : 'Desktop'}
-              </Button>
-            </div>
           </div>
 
           <div className="shrink-0 border-b border-[var(--color-border)] p-3">
@@ -746,46 +655,56 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
                 className="h-4 w-4 accent-[var(--color-accent)]"
               />
             </label>
-            <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+            {shouldShowPushCard ? (
+              <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2">
+                {isPushSuccessMessage ? (
                   <p className="text-xs font-semibold text-[var(--color-heading)]">
-                    Website push notifications
+                    {PUSH_ENABLE_SUCCESS_MESSAGE}
                   </p>
-                  <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
-                    Sends Quran, account, audio, saved ayah, Islamic, and admin alerts.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={pushEnabled ? 'default' : 'outline'}
-                  disabled={pushBusy || !pushSupported || !webPushConfigured}
-                  onClick={() => {
-                    if (pushEnabled) {
-                      void disableQuranPush();
-                    } else {
-                      void enableQuranPush();
-                    }
-                  }}
-                  className="shrink-0"
-                >
-                  {pushBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  {pushEnabled ? 'Push on' : 'Enable'}
-                </Button>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-[var(--color-heading)]">
+                          Website push notifications
+                        </p>
+                        <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                          Sends Quran, account, audio, saved ayah, Islamic, and admin alerts.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={pushBusy || !pushSupported || !webPushConfigured}
+                        onClick={() => {
+                          void enableQuranPush();
+                        }}
+                        className="shrink-0"
+                      >
+                        {pushBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        Enable
+                      </Button>
+                    </div>
+                    {!pushSupported ? (
+                      <p className="mt-2 text-[10px] text-[var(--color-danger)]">
+                        This browser does not support web push.
+                      </p>
+                    ) : !webPushConfigured ? (
+                      <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">
+                        Add Web Push VAPID keys on the server to enable closed-app reminders.
+                      </p>
+                    ) : pushMessage === PUSH_PERMISSION_DENIED_MESSAGE ? (
+                      <PushPermissionResetHelp />
+                    ) : pushMessage ? (
+                      <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">
+                        {pushMessage}
+                      </p>
+                    ) : null}
+                  </>
+                )}
               </div>
-              {!pushSupported ? (
-                <p className="mt-2 text-[10px] text-[var(--color-danger)]">
-                  This browser does not support web push.
-                </p>
-              ) : !webPushConfigured ? (
-                <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">
-                  Add Web Push VAPID keys on the server to enable closed-app reminders.
-                </p>
-              ) : pushMessage ? (
-                <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">{pushMessage}</p>
-              ) : null}
-            </div>
+            ) : null}
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
