@@ -71,6 +71,20 @@ export async function GET(request: NextRequest) {
         if (device.failureCount > 0) {
           result.devicesWithFailures += 1;
         }
+        result.notificationsSent += device.notificationSentCount;
+        result.notificationVisits += device.notificationVisitCount;
+        if (device.notificationVisitCount > 0) {
+          result.devicesWithVisits += 1;
+        }
+        if (
+          device.lastNotificationVisitAt &&
+          (!result.lastNotificationVisitAt ||
+            device.lastNotificationVisitAt.localeCompare(
+              result.lastNotificationVisitAt
+            ) > 0)
+        ) {
+          result.lastNotificationVisitAt = device.lastNotificationVisitAt;
+        }
         return result;
       },
       {
@@ -79,15 +93,28 @@ export async function GET(request: NextRequest) {
         guestDevices: 0,
         reachedDevices: 0,
         devicesWithFailures: 0,
+        notificationsSent: 0,
+        notificationVisits: 0,
+        devicesWithVisits: 0,
+        lastNotificationVisitAt: null as string | null,
       }
     );
+    const summaryWithRate = {
+      ...summary,
+      notificationOpenRate:
+        summary.notificationsSent > 0
+          ? Number(
+              ((summary.notificationVisits / summary.notificationsSent) * 100).toFixed(1)
+            )
+          : 0,
+    };
 
     return NextResponse.json(
       {
         devices,
         guestDevices: dedupedGuestDevices,
         userDevices: dedupedUserDevices,
-        summary,
+        summary: summaryWithRate,
       },
       { headers: dashboardCorsHeaders(request) }
     );

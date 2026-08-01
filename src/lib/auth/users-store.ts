@@ -7,6 +7,7 @@ import { connectToMongoDatabase } from '@/lib/db/mongodb';
 import { buildBookmarkId } from '@/lib/quran-utils';
 import {
   normalizePushContentPreference,
+  type PushDeliveryTracking,
   type PushContentPreference,
   type PushEngagementKind,
 } from '@/lib/push/engagement-types';
@@ -43,6 +44,12 @@ export interface StoredPushSubscription {
   lastEngagementAt: string | null;
   lastEngagementKind: PushEngagementKind | null;
   lastSentAt: string | null;
+  notificationSentCount: number;
+  notificationVisitCount: number;
+  lastNotificationVisitAt: string | null;
+  lastNotificationCampaignId: string | null;
+  lastNotificationKind: string | null;
+  openedDeliveryIds: string[];
   failureCount: number;
   createdAt: string;
   lastSeenAt: string;
@@ -66,6 +73,7 @@ export interface AdminUserPushDevice {
   imageUrl: string | null;
   userAgent: string | null;
   timeZone: string | null;
+  contentPreference: PushContentPreference;
   enabled: boolean;
   quranReminderEnabled: boolean;
   failureCount: number;
@@ -73,6 +81,13 @@ export interface AdminUserPushDevice {
   updatedAt: string;
   lastSeenAt: string;
   lastSentAt: string | null;
+  lastEngagementAt: string | null;
+  lastEngagementKind: PushEngagementKind | null;
+  notificationSentCount: number;
+  notificationVisitCount: number;
+  lastNotificationVisitAt: string | null;
+  lastNotificationCampaignId: string | null;
+  lastNotificationKind: string | null;
 }
 
 export interface StoredUser {
@@ -482,6 +497,34 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
       candidate.lastSentAt === null || candidate.lastSentAt === undefined
         ? null
         : String(candidate.lastSentAt),
+    notificationSentCount: Math.max(
+      0,
+      Math.floor(Number(candidate.notificationSentCount ?? 0) || 0)
+    ),
+    notificationVisitCount: Math.max(
+      0,
+      Math.floor(Number(candidate.notificationVisitCount ?? 0) || 0)
+    ),
+    lastNotificationVisitAt:
+      candidate.lastNotificationVisitAt === null ||
+      candidate.lastNotificationVisitAt === undefined
+        ? null
+        : String(candidate.lastNotificationVisitAt),
+    lastNotificationCampaignId: candidate.lastNotificationCampaignId
+      ? String(candidate.lastNotificationCampaignId).slice(0, 180)
+      : null,
+    lastNotificationKind: candidate.lastNotificationKind
+      ? String(candidate.lastNotificationKind).slice(0, 80)
+      : null,
+    openedDeliveryIds: Array.isArray(candidate.openedDeliveryIds)
+      ? Array.from(
+          new Set(
+            candidate.openedDeliveryIds
+              .map((value) => String(value).trim())
+              .filter(Boolean)
+          )
+        ).slice(-50)
+      : [],
     failureCount: Math.max(0, Math.floor(Number(candidate.failureCount ?? 0) || 0)),
     createdAt,
     lastSeenAt,
@@ -725,6 +768,12 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
       default: null,
     },
     lastSentAt: { type: String, default: null },
+    notificationSentCount: { type: Number, min: 0, default: 0 },
+    notificationVisitCount: { type: Number, min: 0, default: 0 },
+    lastNotificationVisitAt: { type: String, default: null },
+    lastNotificationCampaignId: { type: String, default: null },
+    lastNotificationKind: { type: String, default: null },
+    openedDeliveryIds: { type: [String], default: [] },
     failureCount: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true },
     lastSeenAt: { type: String, default: () => new Date().toISOString() },
@@ -1220,6 +1269,13 @@ export async function upsertUserPushSubscription(
     lastEngagementAt: existingSubscription?.lastEngagementAt ?? null,
     lastEngagementKind: existingSubscription?.lastEngagementKind ?? null,
     lastSentAt: existingSubscription?.lastSentAt ?? null,
+    notificationSentCount: existingSubscription?.notificationSentCount ?? 0,
+    notificationVisitCount: existingSubscription?.notificationVisitCount ?? 0,
+    lastNotificationVisitAt: existingSubscription?.lastNotificationVisitAt ?? null,
+    lastNotificationCampaignId:
+      existingSubscription?.lastNotificationCampaignId ?? null,
+    lastNotificationKind: existingSubscription?.lastNotificationKind ?? null,
+    openedDeliveryIds: existingSubscription?.openedDeliveryIds ?? [],
   });
 
   if (!normalized) {
@@ -1481,6 +1537,7 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
         imageUrl: normalizeImageUrl(candidate?.imageUrl),
         userAgent: subscription.userAgent,
         timeZone: subscription.timeZone,
+        contentPreference: subscription.contentPreference,
         enabled: subscription.enabled,
         quranReminderEnabled: subscription.quranReminderEnabled,
         failureCount: subscription.failureCount,
@@ -1488,6 +1545,13 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
         updatedAt: subscription.updatedAt,
         lastSeenAt: subscription.lastSeenAt,
         lastSentAt: subscription.lastSentAt ?? subscription.lastReminderAt,
+        lastEngagementAt: subscription.lastEngagementAt,
+        lastEngagementKind: subscription.lastEngagementKind,
+        notificationSentCount: subscription.notificationSentCount,
+        notificationVisitCount: subscription.notificationVisitCount,
+        lastNotificationVisitAt: subscription.lastNotificationVisitAt,
+        lastNotificationCampaignId: subscription.lastNotificationCampaignId,
+        lastNotificationKind: subscription.lastNotificationKind,
       });
     }
   }
@@ -1559,7 +1623,8 @@ export async function markPushSubscriptionSent(
   userId: string,
   endpoint: string,
   sentAt: string,
-  engagementKind?: PushEngagementKind
+  engagementKind?: PushEngagementKind,
+  tracking?: PushDeliveryTracking
 ) {
   const User = await ensureUsersModel();
   const subscriptionUpdate: Record<string, unknown> = {
@@ -1574,14 +1639,83 @@ export async function markPushSubscriptionSent(
     subscriptionUpdate['pushSubscriptions.$.lastEngagementKind'] = engagementKind;
   }
 
+  if (tracking) {
+    subscriptionUpdate['pushSubscriptions.$.lastNotificationCampaignId'] =
+      tracking.campaignId;
+    subscriptionUpdate['pushSubscriptions.$.lastNotificationKind'] =
+      tracking.notificationKind;
+  }
+
   await User.findOneAndUpdate(
     { id: userId, 'pushSubscriptions.endpoint': endpoint },
     {
       $set: subscriptionUpdate,
+      $inc: {
+        'pushSubscriptions.$.notificationSentCount': 1,
+      },
     }
   )
     .lean()
     .exec();
+}
+
+export async function recordUserPushNotificationVisit(input: {
+  userId: string;
+  endpointHash: string;
+  deliveryId: string;
+  campaignId: string;
+  notificationKind: string;
+  visitedAt: string;
+}) {
+  const User = await ensureUsersModel();
+  const rawUser = await User.findOne(
+    { id: input.userId },
+    { _id: 0, pushSubscriptions: 1 }
+  )
+    .lean()
+    .exec();
+  const subscription = normalizePushSubscriptions(
+    (rawUser as { pushSubscriptions?: unknown } | null)?.pushSubscriptions
+  ).find(
+    (candidate) =>
+      createHash('sha256').update(candidate.endpoint).digest('hex') ===
+      input.endpointHash
+  );
+
+  if (!subscription) {
+    return false;
+  }
+
+  const result = await User.updateOne(
+    {
+      id: input.userId,
+      pushSubscriptions: {
+        $elemMatch: {
+          endpoint: subscription.endpoint,
+          openedDeliveryIds: { $ne: input.deliveryId },
+        },
+      },
+    },
+    {
+      $inc: {
+        'pushSubscriptions.$.notificationVisitCount': 1,
+      },
+      $set: {
+        'pushSubscriptions.$.lastNotificationVisitAt': input.visitedAt,
+        'pushSubscriptions.$.lastNotificationCampaignId': input.campaignId,
+        'pushSubscriptions.$.lastNotificationKind': input.notificationKind,
+        updatedAt: input.visitedAt,
+      },
+      $push: {
+        'pushSubscriptions.$.openedDeliveryIds': {
+          $each: [input.deliveryId],
+          $slice: -50,
+        },
+      },
+    }
+  ).exec();
+
+  return result.modifiedCount > 0;
 }
 
 export async function markPushSubscriptionFailure(

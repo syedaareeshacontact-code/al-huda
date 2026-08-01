@@ -6,6 +6,7 @@ import { connectToMongoDatabase } from '@/lib/db/mongodb';
 import {
   normalizePushContentPreference,
   type PushContentPreference,
+  type PushDeliveryTracking,
   type PushEngagementKind,
 } from '@/lib/push/engagement-types';
 
@@ -28,6 +29,12 @@ export interface StoredGuestPushSubscription {
   lastSentAt: string | null;
   lastEngagementAt: string | null;
   lastEngagementKind: PushEngagementKind | null;
+  notificationSentCount: number;
+  notificationVisitCount: number;
+  lastNotificationVisitAt: string | null;
+  lastNotificationCampaignId: string | null;
+  lastNotificationKind: string | null;
+  openedDeliveryIds: string[];
 }
 
 export interface GuestPushDeviceForAdmin {
@@ -42,6 +49,13 @@ export interface GuestPushDeviceForAdmin {
   updatedAt: string;
   lastSeenAt: string;
   lastSentAt: string | null;
+  lastEngagementAt: string | null;
+  lastEngagementKind: PushEngagementKind | null;
+  notificationSentCount: number;
+  notificationVisitCount: number;
+  lastNotificationVisitAt: string | null;
+  lastNotificationCampaignId: string | null;
+  lastNotificationKind: string | null;
 }
 
 export interface GuestPushSubscriptionForDelivery extends StoredGuestPushSubscription {
@@ -80,6 +94,12 @@ const guestPushSubscriptionSchema = new Schema<StoredGuestPushSubscription>(
       enum: ['hadith', 'quran', 'islamic'],
       default: null,
     },
+    notificationSentCount: { type: Number, min: 0, default: 0 },
+    notificationVisitCount: { type: Number, min: 0, default: 0 },
+    lastNotificationVisitAt: { type: String, default: null },
+    lastNotificationCampaignId: { type: String, default: null },
+    lastNotificationKind: { type: String, default: null },
+    openedDeliveryIds: { type: [String], default: [] },
   },
   {
     collection: GUEST_PUSH_COLLECTION,
@@ -150,6 +170,32 @@ function normalizeGuestPushSubscription(
       entry.lastEngagementKind === 'islamic'
         ? entry.lastEngagementKind
         : null,
+    notificationSentCount: Math.max(
+      0,
+      Math.floor(Number(entry.notificationSentCount) || 0)
+    ),
+    notificationVisitCount: Math.max(
+      0,
+      Math.floor(Number(entry.notificationVisitCount) || 0)
+    ),
+    lastNotificationVisitAt: entry.lastNotificationVisitAt
+      ? String(entry.lastNotificationVisitAt)
+      : null,
+    lastNotificationCampaignId: entry.lastNotificationCampaignId
+      ? String(entry.lastNotificationCampaignId).slice(0, 180)
+      : null,
+    lastNotificationKind: entry.lastNotificationKind
+      ? String(entry.lastNotificationKind).slice(0, 80)
+      : null,
+    openedDeliveryIds: Array.isArray(entry.openedDeliveryIds)
+      ? Array.from(
+          new Set(
+            entry.openedDeliveryIds
+              .map((value) => String(value).trim())
+              .filter(Boolean)
+          )
+        ).slice(-50)
+      : [],
   };
 }
 
@@ -205,6 +251,12 @@ export async function upsertGuestPushSubscription(input: {
         lastSentAt: null,
         lastEngagementAt: null,
         lastEngagementKind: null,
+        notificationSentCount: 0,
+        notificationVisitCount: 0,
+        lastNotificationVisitAt: null,
+        lastNotificationCampaignId: null,
+        lastNotificationKind: null,
+        openedDeliveryIds: [],
       },
     },
     { upsert: true }
@@ -269,6 +321,32 @@ export async function listGuestPushDevicesForAdmin(): Promise<GuestPushDeviceFor
     updatedAt: String(entry.updatedAt),
     lastSeenAt: String(entry.lastSeenAt),
     lastSentAt: entry.lastSentAt ? String(entry.lastSentAt) : null,
+    lastEngagementAt: entry.lastEngagementAt
+      ? String(entry.lastEngagementAt)
+      : null,
+    lastEngagementKind:
+      entry.lastEngagementKind === 'hadith' ||
+      entry.lastEngagementKind === 'quran' ||
+      entry.lastEngagementKind === 'islamic'
+        ? entry.lastEngagementKind
+        : null,
+    notificationSentCount: Math.max(
+      0,
+      Math.floor(Number(entry.notificationSentCount) || 0)
+    ),
+    notificationVisitCount: Math.max(
+      0,
+      Math.floor(Number(entry.notificationVisitCount) || 0)
+    ),
+    lastNotificationVisitAt: entry.lastNotificationVisitAt
+      ? String(entry.lastNotificationVisitAt)
+      : null,
+    lastNotificationCampaignId: entry.lastNotificationCampaignId
+      ? String(entry.lastNotificationCampaignId).slice(0, 180)
+      : null,
+    lastNotificationKind: entry.lastNotificationKind
+      ? String(entry.lastNotificationKind).slice(0, 80)
+      : null,
   }));
 }
 
@@ -294,7 +372,8 @@ export async function listEnabledGuestPushSubscriptions(): Promise<
 export async function markGuestPushSubscriptionSent(
   endpoint: string,
   sentAt: string,
-  engagementKind?: PushEngagementKind
+  engagementKind?: PushEngagementKind,
+  tracking?: PushDeliveryTracking
 ) {
   const GuestPush = await ensureGuestPushModel();
   const update: Record<string, unknown> = {
@@ -308,12 +387,50 @@ export async function markGuestPushSubscriptionSent(
     update.lastEngagementKind = engagementKind;
   }
 
+  if (tracking) {
+    update.lastNotificationCampaignId = tracking.campaignId;
+    update.lastNotificationKind = tracking.notificationKind;
+  }
+
   await GuestPush.updateOne(
     { endpoint },
     {
       $set: update,
+      $inc: { notificationSentCount: 1 },
     }
   ).exec();
+}
+
+export async function recordGuestPushNotificationVisit(input: {
+  guestDeviceId: string;
+  deliveryId: string;
+  campaignId: string;
+  notificationKind: string;
+  visitedAt: string;
+}) {
+  const GuestPush = await ensureGuestPushModel();
+  const result = await GuestPush.updateOne(
+    {
+      id: input.guestDeviceId,
+      openedDeliveryIds: { $ne: input.deliveryId },
+    },
+    {
+      $inc: { notificationVisitCount: 1 },
+      $set: {
+        lastNotificationVisitAt: input.visitedAt,
+        lastNotificationCampaignId: input.campaignId,
+        lastNotificationKind: input.notificationKind,
+      },
+      $push: {
+        openedDeliveryIds: {
+          $each: [input.deliveryId],
+          $slice: -50,
+        },
+      },
+    }
+  ).exec();
+
+  return result.modifiedCount > 0;
 }
 
 export async function markGuestPushSubscriptionFailure(

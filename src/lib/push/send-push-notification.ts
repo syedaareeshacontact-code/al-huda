@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { PushSubscription } from 'web-push';
 
 import {
@@ -11,6 +13,7 @@ import {
   type GuestPushSubscriptionForDelivery,
 } from '@/lib/push/guest-push-store';
 import type { PushEngagementKind } from '@/lib/push/engagement-types';
+import { createPushTrackingToken } from '@/lib/push/push-open-tracking';
 import { getConfiguredWebPush } from '@/lib/push/web-push';
 
 export interface PushPayload {
@@ -44,6 +47,11 @@ interface SingleDeliveryResult {
 
 const PUSH_DELIVERY_CONCURRENCY = 8;
 
+function normalizeTrackingText(value: unknown, fallback: string, maxLength: number) {
+  const normalized = String(value ?? '').trim();
+  return (normalized || fallback).slice(0, maxLength);
+}
+
 function isGuestPushSubscription(
   subscription:
     | PushSubscriptionForDelivery
@@ -69,22 +77,47 @@ export async function sendPushNotificationToSubscriptions(
     };
   }
 
-  const serializedPayload = JSON.stringify({
-    title: payload.title,
-    body: payload.body,
-    icon: payload.icon || '/logos/pwa-192.png',
-    badge: payload.badge || '/logos/favicon-48.png',
-    tag: payload.tag || 'read-al-quran-notification',
-    url: payload.url || '/',
-    data: {
-      url: payload.url || '/',
-      ...(payload.data || {}),
-    },
-  });
-
   const deliver = async (
     subscription: PushSubscriptionForDelivery | GuestPushSubscriptionForDelivery
   ): Promise<SingleDeliveryResult> => {
+    const deliveryId = randomUUID();
+    const campaignId = normalizeTrackingText(
+      payload.data?.campaignId,
+      payload.tag || 'push-notification',
+      180
+    );
+    const notificationKind = normalizeTrackingText(
+      options.engagementKind ?? payload.data?.kind ?? payload.data?.type,
+      'general',
+      80
+    );
+    const tracking = { deliveryId, campaignId, notificationKind };
+    const trackingToken = isGuestPushSubscription(subscription)
+      ? createPushTrackingToken({
+          ownerType: 'guest',
+          ownerId: subscription.guestDeviceId,
+          ...tracking,
+        })
+      : createPushTrackingToken({
+          ownerType: 'user',
+          ownerId: subscription.userId,
+          endpoint: subscription.endpoint,
+          ...tracking,
+        });
+    const serializedPayload = JSON.stringify({
+      title: payload.title,
+      body: payload.body,
+      icon: payload.icon || '/logos/pwa-192.png',
+      badge: payload.badge || '/logos/favicon-48.png',
+      tag: payload.tag || 'read-al-quran-notification',
+      url: payload.url || '/',
+      data: {
+        url: payload.url || '/',
+        ...(payload.data || {}),
+        ...(trackingToken ? { trackingToken } : {}),
+      },
+    });
+
     try {
       await push.sendNotification(
         {
@@ -102,14 +135,16 @@ export async function sendPushNotificationToSubscriptions(
         await markGuestPushSubscriptionSent(
           subscription.endpoint,
           sentAt,
-          options.engagementKind
+          options.engagementKind,
+          tracking
         );
       } else {
         await markPushSubscriptionSent(
           subscription.userId,
           subscription.endpoint,
           sentAt,
-          options.engagementKind
+          options.engagementKind,
+          tracking
         );
       }
       return { sent: 1, failed: 0, disabled: 0 };

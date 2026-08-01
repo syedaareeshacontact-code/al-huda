@@ -67,6 +67,7 @@ variables from Vercel. Never commit `.env` or `.env.local`.
 | `NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY` | Public VAPID key for browser push subscriptions |
 | `WEB_PUSH_PRIVATE_KEY` | Private VAPID key; server only |
 | `WEB_PUSH_SUBJECT` | VAPID contact, normally a `mailto:` address |
+| `PUSH_TRACKING_SECRET` | Optional dedicated HMAC secret for notification-click attribution; falls back to `CRON_SECRET` |
 | `CRON_SECRET` | Bearer secret for scheduled cron endpoints |
 
 Vercel supplies `VERCEL_ENV` and `VERCEL_GIT_COMMIT_SHA` automatically.

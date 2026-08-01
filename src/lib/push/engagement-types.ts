@@ -2,6 +2,12 @@ export type PushContentPreference = 'hadith' | 'quran' | 'balanced';
 
 export type PushEngagementKind = 'hadith' | 'quran' | 'islamic';
 
+export interface PushDeliveryTracking {
+  campaignId: string;
+  deliveryId: string;
+  notificationKind: string;
+}
+
 export function normalizePushContentPreference(
   value: unknown,
   fallback: PushContentPreference

@@ -188,23 +188,35 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  const trackingToken = event.notification.data?.trackingToken;
 
   event.waitUntil(
-    (async () => {
-      const clientsList = await self.clients.matchAll({
-        type: 'window',
-        includeUncontrolled: true,
-      });
+    Promise.allSettled([
+      trackingToken
+        ? fetch('/api/push/open', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: trackingToken }),
+            keepalive: true,
+          })
+        : Promise.resolve(),
+      (async () => {
+        const clientsList = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
 
-      for (const client of clientsList) {
-        if (client.url === targetUrl && 'focus' in client) {
-          return client.focus();
+        for (const client of clientsList) {
+          if (client.url === targetUrl && 'focus' in client) {
+            return client.focus();
+          }
         }
-      }
 
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
-      }
-    })()
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+        return undefined;
+      })(),
+    ])
   );
 });
