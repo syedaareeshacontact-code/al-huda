@@ -36,6 +36,7 @@ export interface StoredPushSubscription {
   lastSentAt: string | null;
   failureCount: number;
   createdAt: string;
+  lastSeenAt: string;
   updatedAt: string;
 }
 
@@ -423,6 +424,8 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
     Math.min(1440, Math.floor(Number(candidate.intervalMinutes ?? 2) || 2))
   );
   const createdAt = String(candidate.createdAt ?? new Date().toISOString());
+  const updatedAt = String(candidate.updatedAt ?? createdAt);
+  const lastSeenAt = String(candidate.lastSeenAt ?? createdAt);
 
   return {
     endpoint,
@@ -441,8 +444,17 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
         : String(candidate.lastSentAt),
     failureCount: Math.max(0, Math.floor(Number(candidate.failureCount ?? 0) || 0)),
     createdAt,
-    updatedAt: String(candidate.updatedAt ?? createdAt),
+    lastSeenAt,
+    updatedAt,
   };
+}
+
+function comparePushSubscriptionRecency(
+  left: StoredPushSubscription,
+  right: StoredPushSubscription
+) {
+  const seenComparison = right.lastSeenAt.localeCompare(left.lastSeenAt);
+  return seenComparison || right.updatedAt.localeCompare(left.updatedAt);
 }
 
 function normalizePushSubscriptions(value: unknown) {
@@ -459,7 +471,7 @@ function normalizePushSubscriptions(value: unknown) {
   }
 
   return Array.from(byEndpoint.values())
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .sort(comparePushSubscriptionRecency)
     .slice(0, MAX_PUSH_SUBSCRIPTIONS_PER_USER);
 }
 
@@ -663,6 +675,7 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
     lastSentAt: { type: String, default: null },
     failureCount: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true },
+    lastSeenAt: { type: String, default: () => new Date().toISOString() },
     updatedAt: { type: String, required: true },
   },
   {
@@ -1137,6 +1150,7 @@ export async function upsertUserPushSubscription(
     // This is the opt-in time used by the admin activity bell. Keep it stable
     // while a browser refreshes its existing subscription.
     createdAt: existingSubscription?.createdAt ?? nowIso,
+    lastSeenAt: nowIso,
     updatedAt: nowIso,
     lastReminderAt: existingSubscription?.lastReminderAt ?? null,
     lastSentAt: existingSubscription?.lastSentAt ?? null,
@@ -1403,7 +1417,7 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
         failureCount: subscription.failureCount,
         createdAt: subscription.createdAt,
         updatedAt: subscription.updatedAt,
-        lastSeenAt: subscription.updatedAt,
+        lastSeenAt: subscription.lastSeenAt,
         lastSentAt: subscription.lastSentAt ?? subscription.lastReminderAt,
       });
     }
