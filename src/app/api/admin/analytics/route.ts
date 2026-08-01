@@ -16,12 +16,7 @@ import {
 import {
   getRealtimeActivity,
   realtimeActivityWithFallback,
-  type RealtimeActivityRow,
 } from '@/lib/analytics/realtime-report';
-import {
-  listRecentRealtimeSnapshots,
-  saveRealtimeSnapshot,
-} from '@/lib/analytics/realtime-store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -375,49 +370,6 @@ async function getTrafficQuality(
   };
 }
 
-async function saveAndListRealtimeSnapshots(input: {
-  propertyId: string;
-  capturedAt: string;
-  activeUsers: number;
-  activity: RealtimeActivityRow[];
-}) {
-  const meta = {
-    days: 7,
-    saved: false,
-    error: null as string | null,
-  };
-
-  try {
-    await saveRealtimeSnapshot(input);
-    meta.saved = true;
-  } catch (snapshotSaveError) {
-    console.warn('[admin analytics] Unable to save realtime snapshot', snapshotSaveError);
-    meta.error = 'MongoDB realtime snapshot storage is unavailable.';
-  }
-
-  try {
-    const snapshots = await listRecentRealtimeSnapshots({
-      propertyId: input.propertyId,
-      days: meta.days,
-    });
-
-    return {
-      snapshots,
-      meta,
-    };
-  } catch (snapshotListError) {
-    console.warn('[admin analytics] Unable to list realtime snapshots', snapshotListError);
-
-    return {
-      snapshots: [],
-      meta: {
-        ...meta,
-        error: meta.error || 'MongoDB realtime snapshot history is unavailable.',
-      },
-    };
-  }
-}
-
 async function getPageEventDetails(
   analyticsData: ReturnType<typeof getAnalyticsDataClient>,
   property: string,
@@ -537,12 +489,6 @@ export async function GET(request: NextRequest) {
       const activeUsers = realtimeRow ? readGaMetric(realtimeRow, 0) : 0;
       const activity = realtimeActivityWithFallback(realtimeActivityRows, activeUsers);
       const generatedAt = new Date().toISOString();
-      const storedRealtime = await saveAndListRealtimeSnapshots({
-        propertyId,
-        capturedAt: generatedAt,
-        activeUsers,
-        activity,
-      });
 
       return json(request, {
         propertyId,
@@ -551,7 +497,6 @@ export async function GET(request: NextRequest) {
           activeUsers,
           activity,
         },
-        storedRealtime,
       });
     }
 
@@ -740,12 +685,6 @@ export async function GET(request: NextRequest) {
       activeUsersNow
     );
     const generatedAt = new Date().toISOString();
-    const storedRealtime = await saveAndListRealtimeSnapshots({
-      propertyId,
-      capturedAt: generatedAt,
-      activeUsers: activeUsersNow,
-      activity: realtimeActivity,
-    });
     const hourlyRows = last24Hours.rows || [];
 
     return json(request, {
@@ -771,7 +710,6 @@ export async function GET(request: NextRequest) {
         activeUsers: activeUsersNow,
         activity: realtimeActivity,
       },
-      storedRealtime,
       topPages: (topPages.rows || []).map((row) => ({
         path: readGaDimension(row, 0),
         title: readGaDimension(row, 1) || readGaDimension(row, 0),
