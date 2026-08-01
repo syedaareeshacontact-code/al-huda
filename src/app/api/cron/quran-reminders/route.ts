@@ -1,37 +1,149 @@
 import { NextResponse } from 'next/server';
 
 import {
-  createUserNotification,
   listQuranReminderPushSubscriptions,
-  markPushReminderSent,
+  type PushSubscriptionForDelivery,
 } from '@/lib/auth/users-store';
-import { buildSurahPath } from '@/lib/quran-routing';
-import { getAllSurahs } from '@/lib/quran-index';
-import { sendPushNotificationToSubscriptions } from '@/lib/push/send-push-notification';
-import { isQuranReminderDueForSubscription } from '@/lib/push/quran-reminder-schedule';
+import {
+  buildEngagementCampaign,
+  type EngagementCampaign,
+} from '@/lib/push/engagement-content';
+import {
+  getEngagementDecision,
+  type EngagementAudience,
+  type EngagementDecision,
+} from '@/lib/push/engagement-schedule';
+import {
+  listEnabledGuestPushSubscriptions,
+  type GuestPushSubscriptionForDelivery,
+} from '@/lib/push/guest-push-store';
+import {
+  sendPushNotificationToSubscriptions,
+  type PushDeliveryResult,
+} from '@/lib/push/send-push-notification';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
+type DeliverySubscription =
+  | PushSubscriptionForDelivery
+  | GuestPushSubscriptionForDelivery;
+
+interface DueTarget {
+  audience: EngagementAudience;
+  decision: EngagementDecision;
+  subscription: DeliverySubscription;
+}
+
+interface CampaignBucket {
+  campaign: EngagementCampaign;
+  subscriptions: DeliverySubscription[];
+}
+
+const CAMPAIGN_DELIVERY_CONCURRENCY = 4;
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
   const authorization = request.headers.get('authorization') ?? '';
 
-  if (cronSecret) {
-    return authorization === `Bearer ${cronSecret}`;
+  if (!cronSecret) {
+    return process.env.NODE_ENV !== 'production';
   }
 
-  return process.env.NODE_ENV !== 'production' || request.headers.get('x-vercel-cron') === '1';
+  return authorization === `Bearer ${cronSecret}`;
 }
 
-function getRandomSurah(seed: string) {
-  const surahs = getAllSurahs();
-  let hash = 0;
+function isUserSubscription(
+  subscription: DeliverySubscription
+): subscription is PushSubscriptionForDelivery {
+  return !('ownerType' in subscription && subscription.ownerType === 'guest');
+}
 
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+function getCampaignCacheKey(target: DueTarget) {
+  const { decision, subscription } = target;
+  if (decision.kind !== 'quran' || !isUserSubscription(subscription)) {
+    return `${decision.kind}:${decision.localDateKey}`;
   }
 
-  return surahs[hash % surahs.length] ?? surahs[0];
+  const lastRead = subscription.userLastRead;
+  return lastRead
+    ? `${decision.kind}:${decision.localDateKey}:${lastRead.surahId}:${lastRead.ayahNumber}`
+    : `${decision.kind}:${decision.localDateKey}`;
+}
+
+async function buildCampaignBuckets(targets: DueTarget[]) {
+  const campaignCache = new Map<string, Promise<EngagementCampaign>>();
+  const buckets = new Map<string, CampaignBucket>();
+
+  for (const target of targets) {
+    const cacheKey = getCampaignCacheKey(target);
+    let campaignPromise = campaignCache.get(cacheKey);
+    if (!campaignPromise) {
+      campaignPromise = buildEngagementCampaign({
+        kind: target.decision.kind,
+        localDateKey: target.decision.localDateKey,
+        lastRead: isUserSubscription(target.subscription)
+          ? target.subscription.userLastRead
+          : null,
+      });
+      campaignCache.set(cacheKey, campaignPromise);
+    }
+
+    const campaign = await campaignPromise;
+    const existingBucket = buckets.get(campaign.id);
+    if (existingBucket) {
+      existingBucket.subscriptions.push(target.subscription);
+    } else {
+      buckets.set(campaign.id, {
+        campaign,
+        subscriptions: [target.subscription],
+      });
+    }
+  }
+
+  return Array.from(buckets.values());
+}
+
+async function deliverCampaignBuckets(buckets: CampaignBucket[]) {
+  const results = new Array<PushDeliveryResult>(buckets.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(CAMPAIGN_DELIVERY_CONCURRENCY, buckets.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < buckets.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        const bucket = buckets[index];
+        results[index] = await sendPushNotificationToSubscriptions(
+          bucket.subscriptions,
+          {
+            title: bucket.campaign.title,
+            body: bucket.campaign.body,
+            url: bucket.campaign.href,
+            tag: 'daily-reading-engagement',
+            ttlSeconds: 43_200,
+            urgency: 'normal',
+            data: {
+              campaignId: bucket.campaign.id,
+              kind: bucket.campaign.kind,
+            },
+          },
+          { engagementKind: bucket.campaign.kind }
+        );
+      }
+    })
+  );
+
+  return results.reduce(
+    (summary, result) => ({
+      sent: summary.sent + result.sent,
+      failed: summary.failed + result.failed,
+      disabled: summary.disabled + result.disabled,
+      unavailable: summary.unavailable || result.unavailable,
+    }),
+    { sent: 0, failed: 0, disabled: 0, unavailable: false }
+  );
 }
 
 export async function GET(request: Request) {
@@ -41,78 +153,53 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const nowIso = now.toISOString();
-  const subscriptions = await listQuranReminderPushSubscriptions();
-  const subscriptionsByUser = new Map<string, typeof subscriptions>();
-  let sent = 0;
-  let skipped = 0;
-  let failed = 0;
+  const [userSubscriptions, guestSubscriptions] = await Promise.all([
+    listQuranReminderPushSubscriptions(),
+    listEnabledGuestPushSubscriptions(),
+  ]);
+  const dueTargets: DueTarget[] = [];
 
-  for (const subscription of subscriptions) {
-    if (!isQuranReminderDueForSubscription(subscription, now)) {
-      skipped += 1;
-      continue;
-    }
-
-    const userSubscriptions = subscriptionsByUser.get(subscription.userId) ?? [];
-    userSubscriptions.push(subscription);
-    subscriptionsByUser.set(subscription.userId, userSubscriptions);
-  }
-
-  for (const [userId, dueSubscriptions] of subscriptionsByUser.entries()) {
-    const surah = getRandomSurah(`${userId}:${nowIso.slice(0, 16)}`);
-    const href = buildSurahPath(surah.id, surah.surahName);
-    const title = `Read Surah ${surah.surahName}`;
-    const body = `${surah.surahNameTranslation} • ${surah.totalAyah} ayahs. Take two minutes for Quran reflection.`;
-
-    const result = await sendPushNotificationToSubscriptions(dueSubscriptions, {
-      title,
-      body,
-      tag: `quran-reminder-${userId}-${surah.id}`,
-      url: href,
-      data: {
-        surahId: surah.id,
-        kind: 'quran-reminder',
-      },
-    });
-
-    if (result.unavailable) {
-      return NextResponse.json({ message: 'Web push is not configured.' }, { status: 503 });
-    }
-
-    if (result.sent > 0) {
-      await Promise.all(
-        dueSubscriptions.map((subscription) =>
-          markPushReminderSent(subscription.userId, subscription.endpoint, nowIso)
-        )
-      );
-      await createUserNotification(userId, {
-        type: 'quran',
-        priority: 'normal',
-        title: `Read Surah ${surah.surahName}`,
-        message: body,
-        href,
-        metadata: {
-          kind: 'quran-reminder',
-          pushSent: result.sent,
-          pushTargets: dueSubscriptions.length,
-          surahId: surah.id,
-        },
-      });
-      sent += result.sent;
-      failed += result.failed;
-    } else {
-      failed += result.failed || dueSubscriptions.length;
+  for (const subscription of userSubscriptions) {
+    const decision = getEngagementDecision(subscription, 'user', now);
+    if (decision) {
+      dueTargets.push({ audience: 'user', decision, subscription });
     }
   }
+
+  for (const subscription of guestSubscriptions) {
+    const decision = getEngagementDecision(subscription, 'guest', now);
+    if (decision) {
+      dueTargets.push({ audience: 'guest', decision, subscription });
+    }
+  }
+
+  const buckets = await buildCampaignBuckets(dueTargets);
+  const delivery = await deliverCampaignBuckets(buckets);
+  if (delivery.unavailable && dueTargets.length > 0) {
+    return NextResponse.json({ message: 'Web push is not configured.' }, { status: 503 });
+  }
+
+  const countTargets = (audience: EngagementAudience) =>
+    dueTargets.filter((target) => target.audience === audience).length;
+  const countKind = (kind: EngagementDecision['kind']) =>
+    dueTargets.filter((target) => target.decision.kind === kind).length;
 
   return NextResponse.json({
     ok: true,
-    checked: subscriptions.length,
-    dueUsers: subscriptionsByUser.size,
-    schedule: 'local-9am',
-    sent,
-    skipped,
-    failed,
+    checked: userSubscriptions.length + guestSubscriptions.length,
+    checkedUsers: userSubscriptions.length,
+    checkedGuests: guestSubscriptions.length,
+    due: dueTargets.length,
+    dueUsers: countTargets('user'),
+    dueGuests: countTargets('guest'),
+    content: {
+      hadith: countKind('hadith'),
+      quran: countKind('quran'),
+      islamic: countKind('islamic'),
+    },
+    campaigns: buckets.length,
+    schedule: 'smart-local-9am',
+    ...delivery,
     at: nowIso,
   });
 }

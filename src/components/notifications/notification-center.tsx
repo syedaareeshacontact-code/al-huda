@@ -32,6 +32,7 @@ import {
   sameLocationValue,
   searchTextMatches,
 } from '@/lib/prayer-location-options';
+import { getPushContentPreferenceFromPath } from '@/lib/push/engagement-types';
 import { cn } from '@/lib/utils';
 
 interface NotificationCenterProps {
@@ -527,7 +528,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     }
   }, [clearPushSuccessTimer, pushSupported, removeCurrentBrowserPushSubscription]);
 
-  const enableQuranPush = async () => {
+  const enableWebsitePush = async () => {
     if (!pushSupported || !webPushConfigured || !webPushPublicKey) {
       clearPushSuccessTimer();
       setPushMessage('Push reminders need HTTPS, service worker, and VAPID keys.');
@@ -565,6 +566,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         body: JSON.stringify({
           ...subscription.toJSON(),
           timeZone: getBrowserTimeZone(),
+          contentPreference: getPushContentPreferenceFromPath(pathname),
           quranReminderEnabled: true,
           intervalMinutes: 2,
         }),
@@ -885,7 +887,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
                   Notifications
                 </p>
                 <h2 className="mt-1 font-display text-xl font-semibold text-[var(--color-heading)]">
-                  Prayer & Quran alerts
+                  Prayer, Quran & Hadith alerts
                 </h2>
               </div>
               <Badge variant={unreadCount > 0 ? 'default' : 'outline'} className="shrink-0">
@@ -955,7 +957,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
                           Website push notifications
                         </p>
                         <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
-                          Sends Quran, account, audio, saved ayah, Islamic, and admin alerts.
+                          Sends Quran, Hadith, account, saved ayah, Islamic, and admin alerts.
                         </p>
                       </div>
                       <Button
@@ -964,7 +966,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
                         variant="outline"
                         disabled={pushBusy || !pushSupported || !webPushConfigured}
                         onClick={() => {
-                          void enableQuranPush();
+                          void enableWebsitePush();
                         }}
                         className="shrink-0"
                       >

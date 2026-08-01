@@ -27,6 +27,7 @@ const subscriptionSchema = z.object({
     auth: z.string().trim().min(8).max(256),
   }),
   timeZone: z.string().trim().min(1).max(80).optional(),
+  contentPreference: z.enum(['hadith', 'quran']).optional(),
 });
 
 const removeSchema = z.object({
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
       keys: parsed.data.keys,
       userAgent: request.headers.get('user-agent'),
       timeZone: parsed.data.timeZone,
+      contentPreference: parsed.data.contentPreference,
       quranReminderEnabled: true,
       intervalMinutes: 2,
     });
@@ -148,6 +150,8 @@ export async function POST(request: Request) {
     endpoint: parsed.data.endpoint,
     keys: parsed.data.keys,
     userAgent: request.headers.get('user-agent'),
+    timeZone: parsed.data.timeZone,
+    contentPreference: parsed.data.contentPreference,
   });
 
   if (!subscription) {

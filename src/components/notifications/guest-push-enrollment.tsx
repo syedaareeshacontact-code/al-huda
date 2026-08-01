@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+
+import { getPushContentPreferenceFromPath } from '@/lib/push/engagement-types';
 
 interface GuestPushEnrollmentProps {
   isAuthenticated: boolean;
@@ -81,7 +84,8 @@ async function loadPushConfig() {
 
 async function saveSubscription(
   subscription: PushSubscription,
-  deviceId: string
+  deviceId: string,
+  pathname: string
 ) {
   window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
 
@@ -92,6 +96,7 @@ async function saveSubscription(
       deviceId,
       ...subscription.toJSON(),
       timeZone: getBrowserTimeZone(),
+      contentPreference: getPushContentPreferenceFromPath(pathname),
     }),
   });
 
@@ -126,6 +131,8 @@ export default function GuestPushEnrollment({
   isAuthenticated,
   sessionReady,
 }: GuestPushEnrollmentProps) {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (
       !sessionReady ||
@@ -169,7 +176,7 @@ export default function GuestPushEnrollment({
         }));
 
       if (!cancelled) {
-        await saveSubscription(subscription, deviceId);
+        await saveSubscription(subscription, deviceId, pathname);
       }
     };
 
@@ -280,7 +287,7 @@ export default function GuestPushEnrollment({
       removeGestureListeners();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [isAuthenticated, sessionReady]);
+  }, [isAuthenticated, pathname, sessionReady]);
 
   return null;
 }

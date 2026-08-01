@@ -10,6 +10,7 @@ import {
   markGuestPushSubscriptionSent,
   type GuestPushSubscriptionForDelivery,
 } from '@/lib/push/guest-push-store';
+import type { PushEngagementKind } from '@/lib/push/engagement-types';
 import { getConfiguredWebPush } from '@/lib/push/web-push';
 
 export interface PushPayload {
@@ -31,6 +32,18 @@ export interface PushDeliveryResult {
   unavailable: boolean;
 }
 
+export interface PushDeliveryOptions {
+  engagementKind?: PushEngagementKind;
+}
+
+interface SingleDeliveryResult {
+  sent: number;
+  failed: number;
+  disabled: number;
+}
+
+const PUSH_DELIVERY_CONCURRENCY = 8;
+
 function isGuestPushSubscription(
   subscription:
     | PushSubscriptionForDelivery
@@ -43,7 +56,8 @@ export async function sendPushNotificationToSubscriptions(
   subscriptions: Array<
     PushSubscriptionForDelivery | GuestPushSubscriptionForDelivery
   >,
-  payload: PushPayload
+  payload: PushPayload,
+  options: PushDeliveryOptions = {}
 ): Promise<PushDeliveryResult> {
   const push = getConfiguredWebPush();
   if (!push) {
@@ -55,9 +69,6 @@ export async function sendPushNotificationToSubscriptions(
     };
   }
 
-  let sent = 0;
-  let failed = 0;
-  let disabled = 0;
   const serializedPayload = JSON.stringify({
     title: payload.title,
     body: payload.body,
@@ -71,7 +82,9 @@ export async function sendPushNotificationToSubscriptions(
     },
   });
 
-  for (const subscription of subscriptions) {
+  const deliver = async (
+    subscription: PushSubscriptionForDelivery | GuestPushSubscriptionForDelivery
+  ): Promise<SingleDeliveryResult> => {
     try {
       await push.sendNotification(
         {
@@ -84,19 +97,22 @@ export async function sendPushNotificationToSubscriptions(
           urgency: payload.urgency ?? 'normal',
         }
       );
-      sent += 1;
+      const sentAt = new Date().toISOString();
       if (isGuestPushSubscription(subscription)) {
         await markGuestPushSubscriptionSent(
           subscription.endpoint,
-          new Date().toISOString()
+          sentAt,
+          options.engagementKind
         );
       } else {
         await markPushSubscriptionSent(
           subscription.userId,
           subscription.endpoint,
-          new Date().toISOString()
+          sentAt,
+          options.engagementKind
         );
       }
+      return { sent: 1, failed: 0, disabled: 0 };
     } catch (error) {
       const statusCode =
         error && typeof error === 'object' && 'statusCode' in error
@@ -115,17 +131,39 @@ export async function sendPushNotificationToSubscriptions(
           shouldDisable
         );
       }
-      failed += 1;
-      if (shouldDisable) {
-        disabled += 1;
-      }
+      return {
+        sent: 0,
+        failed: 1,
+        disabled: shouldDisable ? 1 : 0,
+      };
     }
-  }
+  };
+
+  const results = new Array<SingleDeliveryResult>(subscriptions.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(PUSH_DELIVERY_CONCURRENCY, subscriptions.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < subscriptions.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await deliver(subscriptions[index]);
+      }
+    })
+  );
+
+  const totals = results.reduce(
+    (summary, result) => ({
+      sent: summary.sent + result.sent,
+      failed: summary.failed + result.failed,
+      disabled: summary.disabled + result.disabled,
+    }),
+    { sent: 0, failed: 0, disabled: 0 }
+  );
 
   return {
-    sent,
-    failed,
-    disabled,
+    ...totals,
     unavailable: false,
   };
 }

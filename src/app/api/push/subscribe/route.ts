@@ -21,6 +21,7 @@ const subscriptionSchema = z.object({
     auth: z.string().trim().min(8),
   }),
   timeZone: z.string().trim().min(1).max(80).optional(),
+  contentPreference: z.enum(['hadith', 'quran']).optional(),
   quranReminderEnabled: z.boolean().optional(),
   intervalMinutes: z.number().int().min(2).max(1440).optional(),
 });
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
     keys: parsed.data.keys,
     userAgent: request.headers.get('user-agent'),
     timeZone: parsed.data.timeZone,
+    contentPreference: parsed.data.contentPreference,
     quranReminderEnabled: parsed.data.quranReminderEnabled ?? true,
     intervalMinutes: parsed.data.intervalMinutes ?? 2,
   });

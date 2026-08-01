@@ -3,6 +3,11 @@ import { randomUUID } from 'node:crypto';
 import mongoose, { Schema, type Model } from 'mongoose';
 
 import { connectToMongoDatabase } from '@/lib/db/mongodb';
+import {
+  normalizePushContentPreference,
+  type PushContentPreference,
+  type PushEngagementKind,
+} from '@/lib/push/engagement-types';
 
 export interface StoredGuestPushSubscription {
   id: string;
@@ -13,18 +18,24 @@ export interface StoredGuestPushSubscription {
     auth: string;
   };
   userAgent: string | null;
+  timeZone: string | null;
+  contentPreference: PushContentPreference;
   enabled: boolean;
   failureCount: number;
   createdAt: string;
   updatedAt: string;
   lastSeenAt: string;
   lastSentAt: string | null;
+  lastEngagementAt: string | null;
+  lastEngagementKind: PushEngagementKind | null;
 }
 
 export interface GuestPushDeviceForAdmin {
   id: string;
   deviceId: string;
   userAgent: string | null;
+  timeZone: string | null;
+  contentPreference: PushContentPreference;
   enabled: boolean;
   failureCount: number;
   createdAt: string;
@@ -51,12 +62,24 @@ const guestPushSubscriptionSchema = new Schema<StoredGuestPushSubscription>(
       auth: { type: String, required: true, trim: true },
     },
     userAgent: { type: String, default: null },
+    timeZone: { type: String, default: null },
+    contentPreference: {
+      type: String,
+      enum: ['hadith', 'quran', 'balanced'],
+      default: 'hadith',
+    },
     enabled: { type: Boolean, default: true, index: true },
     failureCount: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true, index: true },
     updatedAt: { type: String, required: true },
     lastSeenAt: { type: String, required: true, index: true },
     lastSentAt: { type: String, default: null },
+    lastEngagementAt: { type: String, default: null },
+    lastEngagementKind: {
+      type: String,
+      enum: ['hadith', 'quran', 'islamic'],
+      default: null,
+    },
   },
   {
     collection: GUEST_PUSH_COLLECTION,
@@ -81,6 +104,20 @@ async function ensureGuestPushModel() {
   return getGuestPushModel();
 }
 
+function normalizeGuestTimeZone(value: unknown) {
+  const timeZone = String(value ?? '').trim();
+  if (!timeZone || timeZone.length > 80) {
+    return null;
+  }
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone }).format(new Date());
+    return timeZone;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeGuestPushSubscription(
   entry: StoredGuestPushSubscription
 ): StoredGuestPushSubscription {
@@ -93,12 +130,26 @@ function normalizeGuestPushSubscription(
       auth: String(entry.keys?.auth ?? ''),
     },
     userAgent: entry.userAgent ? String(entry.userAgent) : null,
+    timeZone: normalizeGuestTimeZone(entry.timeZone),
+    contentPreference: normalizePushContentPreference(
+      entry.contentPreference,
+      'hadith'
+    ),
     enabled: entry.enabled !== false,
     failureCount: Math.max(0, Number(entry.failureCount) || 0),
     createdAt: String(entry.createdAt),
     updatedAt: String(entry.updatedAt),
     lastSeenAt: String(entry.lastSeenAt),
     lastSentAt: entry.lastSentAt ? String(entry.lastSentAt) : null,
+    lastEngagementAt: entry.lastEngagementAt
+      ? String(entry.lastEngagementAt)
+      : null,
+    lastEngagementKind:
+      entry.lastEngagementKind === 'hadith' ||
+      entry.lastEngagementKind === 'quran' ||
+      entry.lastEngagementKind === 'islamic'
+        ? entry.lastEngagementKind
+        : null,
   };
 }
 
@@ -110,14 +161,23 @@ export async function upsertGuestPushSubscription(input: {
     auth: string;
   };
   userAgent?: string | null;
+  timeZone?: string | null;
+  contentPreference?: PushContentPreference;
 }) {
   const GuestPush = await ensureGuestPushModel();
   const nowIso = new Date().toISOString();
   const [endpointMatch, deviceMatch] = await Promise.all([
-    GuestPush.findOne({ endpoint: input.endpoint }, { _id: 0, id: 1 }).lean().exec(),
-    GuestPush.findOne({ deviceId: input.deviceId }, { _id: 0, id: 1 }).lean().exec(),
+    GuestPush.findOne(
+      { endpoint: input.endpoint },
+      { _id: 0, id: 1, timeZone: 1, contentPreference: 1 }
+    ).lean().exec(),
+    GuestPush.findOne(
+      { deviceId: input.deviceId },
+      { _id: 0, id: 1, timeZone: 1, contentPreference: 1 }
+    ).lean().exec(),
   ]);
   const id = String(endpointMatch?.id ?? deviceMatch?.id ?? randomUUID());
+  const existingSubscription = endpointMatch ?? deviceMatch;
 
   await GuestPush.updateOne(
     { id },
@@ -127,6 +187,13 @@ export async function upsertGuestPushSubscription(input: {
         endpoint: input.endpoint,
         keys: input.keys,
         userAgent: input.userAgent?.trim() || null,
+        timeZone:
+          normalizeGuestTimeZone(input.timeZone) ??
+          normalizeGuestTimeZone(existingSubscription?.timeZone),
+        contentPreference: normalizePushContentPreference(
+          input.contentPreference ?? existingSubscription?.contentPreference,
+          'hadith'
+        ),
         enabled: true,
         failureCount: 0,
         updatedAt: nowIso,
@@ -136,6 +203,8 @@ export async function upsertGuestPushSubscription(input: {
         id,
         createdAt: nowIso,
         lastSentAt: null,
+        lastEngagementAt: null,
+        lastEngagementKind: null,
       },
     },
     { upsert: true }
@@ -189,6 +258,11 @@ export async function listGuestPushDevicesForAdmin(): Promise<GuestPushDeviceFor
     id: String(entry.id),
     deviceId: String(entry.deviceId),
     userAgent: entry.userAgent ? String(entry.userAgent) : null,
+    timeZone: normalizeGuestTimeZone(entry.timeZone),
+    contentPreference: normalizePushContentPreference(
+      entry.contentPreference,
+      'hadith'
+    ),
     enabled: entry.enabled !== false,
     failureCount: Math.max(0, Number(entry.failureCount) || 0),
     createdAt: String(entry.createdAt),
@@ -217,16 +291,27 @@ export async function listEnabledGuestPushSubscriptions(): Promise<
   });
 }
 
-export async function markGuestPushSubscriptionSent(endpoint: string, sentAt: string) {
+export async function markGuestPushSubscriptionSent(
+  endpoint: string,
+  sentAt: string,
+  engagementKind?: PushEngagementKind
+) {
   const GuestPush = await ensureGuestPushModel();
+  const update: Record<string, unknown> = {
+    lastSentAt: sentAt,
+    updatedAt: sentAt,
+    failureCount: 0,
+  };
+
+  if (engagementKind) {
+    update.lastEngagementAt = sentAt;
+    update.lastEngagementKind = engagementKind;
+  }
+
   await GuestPush.updateOne(
     { endpoint },
     {
-      $set: {
-        lastSentAt: sentAt,
-        updatedAt: sentAt,
-        failureCount: 0,
-      },
+      $set: update,
     }
   ).exec();
 }

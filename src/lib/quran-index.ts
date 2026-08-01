@@ -1,9 +1,9 @@
-import surahIndexRaw from '@/data/surah-index.json';
+import surahIndexRaw from '../data/surah-index.json';
 import {
   buildSurahPath,
   buildSurahSlug,
   parseSurahIdFromParam,
-} from '@/lib/quran-routing';
+} from './quran-routing';
 
 export interface SurahIndexEntry {
   id: number;

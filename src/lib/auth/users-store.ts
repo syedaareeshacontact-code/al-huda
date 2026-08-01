@@ -5,6 +5,11 @@ import mongoose, { Schema, type Model } from 'mongoose';
 import { hashPassword } from '@/lib/auth/password';
 import { connectToMongoDatabase } from '@/lib/db/mongodb';
 import { buildBookmarkId } from '@/lib/quran-utils';
+import {
+  normalizePushContentPreference,
+  type PushContentPreference,
+  type PushEngagementKind,
+} from '@/lib/push/engagement-types';
 import type { NotificationPriority, NotificationType, UserNotification } from '@/types/notifications';
 import type { AppSettings, ThemeMode, UserSettings } from '@/types/settings';
 
@@ -30,10 +35,13 @@ export interface StoredPushSubscription {
   };
   userAgent: string | null;
   timeZone: string | null;
+  contentPreference: PushContentPreference;
   enabled: boolean;
   quranReminderEnabled: boolean;
   intervalMinutes: number;
   lastReminderAt: string | null;
+  lastEngagementAt: string | null;
+  lastEngagementKind: PushEngagementKind | null;
   lastSentAt: string | null;
   failureCount: number;
   createdAt: string;
@@ -46,6 +54,7 @@ export type UserTrafficSource = 'instagram';
 export interface PushSubscriptionForDelivery extends StoredPushSubscription {
   userId: string;
   userName: string;
+  userLastRead?: StoredLastReadEntry | null;
 }
 
 export interface AdminUserPushDevice {
@@ -448,6 +457,10 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
     keys: { p256dh, auth },
     userAgent: candidate.userAgent ? String(candidate.userAgent).slice(0, 320) : null,
     timeZone: normalizeTimeZone(candidate.timeZone),
+    contentPreference: normalizePushContentPreference(
+      candidate.contentPreference,
+      'balanced'
+    ),
     enabled: candidate.enabled !== false,
     quranReminderEnabled: candidate.quranReminderEnabled !== false,
     intervalMinutes,
@@ -455,6 +468,16 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
       candidate.lastReminderAt === null || candidate.lastReminderAt === undefined
         ? null
         : String(candidate.lastReminderAt),
+    lastEngagementAt:
+      candidate.lastEngagementAt === null || candidate.lastEngagementAt === undefined
+        ? null
+        : String(candidate.lastEngagementAt),
+    lastEngagementKind:
+      candidate.lastEngagementKind === 'hadith' ||
+      candidate.lastEngagementKind === 'quran' ||
+      candidate.lastEngagementKind === 'islamic'
+        ? candidate.lastEngagementKind
+        : null,
     lastSentAt:
       candidate.lastSentAt === null || candidate.lastSentAt === undefined
         ? null
@@ -686,10 +709,21 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
     },
     userAgent: { type: String, default: null },
     timeZone: { type: String, default: null },
+    contentPreference: {
+      type: String,
+      enum: ['hadith', 'quran', 'balanced'],
+      default: 'balanced',
+    },
     enabled: { type: Boolean, default: true },
     quranReminderEnabled: { type: Boolean, default: true },
     intervalMinutes: { type: Number, min: 2, max: 1440, default: 2 },
     lastReminderAt: { type: String, default: null },
+    lastEngagementAt: { type: String, default: null },
+    lastEngagementKind: {
+      type: String,
+      enum: ['hadith', 'quran', 'islamic'],
+      default: null,
+    },
     lastSentAt: { type: String, default: null },
     failureCount: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true },
@@ -1147,7 +1181,11 @@ export async function upsertUserPushSubscription(
     Partial<
       Pick<
         StoredPushSubscription,
-        'userAgent' | 'timeZone' | 'quranReminderEnabled' | 'intervalMinutes'
+        | 'userAgent'
+        | 'timeZone'
+        | 'contentPreference'
+        | 'quranReminderEnabled'
+        | 'intervalMinutes'
       >
     >
 ): Promise<StoredPushSubscription | null> {
@@ -1167,6 +1205,8 @@ export async function upsertUserPushSubscription(
     keys: input.keys,
     userAgent: input.userAgent ?? null,
     timeZone: input.timeZone ?? null,
+    contentPreference:
+      input.contentPreference ?? existingSubscription?.contentPreference ?? 'balanced',
     enabled: true,
     quranReminderEnabled: input.quranReminderEnabled !== false,
     intervalMinutes: input.intervalMinutes ?? 2,
@@ -1177,6 +1217,8 @@ export async function upsertUserPushSubscription(
     lastSeenAt: nowIso,
     updatedAt: nowIso,
     lastReminderAt: existingSubscription?.lastReminderAt ?? null,
+    lastEngagementAt: existingSubscription?.lastEngagementAt ?? null,
+    lastEngagementKind: existingSubscription?.lastEngagementKind ?? null,
     lastSentAt: existingSubscription?.lastSentAt ?? null,
   });
 
@@ -1299,6 +1341,7 @@ export async function listQuranReminderPushSubscriptions(): Promise<PushSubscrip
       _id: 0,
       id: 1,
       name: 1,
+      lastRead: 1,
       pushSubscriptions: 1,
     }
   )
@@ -1325,6 +1368,7 @@ export async function listQuranReminderPushSubscriptions(): Promise<PushSubscrip
           ...subscription,
           userId: user.id,
           userName: user.name,
+          userLastRead: user.lastRead,
         });
       }
     }
@@ -1511,17 +1555,29 @@ export async function markPushReminderSent(userId: string, endpoint: string, sen
     .exec();
 }
 
-export async function markPushSubscriptionSent(userId: string, endpoint: string, sentAt: string) {
+export async function markPushSubscriptionSent(
+  userId: string,
+  endpoint: string,
+  sentAt: string,
+  engagementKind?: PushEngagementKind
+) {
   const User = await ensureUsersModel();
+  const subscriptionUpdate: Record<string, unknown> = {
+    'pushSubscriptions.$.lastSentAt': sentAt,
+    'pushSubscriptions.$.updatedAt': sentAt,
+    'pushSubscriptions.$.failureCount': 0,
+    updatedAt: sentAt,
+  };
+
+  if (engagementKind) {
+    subscriptionUpdate['pushSubscriptions.$.lastEngagementAt'] = sentAt;
+    subscriptionUpdate['pushSubscriptions.$.lastEngagementKind'] = engagementKind;
+  }
+
   await User.findOneAndUpdate(
     { id: userId, 'pushSubscriptions.endpoint': endpoint },
     {
-      $set: {
-        'pushSubscriptions.$.lastSentAt': sentAt,
-        'pushSubscriptions.$.updatedAt': sentAt,
-        'pushSubscriptions.$.failureCount': 0,
-        updatedAt: sentAt,
-      },
+      $set: subscriptionUpdate,
     }
   )
     .lean()
