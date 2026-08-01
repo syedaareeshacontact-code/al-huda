@@ -173,8 +173,13 @@ required production URL configuration.
 
 Set production environment values in the Vercel project. In particular,
 `NEXT_PUBLIC_SITE_URL` must be the canonical public HTTPS origin.
-`vercel.json` schedules `/api/cron/quran-reminders` daily at `09:00 UTC`.
-Protect non-Vercel/manual cron calls with `CRON_SECRET`.
+
+`/api/cron/quran-reminders` is intentionally scheduled by an external service
+instead of Vercel Cron, because Vercel Hobby only permits a daily cron run.
+cron-job.org calls it every 15 minutes with
+`Authorization: Bearer <CRON_SECRET>`. The endpoint then uses each device's
+stored time zone to decide whether its local 9:00 AM reminder is due; the cron
+service itself must not be configured separately for every country.
 
 ### Docker
 
@@ -206,4 +211,3 @@ Keep documentation small and durable:
 - Before changing behavior, inspect the relevant code and tests. After changing
   behavior, run checks proportional to the risk and update these documents only
   when their source-of-truth information changed.
-
