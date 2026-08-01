@@ -26,6 +26,7 @@ const subscriptionSchema = z.object({
     p256dh: z.string().trim().min(12).max(512),
     auth: z.string().trim().min(8).max(256),
   }),
+  timeZone: z.string().trim().min(1).max(80).optional(),
 });
 
 const removeSchema = z.object({
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
       endpoint: parsed.data.endpoint,
       keys: parsed.data.keys,
       userAgent: request.headers.get('user-agent'),
+      timeZone: parsed.data.timeZone,
       quranReminderEnabled: true,
       intervalMinutes: 2,
     });

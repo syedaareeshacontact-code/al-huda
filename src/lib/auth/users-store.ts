@@ -29,6 +29,7 @@ export interface StoredPushSubscription {
     auth: string;
   };
   userAgent: string | null;
+  timeZone: string | null;
   enabled: boolean;
   quranReminderEnabled: boolean;
   intervalMinutes: number;
@@ -55,6 +56,7 @@ export interface AdminUserPushDevice {
   userEmail: string;
   imageUrl: string | null;
   userAgent: string | null;
+  timeZone: string | null;
   enabled: boolean;
   quranReminderEnabled: boolean;
   failureCount: number;
@@ -143,6 +145,20 @@ function normalizeImageUrl(value: unknown) {
       return null;
     }
     return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeTimeZone(value: unknown) {
+  const timeZone = String(value ?? '').trim();
+  if (!timeZone || timeZone.length > 80) {
+    return null;
+  }
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone }).format(new Date());
+    return timeZone;
   } catch {
     return null;
   }
@@ -431,6 +447,7 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
     endpoint,
     keys: { p256dh, auth },
     userAgent: candidate.userAgent ? String(candidate.userAgent).slice(0, 320) : null,
+    timeZone: normalizeTimeZone(candidate.timeZone),
     enabled: candidate.enabled !== false,
     quranReminderEnabled: candidate.quranReminderEnabled !== false,
     intervalMinutes,
@@ -668,6 +685,7 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
       auth: { type: String, required: true, trim: true },
     },
     userAgent: { type: String, default: null },
+    timeZone: { type: String, default: null },
     enabled: { type: Boolean, default: true },
     quranReminderEnabled: { type: Boolean, default: true },
     intervalMinutes: { type: Number, min: 2, max: 1440, default: 2 },
@@ -1126,7 +1144,12 @@ export async function markAllUserNotificationsRead(userId: string): Promise<User
 export async function upsertUserPushSubscription(
   userId: string,
   input: Pick<StoredPushSubscription, 'endpoint' | 'keys'> &
-    Partial<Pick<StoredPushSubscription, 'userAgent' | 'quranReminderEnabled' | 'intervalMinutes'>>
+    Partial<
+      Pick<
+        StoredPushSubscription,
+        'userAgent' | 'timeZone' | 'quranReminderEnabled' | 'intervalMinutes'
+      >
+    >
 ): Promise<StoredPushSubscription | null> {
   const User = await ensureUsersModel();
   const nowIso = new Date().toISOString();
@@ -1143,6 +1166,7 @@ export async function upsertUserPushSubscription(
     endpoint: input.endpoint,
     keys: input.keys,
     userAgent: input.userAgent ?? null,
+    timeZone: input.timeZone ?? null,
     enabled: true,
     quranReminderEnabled: input.quranReminderEnabled !== false,
     intervalMinutes: input.intervalMinutes ?? 2,
@@ -1412,6 +1436,7 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
         userEmail,
         imageUrl: normalizeImageUrl(candidate?.imageUrl),
         userAgent: subscription.userAgent,
+        timeZone: subscription.timeZone,
         enabled: subscription.enabled,
         quranReminderEnabled: subscription.quranReminderEnabled,
         failureCount: subscription.failureCount,

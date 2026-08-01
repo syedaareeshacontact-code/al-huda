@@ -19,6 +19,7 @@ function createUserDevice(
     userEmail: 'reader@example.com',
     imageUrl: null,
     userAgent: androidUserAgent,
+    timeZone: 'Asia/Karachi',
     enabled: true,
     quranReminderEnabled: true,
     failureCount: 0,

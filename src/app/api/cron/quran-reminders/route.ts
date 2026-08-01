@@ -8,6 +8,7 @@ import {
 import { buildSurahPath } from '@/lib/quran-routing';
 import { getAllSurahs } from '@/lib/quran-index';
 import { sendPushNotificationToSubscriptions } from '@/lib/push/send-push-notification';
+import { isQuranReminderDueForSubscription } from '@/lib/push/quran-reminder-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,12 +48,7 @@ export async function GET(request: Request) {
   let failed = 0;
 
   for (const subscription of subscriptions) {
-    const lastReminderAt = subscription.lastReminderAt
-      ? new Date(subscription.lastReminderAt).getTime()
-      : 0;
-    const intervalMs = subscription.intervalMinutes * 60_000;
-
-    if (lastReminderAt && now.getTime() - lastReminderAt < intervalMs) {
+    if (!isQuranReminderDueForSubscription(subscription, now)) {
       skipped += 1;
       continue;
     }
@@ -113,6 +109,7 @@ export async function GET(request: Request) {
     ok: true,
     checked: subscriptions.length,
     dueUsers: subscriptionsByUser.size,
+    schedule: 'local-9am',
     sent,
     skipped,
     failed,

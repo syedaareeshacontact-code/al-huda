@@ -57,6 +57,14 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+function getBrowserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function loadPushConfig() {
   const response = await fetch('/api/push/public-key', { cache: 'no-store' });
   if (!response.ok) {
@@ -83,6 +91,7 @@ async function saveSubscription(
     body: JSON.stringify({
       deviceId,
       ...subscription.toJSON(),
+      timeZone: getBrowserTimeZone(),
     }),
   });
 

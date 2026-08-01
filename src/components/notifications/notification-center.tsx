@@ -564,6 +564,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...subscription.toJSON(),
+          timeZone: getBrowserTimeZone(),
           quranReminderEnabled: true,
           intervalMinutes: 2,
         }),
