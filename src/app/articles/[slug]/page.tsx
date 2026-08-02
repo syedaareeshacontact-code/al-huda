@@ -124,9 +124,10 @@ function buildArticleJsonLd(article: Article) {
       caption: article.coverAlt,
     },
     author: {
-      '@type': 'Organization',
+      '@type': 'Person',
+      '@id': toAbsoluteUrl('/#author-zain-qalandar-shah'),
       name: article.author,
-      url: siteOrigin,
+      url: toAbsoluteUrl('/#author-zain-qalandar-shah'),
     },
     publisher: {
       '@type': 'Organization',

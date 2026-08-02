@@ -60,7 +60,14 @@ export function ArticleHeader({ article }: ArticleHeaderProps) {
             <UserRound className="mt-0.5 size-4 shrink-0 text-teal-600 dark:text-teal-300" aria-hidden="true" />
             <div>
               <dt className="text-xs text-[var(--color-muted-text)]">Written by</dt>
-              <dd className="mt-0.5 font-semibold text-[var(--color-heading)]">{article.author}</dd>
+              <dd className="mt-0.5 font-semibold text-[var(--color-heading)]">
+                <Link
+                  href="/#author-zain-qalandar-shah"
+                  className="underline-offset-4 hover:text-teal-700 hover:underline dark:hover:text-teal-300"
+                >
+                  {article.author}
+                </Link>
+              </dd>
             </div>
           </div>
 

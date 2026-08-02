@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
   BookMarked,
@@ -40,7 +40,7 @@ const POPULAR_SURAHS = POPULAR_SURAH_IDS.map((id) => getSurahById(id)).filter(
 );
 type LibraryPanel = 'favorites' | 'bookmarks';
 
-export default function HomeRoot() {
+export default function HomeRoot({ children }: { children?: ReactNode }) {
   const router = useRouter();
   const [favorites, setFavorites] = useState<number[]>([]);
   const [bookmarks, setBookmarks] = useState<AyahBookmark[]>([]);
@@ -486,6 +486,8 @@ export default function HomeRoot() {
           </div>
         </div>
       </section>
+
+      {children}
     </div>
   );
 }
