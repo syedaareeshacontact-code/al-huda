@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { CalendarDays, CheckCircle2, Clock3, ShieldCheck, UserRound } from 'lucide-react';
 
 import type { Article } from '@/lib/articles';
+import { PRIMARY_AUTHOR } from '@/lib/author-profile';
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('en', {
   day: 'numeric',
@@ -62,7 +63,7 @@ export function ArticleHeader({ article }: ArticleHeaderProps) {
               <dt className="text-xs text-[var(--color-muted-text)]">Written by</dt>
               <dd className="mt-0.5 font-semibold text-[var(--color-heading)]">
                 <Link
-                  href="/#author-zain-qalandar-shah"
+                  href={PRIMARY_AUTHOR.href}
                   className="underline-offset-4 hover:text-teal-700 hover:underline dark:hover:text-teal-300"
                 >
                   {article.author}

@@ -5,9 +5,9 @@ import { buildPageMetadata } from '@/lib/seo';
 import { ISLAMIC_LEARNING_KEYWORDS, MASTER_SEO_KEYWORDS, TRUST_KEYWORDS } from '@/lib/seo-keywords';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'About Read al Quran – Our Mission & Vision',
+  title: 'About Read al Quran – Mission, Owner & Sources',
   description:
-    'Learn about Read al Quran, its mission, and its content sources: Quran.com APIs for Quran and Tafseer, plus Hadith API for Hadith collections.',
+    'Learn about Read al Quran, its mission, owner and editor Zain Qalandar Shah, content sources, editorial standards, and review limitations.',
   path: '/about',
   keywords: [
     ...TRUST_KEYWORDS,

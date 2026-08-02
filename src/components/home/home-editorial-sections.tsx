@@ -273,6 +273,13 @@ export default function HomeEditorialSections() {
               He does not claim Islamic scholarly authority. Questions requiring a religious
               ruling or specialist verification should be taken to a qualified scholar.
             </p>
+            <Link
+              href="/authors/zain-qalandar-shah"
+              className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-[var(--color-accent)] px-4 py-2 text-sm font-bold text-[var(--color-accent-foreground)]"
+            >
+              View author profile
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
           </article>
 
           <article className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)] sm:p-7">

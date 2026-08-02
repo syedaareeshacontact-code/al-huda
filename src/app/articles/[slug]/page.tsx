@@ -14,6 +14,7 @@ import {
   getRelatedArticles,
   type Article,
 } from '@/lib/articles';
+import { PRIMARY_AUTHOR } from '@/lib/author-profile';
 import {
   buildBreadcrumbJsonLd,
   getSiteName,
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     title: article.title,
     description: article.description,
     keywords: article.keywords,
-    authors: [{ name: article.author }],
+    authors: [{ name: article.author, url: PRIMARY_AUTHOR.href }],
     creator: article.author,
     publisher: getSiteName(),
     alternates: {
@@ -125,9 +126,9 @@ function buildArticleJsonLd(article: Article) {
     },
     author: {
       '@type': 'Person',
-      '@id': toAbsoluteUrl('/#author-zain-qalandar-shah'),
+      '@id': `${toAbsoluteUrl(PRIMARY_AUTHOR.href)}#person`,
       name: article.author,
-      url: toAbsoluteUrl('/#author-zain-qalandar-shah'),
+      url: toAbsoluteUrl(PRIMARY_AUTHOR.href),
     },
     publisher: {
       '@type': 'Organization',

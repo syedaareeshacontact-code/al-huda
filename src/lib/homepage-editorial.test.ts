@@ -40,7 +40,8 @@ describe('homepage editorial trust', () => {
     const articlePage = read('src/app/articles/[slug]/page.tsx');
 
     expect(homePage).toContain("'@type': 'Person'");
-    expect(homePage).toContain('author-zain-qalandar-shah');
+    expect(homePage).toContain('PRIMARY_AUTHOR.href');
+    expect(homePage).toContain("'@type': 'Person'");
     expect(articlePage).toContain("'@type': 'Person'");
   });
 });

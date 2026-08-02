@@ -93,6 +93,7 @@ export async function GET(
       `${origin}/`,
       `${origin}/surah`,
       `${origin}/about`,
+      `${origin}/authors/zain-qalandar-shah`,
       `${origin}/contact`,
       `${origin}/editorial-policy`,
       `${origin}/corrections`,

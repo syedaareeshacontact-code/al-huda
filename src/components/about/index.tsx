@@ -1,6 +1,7 @@
 import {
   BookHeart,
   BookOpenText,
+  CircleUserRound,
   ExternalLink,
   HandHeart,
   ScrollText,
@@ -93,6 +94,44 @@ export default function AboutRoot() {
           <CardContent className="text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
             Become a trusted companion for Muslims worldwide by combining sound content,
             thoughtful design, and strong accessibility across devices.
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mt-8" aria-labelledby="owner-editor-heading">
+        <Card className="overflow-hidden border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_48%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%),var(--color-surface))]">
+          <CardContent className="grid gap-5 p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-start">
+            <span className="grid size-16 place-items-center rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[var(--color-surface-elevated)] text-[var(--color-accent)]">
+              <CircleUserRound className="size-8" aria-hidden="true" />
+            </span>
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                Site owner, author &amp; content editor
+              </p>
+              <h2
+                id="owner-editor-heading"
+                className="mt-1 font-display text-3xl font-semibold text-[var(--color-heading)]"
+              >
+                Zain Qalandar Shah
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
+                Zain owns and maintains Read al Quran and writes and edits the original guides
+                published on the site. His work includes selecting useful topics, checking source
+                attribution, writing in clear language, maintaining editorial standards, and
+                responding to correction reports.
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted-text)] sm:text-base">
+                This role is separate from Islamic scholarly review. The site does not present Zain
+                as a qualified scholar or mufti, and content that still needs specialist review is
+                labelled clearly.
+              </p>
+              <Link
+                href="/authors/zain-qalandar-shah"
+                className="mt-5 inline-flex min-h-10 items-center rounded-xl bg-[var(--color-accent)] px-4 py-2 text-sm font-bold text-[var(--color-accent-foreground)]"
+              >
+                View Zain&apos;s author profile
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </section>

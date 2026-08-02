@@ -2,6 +2,7 @@ import {
   getAllArticleSummaries,
   getArticleCategories,
 } from '@/lib/articles';
+import { PRIMARY_AUTHOR } from '@/lib/author-profile';
 import { getSiteOrigin } from '@/lib/seo';
 import { SITEMAP_CACHE_CONTROL } from '@/lib/sitemap-config';
 
@@ -31,6 +32,7 @@ export function GET() {
   );
   const urls = [
     renderUrl(`${origin}/articles`, latestUpdate),
+    renderUrl(`${origin}${PRIMARY_AUTHOR.href}`, latestUpdate),
     ...categories.map((category) =>
       renderUrl(
         `${origin}/articles/category/${category.slug}`,
