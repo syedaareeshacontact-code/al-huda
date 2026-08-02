@@ -11,6 +11,7 @@ import {
   type PushContentPreference,
   type PushEngagementKind,
 } from '@/lib/push/engagement-types';
+import { shouldCountSiteVisit } from '@/lib/push/site-visit-tracking';
 import type { NotificationPriority, NotificationType, UserNotification } from '@/types/notifications';
 import type { AppSettings, ThemeMode, UserSettings } from '@/types/settings';
 
@@ -46,6 +47,8 @@ export interface StoredPushSubscription {
   lastSentAt: string | null;
   notificationSentCount: number;
   notificationVisitCount: number;
+  siteVisitCount: number;
+  lastSiteVisitAt: string | null;
   lastNotificationVisitAt: string | null;
   lastNotificationCampaignId: string | null;
   lastNotificationKind: string | null;
@@ -85,6 +88,8 @@ export interface AdminUserPushDevice {
   lastEngagementKind: PushEngagementKind | null;
   notificationSentCount: number;
   notificationVisitCount: number;
+  siteVisitCount: number;
+  lastSiteVisitAt: string | null;
   lastNotificationVisitAt: string | null;
   lastNotificationCampaignId: string | null;
   lastNotificationKind: string | null;
@@ -505,6 +510,14 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
       0,
       Math.floor(Number(candidate.notificationVisitCount ?? 0) || 0)
     ),
+    siteVisitCount: Math.max(
+      0,
+      Math.floor(Number(candidate.siteVisitCount ?? 0) || 0)
+    ),
+    lastSiteVisitAt:
+      candidate.lastSiteVisitAt === null || candidate.lastSiteVisitAt === undefined
+        ? null
+        : String(candidate.lastSiteVisitAt),
     lastNotificationVisitAt:
       candidate.lastNotificationVisitAt === null ||
       candidate.lastNotificationVisitAt === undefined
@@ -770,6 +783,8 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
     lastSentAt: { type: String, default: null },
     notificationSentCount: { type: Number, min: 0, default: 0 },
     notificationVisitCount: { type: Number, min: 0, default: 0 },
+    siteVisitCount: { type: Number, min: 0, default: 0 },
+    lastSiteVisitAt: { type: String, default: null },
     lastNotificationVisitAt: { type: String, default: null },
     lastNotificationCampaignId: { type: String, default: null },
     lastNotificationKind: { type: String, default: null },
@@ -1271,6 +1286,8 @@ export async function upsertUserPushSubscription(
     lastSentAt: existingSubscription?.lastSentAt ?? null,
     notificationSentCount: existingSubscription?.notificationSentCount ?? 0,
     notificationVisitCount: existingSubscription?.notificationVisitCount ?? 0,
+    siteVisitCount: existingSubscription?.siteVisitCount ?? 0,
+    lastSiteVisitAt: existingSubscription?.lastSiteVisitAt ?? null,
     lastNotificationVisitAt: existingSubscription?.lastNotificationVisitAt ?? null,
     lastNotificationCampaignId:
       existingSubscription?.lastNotificationCampaignId ?? null,
@@ -1549,6 +1566,8 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
         lastEngagementKind: subscription.lastEngagementKind,
         notificationSentCount: subscription.notificationSentCount,
         notificationVisitCount: subscription.notificationVisitCount,
+        siteVisitCount: subscription.siteVisitCount,
+        lastSiteVisitAt: subscription.lastSiteVisitAt,
         lastNotificationVisitAt: subscription.lastNotificationVisitAt,
         lastNotificationCampaignId: subscription.lastNotificationCampaignId,
         lastNotificationKind: subscription.lastNotificationKind,
@@ -1716,6 +1735,88 @@ export async function recordUserPushNotificationVisit(input: {
   ).exec();
 
   return result.modifiedCount > 0;
+}
+
+export async function recordUserPushSiteVisit(input: {
+  userId: string;
+  endpoint?: string;
+  userAgent?: string | null;
+  timeZone?: string | null;
+  contentPreference?: PushContentPreference;
+  visitedAt?: string;
+}) {
+  const endpoint = String(input.endpoint ?? '').trim();
+  if (!endpoint) {
+    return { matched: false, counted: false };
+  }
+
+  const User = await ensureUsersModel();
+  const rawUser = await User.findOne(
+    { id: input.userId },
+    { _id: 0, pushSubscriptions: 1 }
+  )
+    .lean()
+    .exec();
+  const subscription = normalizePushSubscriptions(
+    (rawUser as { pushSubscriptions?: unknown } | null)?.pushSubscriptions
+  ).find((candidate) => candidate.enabled && candidate.endpoint === endpoint);
+
+  if (!subscription) {
+    return { matched: false, counted: false };
+  }
+
+  const visitedAt = input.visitedAt ?? new Date().toISOString();
+  const shouldCount = shouldCountSiteVisit(subscription.lastSiteVisitAt, visitedAt);
+  const setUpdate: Record<string, unknown> = {
+    'pushSubscriptions.$.lastSeenAt': visitedAt,
+    'pushSubscriptions.$.updatedAt': visitedAt,
+    updatedAt: visitedAt,
+  };
+  const normalizedTimeZone = normalizeTimeZone(input.timeZone);
+
+  if (input.userAgent !== undefined) {
+    setUpdate['pushSubscriptions.$.userAgent'] =
+      input.userAgent?.trim().slice(0, 320) || null;
+  }
+  if (normalizedTimeZone) {
+    setUpdate['pushSubscriptions.$.timeZone'] = normalizedTimeZone;
+  }
+  if (input.contentPreference) {
+    setUpdate['pushSubscriptions.$.contentPreference'] =
+      normalizePushContentPreference(input.contentPreference, 'balanced');
+  }
+  if (shouldCount) {
+    setUpdate['pushSubscriptions.$.lastSiteVisitAt'] = visitedAt;
+  }
+
+  const update: {
+    $set: Record<string, unknown>;
+    $inc?: Record<string, number>;
+  } = {
+    $set: setUpdate,
+  };
+
+  if (shouldCount) {
+    update.$inc = { 'pushSubscriptions.$.siteVisitCount': 1 };
+  }
+
+  const result = await User.updateOne(
+    {
+      id: input.userId,
+      pushSubscriptions: {
+        $elemMatch: {
+          endpoint,
+          enabled: true,
+        },
+      },
+    },
+    update
+  ).exec();
+
+  return {
+    matched: result.matchedCount > 0,
+    counted: shouldCount && result.modifiedCount > 0,
+  };
 }
 
 export async function markPushSubscriptionFailure(

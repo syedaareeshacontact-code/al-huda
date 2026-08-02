@@ -73,8 +73,12 @@ export async function GET(request: NextRequest) {
         }
         result.notificationsSent += device.notificationSentCount;
         result.notificationVisits += device.notificationVisitCount;
+        result.siteVisits += device.siteVisitCount;
         if (device.notificationVisitCount > 0) {
           result.devicesWithVisits += 1;
+        }
+        if (device.siteVisitCount > 0) {
+          result.devicesWithSiteVisits += 1;
         }
         if (
           device.lastNotificationVisitAt &&
@@ -84,6 +88,13 @@ export async function GET(request: NextRequest) {
             ) > 0)
         ) {
           result.lastNotificationVisitAt = device.lastNotificationVisitAt;
+        }
+        if (
+          device.lastSiteVisitAt &&
+          (!result.lastSiteVisitAt ||
+            device.lastSiteVisitAt.localeCompare(result.lastSiteVisitAt) > 0)
+        ) {
+          result.lastSiteVisitAt = device.lastSiteVisitAt;
         }
         return result;
       },
@@ -95,8 +106,11 @@ export async function GET(request: NextRequest) {
         devicesWithFailures: 0,
         notificationsSent: 0,
         notificationVisits: 0,
+        siteVisits: 0,
         devicesWithVisits: 0,
+        devicesWithSiteVisits: 0,
         lastNotificationVisitAt: null as string | null,
+        lastSiteVisitAt: null as string | null,
       }
     );
     const summaryWithRate = {

@@ -9,6 +9,7 @@ import {
   type PushDeliveryTracking,
   type PushEngagementKind,
 } from '@/lib/push/engagement-types';
+import { getSiteVisitCutoffIso } from '@/lib/push/site-visit-tracking';
 
 export interface StoredGuestPushSubscription {
   id: string;
@@ -31,6 +32,8 @@ export interface StoredGuestPushSubscription {
   lastEngagementKind: PushEngagementKind | null;
   notificationSentCount: number;
   notificationVisitCount: number;
+  siteVisitCount: number;
+  lastSiteVisitAt: string | null;
   lastNotificationVisitAt: string | null;
   lastNotificationCampaignId: string | null;
   lastNotificationKind: string | null;
@@ -53,6 +56,8 @@ export interface GuestPushDeviceForAdmin {
   lastEngagementKind: PushEngagementKind | null;
   notificationSentCount: number;
   notificationVisitCount: number;
+  siteVisitCount: number;
+  lastSiteVisitAt: string | null;
   lastNotificationVisitAt: string | null;
   lastNotificationCampaignId: string | null;
   lastNotificationKind: string | null;
@@ -96,6 +101,8 @@ const guestPushSubscriptionSchema = new Schema<StoredGuestPushSubscription>(
     },
     notificationSentCount: { type: Number, min: 0, default: 0 },
     notificationVisitCount: { type: Number, min: 0, default: 0 },
+    siteVisitCount: { type: Number, min: 0, default: 0 },
+    lastSiteVisitAt: { type: String, default: null },
     lastNotificationVisitAt: { type: String, default: null },
     lastNotificationCampaignId: { type: String, default: null },
     lastNotificationKind: { type: String, default: null },
@@ -178,6 +185,11 @@ function normalizeGuestPushSubscription(
       0,
       Math.floor(Number(entry.notificationVisitCount) || 0)
     ),
+    siteVisitCount: Math.max(
+      0,
+      Math.floor(Number(entry.siteVisitCount) || 0)
+    ),
+    lastSiteVisitAt: entry.lastSiteVisitAt ? String(entry.lastSiteVisitAt) : null,
     lastNotificationVisitAt: entry.lastNotificationVisitAt
       ? String(entry.lastNotificationVisitAt)
       : null,
@@ -253,6 +265,8 @@ export async function upsertGuestPushSubscription(input: {
         lastEngagementKind: null,
         notificationSentCount: 0,
         notificationVisitCount: 0,
+        siteVisitCount: 0,
+        lastSiteVisitAt: null,
         lastNotificationVisitAt: null,
         lastNotificationCampaignId: null,
         lastNotificationKind: null,
@@ -338,6 +352,11 @@ export async function listGuestPushDevicesForAdmin(): Promise<GuestPushDeviceFor
       0,
       Math.floor(Number(entry.notificationVisitCount) || 0)
     ),
+    siteVisitCount: Math.max(
+      0,
+      Math.floor(Number(entry.siteVisitCount) || 0)
+    ),
+    lastSiteVisitAt: entry.lastSiteVisitAt ? String(entry.lastSiteVisitAt) : null,
     lastNotificationVisitAt: entry.lastNotificationVisitAt
       ? String(entry.lastNotificationVisitAt)
       : null,
@@ -431,6 +450,78 @@ export async function recordGuestPushNotificationVisit(input: {
   ).exec();
 
   return result.modifiedCount > 0;
+}
+
+export async function recordGuestPushSiteVisit(input: {
+  deviceId?: string;
+  endpoint?: string;
+  userAgent?: string | null;
+  timeZone?: string | null;
+  contentPreference?: PushContentPreference;
+  visitedAt?: string;
+}) {
+  const filters: Array<Record<string, string>> = [];
+  if (input.deviceId) {
+    filters.push({ deviceId: input.deviceId });
+  }
+  if (input.endpoint) {
+    filters.push({ endpoint: input.endpoint });
+  }
+  if (filters.length === 0) {
+    return { matched: false, counted: false };
+  }
+
+  const GuestPush = await ensureGuestPushModel();
+  const visitedAt = input.visitedAt ?? new Date().toISOString();
+  const update: Record<string, unknown> = {
+    lastSeenAt: visitedAt,
+    updatedAt: visitedAt,
+  };
+  const normalizedTimeZone = normalizeGuestTimeZone(input.timeZone);
+
+  if (input.userAgent !== undefined) {
+    update.userAgent = input.userAgent?.trim().slice(0, 320) || null;
+  }
+  if (normalizedTimeZone) {
+    update.timeZone = normalizedTimeZone;
+  }
+  if (input.contentPreference) {
+    update.contentPreference = normalizePushContentPreference(
+      input.contentPreference,
+      'hadith'
+    );
+  }
+
+  const baseFilter = { enabled: true, $or: filters };
+  const seenResult = await GuestPush.updateOne(baseFilter, { $set: update }).exec();
+  if (seenResult.matchedCount === 0) {
+    return { matched: false, counted: false };
+  }
+
+  const countResult = await GuestPush.updateOne(
+    {
+      $and: [
+        baseFilter,
+        {
+          $or: [
+            { lastSiteVisitAt: null },
+            { lastSiteVisitAt: { $exists: false } },
+            { lastSiteVisitAt: { $lt: getSiteVisitCutoffIso(visitedAt) } },
+          ],
+        },
+      ],
+    },
+    {
+      $inc: { siteVisitCount: 1 },
+      $set: {
+        lastSiteVisitAt: visitedAt,
+        lastSeenAt: visitedAt,
+        updatedAt: visitedAt,
+      },
+    }
+  ).exec();
+
+  return { matched: true, counted: countResult.modifiedCount > 0 };
 }
 
 export async function markGuestPushSubscriptionFailure(

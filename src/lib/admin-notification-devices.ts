@@ -62,6 +62,11 @@ export function dedupeAdminNotificationDevices(
         existing.notificationSentCount + device.notificationSentCount,
       notificationVisitCount:
         existing.notificationVisitCount + device.notificationVisitCount,
+      siteVisitCount: existing.siteVisitCount + device.siteVisitCount,
+      lastSiteVisitAt: latestNullableIso(
+        existing.lastSiteVisitAt,
+        device.lastSiteVisitAt
+      ),
       lastNotificationVisitAt: latestNullableIso(
         existing.lastNotificationVisitAt,
         device.lastNotificationVisitAt

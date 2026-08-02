@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { getPushContentPreferenceFromPath } from '@/lib/push/engagement-types';
+import { SITE_VISIT_THROTTLE_MS } from '@/lib/push/site-visit-tracking';
 
 interface GuestPushEnrollmentProps {
   isAuthenticated: boolean;
@@ -23,6 +24,7 @@ const DEVICE_ID_KEY = 'alhuda:guest-push-device-id';
 const OWNER_KEY = 'alhuda:push-subscription-owner';
 const PROMPT_ATTEMPT_KEY = 'alhuda:guest-push-prompt-attempted';
 const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
+const SITE_VISIT_RECORDED_AT_KEY = 'alhuda:push-site-visit-recorded-at';
 
 function createDeviceId() {
   if (typeof crypto.randomUUID === 'function') {
@@ -80,6 +82,33 @@ async function loadPushConfig() {
   }
 
   return payload.publicKey;
+}
+
+async function loadCurrentPushEndpoint() {
+  const storedEndpoint = window.localStorage.getItem(PUSH_ENDPOINT_KEY);
+  if (storedEndpoint) {
+    return storedEndpoint;
+  }
+
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (subscription?.endpoint) {
+    window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
+    return subscription.endpoint;
+  }
+
+  return null;
+}
+
+function shouldRecordSiteVisit() {
+  const lastRecordedAt = Number(
+    window.localStorage.getItem(SITE_VISIT_RECORDED_AT_KEY) || 0
+  );
+
+  return (
+    !Number.isFinite(lastRecordedAt) ||
+    Date.now() - lastRecordedAt >= SITE_VISIT_THROTTLE_MS
+  );
 }
 
 async function saveSubscription(
@@ -285,6 +314,75 @@ export default function GuestPushEnrollment({
         window.clearTimeout(promptTimer);
       }
       removeGestureListeners();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isAuthenticated, pathname, sessionReady]);
+
+  useEffect(() => {
+    if (
+      !sessionReady ||
+      process.env.NODE_ENV !== 'production' ||
+      typeof window === 'undefined' ||
+      !window.isSecureContext ||
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window) ||
+      !('Notification' in window) ||
+      Notification.permission !== 'granted'
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let trackTimer: number | null = null;
+    const deviceId = getDeviceId();
+
+    const recordSiteVisit = async () => {
+      if (cancelled || !shouldRecordSiteVisit()) {
+        return;
+      }
+
+      try {
+        const endpoint = await loadCurrentPushEndpoint();
+        if (cancelled || (isAuthenticated && !endpoint)) {
+          return;
+        }
+
+        const response = await fetch('/api/push/visit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+          body: JSON.stringify({
+            deviceId,
+            ...(endpoint ? { endpoint } : {}),
+            timeZone: getBrowserTimeZone(),
+            contentPreference: getPushContentPreferenceFromPath(pathname),
+          }),
+        });
+
+        if (response.ok) {
+          window.localStorage.setItem(SITE_VISIT_RECORDED_AT_KEY, String(Date.now()));
+        }
+      } catch {
+        // Visit tracking should never interrupt the reader experience.
+      }
+    };
+
+    trackTimer = window.setTimeout(() => {
+      void recordSiteVisit();
+    }, 2500);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void recordSiteVisit();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      if (trackTimer !== null) {
+        window.clearTimeout(trackTimer);
+      }
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [isAuthenticated, pathname, sessionReady]);
