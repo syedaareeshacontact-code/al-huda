@@ -108,12 +108,17 @@ export function buildPrayerTimesMetadata(city?: string, cityUrdu?: string): Meta
   });
 }
 
-export function buildDuasMetadata(category?: string, categoryName?: string): Metadata {
+export function buildDuasMetadata(
+  category?: string,
+  categoryName?: string,
+  index = true
+): Metadata {
   if (category && categoryName) {
     return buildPageMetadata({
       title: `${categoryName} — Islamic Duas & Supplications with Arabic Text`,
       description: `Read ${categoryName.toLowerCase()} with Arabic text, transliteration, English translation, and source information where supplied by the data provider.`,
       path: `/duas/${category}`,
+      index,
       keywords: [
         categoryName.toLowerCase(),
         `${categoryName.toLowerCase()} dua`,
@@ -128,16 +133,18 @@ export function buildDuasMetadata(category?: string, categoryName?: string): Met
     description:
       'Browse 126 Islamic duas and azkar across 27 categories, with Arabic text, transliteration, English translation, and source references where supplied.',
     path: '/duas',
+    index,
     keywords: DUAS_KEYWORDS,
   });
 }
 
-export function buildAzkarMetadata(): Metadata {
+export function buildAzkarMetadata(index = true): Metadata {
   return buildPageMetadata({
     title: 'Morning & Evening Azkar — Daily Islamic Remembrance (Adhkar)',
     description:
       'Daily morning and evening azkar (adhkar) with Arabic text, transliteration, translation, and source references where supplied.',
     path: '/azkar',
+    index,
     keywords: [
       'morning azkar',
       'evening azkar',
@@ -150,12 +157,13 @@ export function buildAzkarMetadata(): Metadata {
   });
 }
 
-export function build99NamesMetadata(): Metadata {
+export function build99NamesMetadata(index = true): Metadata {
   return buildPageMetadata({
     title: '99 Names of Allah (Asma ul Husna) — Arabic, Meaning & Benefits',
     description:
       'Learn all 99 Names of Allah (Asma ul Husna) with Arabic calligraphy, transliteration, English meaning, and detailed explanations.',
     path: '/99-names-of-allah',
+    index,
     keywords: [
       '99 names of allah',
       'asma ul husna',

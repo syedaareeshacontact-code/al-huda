@@ -24,24 +24,37 @@ import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 const PAGE_SIZE = 8;
 const POPULAR_SURAH_IDS = [36, 18, 55, 67] as const;
 
-export const metadata: Metadata = {
-  ...buildPageMetadata({
-    title: 'Quran Articles, Surah Guides & Authentic Duas',
-    description:
-      'Explore source-aware Quran articles, Surah guides, authentic duas, and practical reading advice with visible references and review status.',
-    path: '/articles',
-    imageUrl:
-      '/images/articles/how-to-start-reading-the-quran/beginner-quran-reading-guide-cover.webp',
-  }),
-  keywords: [
-    'Quran articles',
-    'Surah guides',
-    'Islamic duas',
-    'learn Quran',
-    'Quran reading guide',
-    'Read al Quran articles',
-  ],
-};
+const ARTICLES_METADATA = {
+  title: 'Quran Articles, Surah Guides & Authentic Duas',
+  description:
+    'Explore source-aware Quran articles, Surah guides, authentic duas, and practical reading advice with visible references and review status.',
+  path: '/articles',
+  imageUrl:
+    '/images/articles/how-to-start-reading-the-quran/beginner-quran-reading-guide-cover.webp',
+} as const;
+
+const ARTICLES_KEYWORDS = [
+  'Quran articles',
+  'Surah guides',
+  'Islamic duas',
+  'learn Quran',
+  'Quran reading guide',
+  'Read al Quran articles',
+];
+
+export async function generateMetadata({ searchParams }: ArticlesPageProps): Promise<Metadata> {
+  const resolvedSearchParams = await searchParams;
+  const search = getStringParam(resolvedSearchParams.q).trim();
+  const requestedPage = Number.parseInt(getStringParam(resolvedSearchParams.page), 10);
+  const hasFilteredView = Boolean(search) || (Number.isFinite(requestedPage) && requestedPage > 1);
+
+  return buildPageMetadata({
+    ...ARTICLES_METADATA,
+    keywords: ARTICLES_KEYWORDS,
+    index: !hasFilteredView,
+    follow: true,
+  });
+}
 
 type ArticlesPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

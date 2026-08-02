@@ -28,6 +28,7 @@ import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
+import { hasTafsirForAyah } from '@/lib/tafsir-index';
 
 interface TafsirPageProps {
   params: Promise<{
@@ -75,7 +76,12 @@ export async function generateMetadata({
   const resolved = resolveSurahParam(surahParam);
   const ayahNumber = parseAyahNumber(ayahParam);
 
-  if (!resolved || !ayahNumber || ayahNumber > resolved.surah.totalAyah) {
+  if (
+    !resolved ||
+    !ayahNumber ||
+    ayahNumber > resolved.surah.totalAyah ||
+    !hasTafsirForAyah(resolved.surah.id, ayahNumber)
+  ) {
     return buildPageMetadata({
       title: 'Tafseer Not Found',
       description: 'Requested tafseer page was not found.',
@@ -115,6 +121,10 @@ export default async function TafsirDetailPage({
     notFound();
   }
 
+  if (!hasTafsirForAyah(surah.id, ayahNumber)) {
+    notFound();
+  }
+
   if (!isCanonicalSlug) {
     permanentRedirect(buildTafsirPath(surah.id, surah.surahName, ayahNumber));
   }
@@ -126,7 +136,7 @@ export default async function TafsirDetailPage({
   ]);
 
   if (!ayah || !tafsir) {
-    notFound();
+    throw new Error('Tafseer content is temporarily unavailable.');
   }
 
   const safeTafsirHtml = sanitizeTafsirHtml(tafsir.textHtml);

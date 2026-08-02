@@ -18,7 +18,6 @@ import {
   X,
 } from 'lucide-react';
 
-import HomeFeatureTour from '@/components/home/home-feature-tour';
 import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { getAllSurahs, getSurahById } from '@/lib/quran-index';
@@ -164,8 +163,6 @@ export default function HomeRoot({ children }: { children?: ReactNode }) {
 
   return (
     <div className="pb-20 pt-5 sm:pt-9">
-      <HomeFeatureTour />
-
       <section className="relative z-20" data-slot="page-shell" aria-labelledby="home-heading">
         <div className="relative overflow-visible rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%),var(--color-surface)_58%,var(--color-surface-elevated))] px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-9 lg:px-12 lg:py-11">
           <div className="pointer-events-none absolute -right-14 -top-20 hidden size-64 rounded-full border border-[color-mix(in_oklab,var(--color-accent),transparent_82%)] opacity-60 sm:block" />

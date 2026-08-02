@@ -6,7 +6,10 @@ import ChapterFilterBar from '@/components/hadith/ChapterFilterBar';
 import HadithCard from '@/components/hadith/HadithCard';
 import HadithPagination from '@/components/hadith/HadithPagination';
 import { Badge } from '@/components/ui/badge';
-import { getCollectionBySlug, getChaptersByCollection } from '@/lib/hadith/collections.service';
+import {
+  getCollectionBySlugOrThrow,
+  getChaptersByCollectionOrThrow,
+} from '@/lib/hadith/collections.service';
 import { getHadiths } from '@/lib/hadith/hadith.service';
 import { HadithApiError } from '@/lib/hadith/api-client';
 import {
@@ -19,6 +22,11 @@ import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 
 export const revalidate = 3600;
 
+function parsePageNumber(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export async function generateMetadata({
   params,
   searchParams,
@@ -28,17 +36,38 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { collection } = await params;
   const { page = '1', chapter } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page, 10));
+  const currentPage = parsePageNumber(page);
 
-  const [bookData, chapters] = await Promise.all([
-    getCollectionBySlug(collection),
-    chapter ? getChaptersByCollection(collection) : Promise.resolve([]),
-  ]);
+  let bookData: Awaited<ReturnType<typeof getCollectionBySlugOrThrow>>;
+  let chapters: Awaited<ReturnType<typeof getChaptersByCollectionOrThrow>>;
+  try {
+    [bookData, chapters] = await Promise.all([
+      getCollectionBySlugOrThrow(collection),
+      chapter ? getChaptersByCollectionOrThrow(collection) : Promise.resolve([]),
+    ]);
+  } catch {
+    return buildPageMetadata({
+      title: 'Hadith List Temporarily Unavailable',
+      description: 'This Hadith list could not be loaded from the data provider.',
+      path: buildHadithBookPath(collection),
+      index: false,
+    });
+  }
 
-  if (!bookData) return {};
+  if (
+    !bookData ||
+    (chapter && !chapters.some((entry) => String(entry.chapterNumber) === chapter))
+  ) {
+    return buildPageMetadata({
+      title: 'Hadith Page Not Found',
+      description: 'The requested Hadith collection or chapter was not found.',
+      path: buildHadithBookPath(collection),
+      index: false,
+    });
+  }
 
   const chapterMeta = chapter
-    ? chapters.find((entry) => entry.chapterNumber === chapter)
+    ? chapters.find((entry) => String(entry.chapterNumber) === chapter)
     : undefined;
 
   const path = buildHadithBookPath(collection, { chapter, page: currentPage });
@@ -72,14 +101,14 @@ export default async function BookPage({
   if (book !== collection) notFound();
   const { page = '1', chapter } = await searchParams;
 
-  const currentPage = Math.max(1, parseInt(page, 10));
+  const currentPage = parsePageNumber(page);
 
   let bookData, hadithsData, allChapters;
   try {
     [bookData, hadithsData, allChapters] = await Promise.all([
-      getCollectionBySlug(collection),
+      getCollectionBySlugOrThrow(collection),
       getHadiths({ bookSlug: collection, chapterId: chapter, page: currentPage }),
-      getChaptersByCollection(collection),
+      getChaptersByCollectionOrThrow(collection),
     ]);
   } catch (error) {
     if (error instanceof HadithApiError && error.status === 404) {
@@ -91,8 +120,10 @@ export default async function BookPage({
   if (!bookData) notFound();
 
   const chapterMeta = chapter
-    ? allChapters.find((entry) => entry.chapterNumber === chapter)
+    ? allChapters.find((entry) => String(entry.chapterNumber) === chapter)
     : undefined;
+  if (chapter && !chapterMeta) notFound();
+  if (hadithsData.hadiths.data.length === 0) notFound();
   const collectionPath = buildHadithCollectionPath(collection);
   const bookPath = buildHadithBookPath(collection, { chapter, page: currentPage });
 

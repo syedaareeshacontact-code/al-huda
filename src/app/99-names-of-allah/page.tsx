@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import NamesGrid from '@/components/duas/names-grid';
+import PublicContentState from '@/components/errors/public-content-state';
 import { getAsmaUlHusna } from '@/lib/ummah-api';
 import {
   build99NamesMetadata,
@@ -9,10 +10,40 @@ import {
 
 export const revalidate = 86400;
 
-export const metadata = build99NamesMetadata();
+export async function generateMetadata() {
+  try {
+    const names = await getAsmaUlHusna();
+    return build99NamesMetadata(names.length > 0);
+  } catch {
+    return build99NamesMetadata(false);
+  }
+}
 
 export default async function NamesOfAllahPage() {
-  const names = await getAsmaUlHusna();
+  let names: Awaited<ReturnType<typeof getAsmaUlHusna>>;
+  try {
+    names = await getAsmaUlHusna();
+  } catch {
+    return (
+      <PublicContentState
+        title="The Names of Allah are temporarily unavailable"
+        description="The source data could not be loaded. Please retry shortly; an empty or incomplete page will not be indexed."
+        primaryHref="/99-names-of-allah"
+        primaryLabel="Try again"
+      />
+    );
+  }
+
+  if (names.length === 0) {
+    return (
+      <PublicContentState
+        title="The Names of Allah are temporarily unavailable"
+        description="The provider returned no names, so this incomplete page is excluded from indexing."
+        primaryHref="/99-names-of-allah"
+        primaryLabel="Try again"
+      />
+    );
+  }
   const breadcrumb = buildIslamicToolsBreadcrumb([
     { name: '99 Names of Allah', path: '/99-names-of-allah' },
   ]);

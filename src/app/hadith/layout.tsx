@@ -6,14 +6,11 @@ import HadithSidebarNav from '@/components/hadith/HadithSidebarNav';
 import HadithMobileNav from '@/components/hadith/HadithMobileNav';
 import HadithTopSearchShell from '@/components/hadith/HadithTopSearchShell';
 import { getAllCollections } from '@/lib/hadith/collections.service';
-import { getSiteName } from '@/lib/seo';
-
-const siteName = getSiteName();
 
 export const metadata: Metadata = {
   title: {
-    template: `%s | Hadith | ${siteName}`,
-    default: `Hadith Collections | ${siteName}`,
+    template: '%s | Hadith',
+    default: 'Hadith Collections',
   },
 };
 

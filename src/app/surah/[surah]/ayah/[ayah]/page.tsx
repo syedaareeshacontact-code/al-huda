@@ -118,7 +118,7 @@ export default async function AyahDetailPage({
 
   const ayah = await getAyahContent(surah.id, ayahNumber);
   if (!ayah) {
-    notFound();
+    throw new Error('Ayah content is temporarily unavailable.');
   }
 
   const [audioUrls, tafsir] = await Promise.all([

@@ -21,7 +21,6 @@ interface GuestSubscriptionResponse {
 }
 
 const OWNER_KEY = 'alhuda:push-subscription-owner';
-const PROMPT_ATTEMPT_KEY = 'alhuda:guest-push-prompt-attempted';
 const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
 const PUSH_OPEN_TOKEN_QUERY_PARAM = 'push_open_token';
 const PENDING_PUSH_OPEN_TOKEN_KEY = 'alhuda:pending-push-open-token';
@@ -202,8 +201,6 @@ export default function GuestPushEnrollment({
     }
 
     let cancelled = false;
-    let promptTimer: number | null = null;
-    let removeGestureListeners = () => {};
     const deviceId = getSiteDeviceId();
 
     const syncGrantedSubscription = async () => {
@@ -246,49 +243,6 @@ export default function GuestPushEnrollment({
       }
     };
 
-    const requestPermissionAndSync = async (fromGesture: boolean) => {
-      if (cancelled || Notification.permission !== 'default') {
-        return;
-      }
-
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'default' || fromGesture) {
-          window.localStorage.setItem(
-            PROMPT_ATTEMPT_KEY,
-            `${permission}:${new Date().toISOString()}`
-          );
-        }
-
-        if (permission === 'granted' && !cancelled) {
-          await syncGrantedSubscription();
-        } else if (permission === 'denied' && !cancelled) {
-          await reconcileDisabledPermission();
-        }
-      } catch {
-        if (fromGesture) {
-          window.localStorage.setItem(
-            PROMPT_ATTEMPT_KEY,
-            `failed:${new Date().toISOString()}`
-          );
-        }
-      }
-    };
-
-    const installGestureFallback = () => {
-      const onGesture = () => {
-        removeGestureListeners();
-        void requestPermissionAndSync(true);
-      };
-
-      window.addEventListener('pointerdown', onGesture, { once: true, capture: true });
-      window.addEventListener('keydown', onGesture, { once: true, capture: true });
-      removeGestureListeners = () => {
-        window.removeEventListener('pointerdown', onGesture, true);
-        window.removeEventListener('keydown', onGesture, true);
-      };
-    };
-
     const reconcile = async () => {
       if (Notification.permission === 'granted') {
         await syncGrantedSubscription();
@@ -300,29 +254,8 @@ export default function GuestPushEnrollment({
         return;
       }
 
-      if (
-        isAuthenticated ||
-        window.localStorage.getItem(OWNER_KEY) === 'user' ||
-        window.localStorage.getItem(PROMPT_ATTEMPT_KEY)
-      ) {
-        return;
-      }
-
-      const publicKey = await loadPushConfig();
-      if (!publicKey || cancelled) {
-        return;
-      }
-
-      promptTimer = window.setTimeout(async () => {
-        await requestPermissionAndSync(false);
-        if (
-          !cancelled &&
-          Notification.permission === 'default' &&
-          !window.localStorage.getItem(PROMPT_ATTEMPT_KEY)
-        ) {
-          installGestureFallback();
-        }
-      }, 1200);
+      // Never ask for notification permission automatically. New subscriptions
+      // must start from an explicit user action in the notification settings UI.
     };
 
     void reconcile();
@@ -336,10 +269,6 @@ export default function GuestPushEnrollment({
 
     return () => {
       cancelled = true;
-      if (promptTimer !== null) {
-        window.clearTimeout(promptTimer);
-      }
-      removeGestureListeners();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [isAuthenticated, pathname, sessionReady]);

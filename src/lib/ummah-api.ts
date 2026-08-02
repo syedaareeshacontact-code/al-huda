@@ -1,5 +1,15 @@
 const UMMAH_BASE = 'https://ummahapi.com/api';
 
+export class UmmahApiError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'UmmahApiError';
+  }
+}
+
 export interface DuaCategory {
   id: string;
   name: string;
@@ -27,15 +37,34 @@ export interface AsmaUlHusna {
 }
 
 async function ummahFetch<T>(path: string, revalidate = 86400): Promise<T> {
-  const res = await fetch(`${UMMAH_BASE}${path}`, {
-    next: { revalidate },
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!res.ok) throw new Error(`UmmahAPI error: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(`UmmahAPI: ${json.error ?? 'Unknown error'}`);
-  return json.data as T;
+  let response: Response;
+
+  try {
+    response = await fetch(`${UMMAH_BASE}${path}`, {
+      next: { revalidate },
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw new UmmahApiError(502, 'The duas provider is temporarily unreachable.');
+  }
+
+  if (!response.ok) {
+    throw new UmmahApiError(response.status, `The duas provider returned ${response.status}.`);
+  }
+
+  let json: { success?: boolean; error?: string; data?: T };
+  try {
+    json = (await response.json()) as { success?: boolean; error?: string; data?: T };
+  } catch {
+    throw new UmmahApiError(502, 'The duas provider returned an invalid response.');
+  }
+
+  if (!json.success || json.data === undefined) {
+    throw new UmmahApiError(502, json.error || 'The duas provider returned no content.');
+  }
+
+  return json.data;
 }
 
 export async function getDuaCategories(): Promise<DuaCategory[]> {

@@ -12,7 +12,7 @@ import SuggestedHadiths from '@/components/hadith/SuggestedHadiths';
 import { HadithDetailSchema, HadithBreadcrumbsSchema } from '@/components/hadith/HadithSchema';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { getCollectionBySlug } from '@/lib/hadith/collections.service';
+import { getCollectionBySlugOrThrow } from '@/lib/hadith/collections.service';
 import { getHadithByNumber, getSuggestedHadiths } from '@/lib/hadith/hadith.service';
 import {
   getHadithMetaDescription,
@@ -68,7 +68,26 @@ export async function generateMetadata({
   params: Promise<{ collection: string; book: string; hadithNumber: string }>;
 }): Promise<Metadata> {
   const { collection, hadithNumber } = await params;
-  const hadith = await getHadithByNumber(collection, hadithNumber);
+  if (!/^\d+$/.test(hadithNumber)) {
+    return buildPageMetadata({
+      title: 'Hadith Not Found',
+      description: 'The requested Hadith number was not found.',
+      path: buildHadithDetailPath(collection, hadithNumber),
+      index: false,
+    });
+  }
+
+  let hadith: Awaited<ReturnType<typeof getHadithByNumber>>;
+  try {
+    hadith = await getHadithByNumber(collection, hadithNumber);
+  } catch {
+    return buildPageMetadata({
+      title: 'Hadith Temporarily Unavailable',
+      description: 'This Hadith could not be loaded from the data provider.',
+      path: buildHadithDetailPath(collection, hadithNumber),
+      index: false,
+    });
+  }
   if (!hadith) return {};
 
   const description = getHadithMetaDescription(hadith);
@@ -103,11 +122,11 @@ export default async function HadithDetailPage({
 }) {
   const { collection, book, hadithNumber } = await params;
 
-  if (book !== collection) notFound();
+  if (book !== collection || !/^\d+$/.test(hadithNumber)) notFound();
 
   const [hadith, bookData] = await Promise.all([
     getHadithByNumber(collection, hadithNumber),
-    getCollectionBySlug(collection),
+    getCollectionBySlugOrThrow(collection),
   ]);
 
   if (!hadith || !bookData) notFound();
@@ -158,8 +177,6 @@ export default async function HadithDetailPage({
           hadithNumber,
         })}
       />
-      <HadithQuranNudge links={quranNudgeLinks} />
-
       <article className="mx-auto max-w-4xl space-y-5 animate-fade-up">
         <BreadcrumbNav items={navBreadcrumbs} includeSchema={false} />
 
@@ -365,6 +382,8 @@ export default async function HadithDetailPage({
           currentNumber={parseInt(hadithNumber, 10)}
           totalHadiths={bookData.hadiths_count}
         />
+
+        <HadithQuranNudge links={quranNudgeLinks} />
 
         <SuggestedHadiths hadiths={suggestedHadiths} bookSlug={collection} />
       </article>

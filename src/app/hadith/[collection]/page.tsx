@@ -4,10 +4,11 @@ import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/hadith/BreadcrumbNav';
 import ChapterList from '@/components/hadith/ChapterList';
 import CollectionHero from '@/components/hadith/CollectionHero';
+import PublicContentState from '@/components/errors/public-content-state';
 import {
   getAllCollections,
-  getCollectionBySlug,
-  getChaptersByCollection,
+  getCollectionBySlugOrThrow,
+  getChaptersByCollectionOrThrow,
 } from '@/lib/hadith/collections.service';
 import {
   buildHadithCollectionPath,
@@ -43,9 +44,27 @@ export async function generateMetadata({
   params: Promise<{ collection: string }>;
 }): Promise<Metadata> {
   const { collection } = await params;
-  const book = await getCollectionBySlug(collection);
-  if (!book) return {};
-
+  let book: Awaited<ReturnType<typeof getCollectionBySlugOrThrow>>;
+  let chapters: Awaited<ReturnType<typeof getChaptersByCollectionOrThrow>>;
+  try {
+    book = await getCollectionBySlugOrThrow(collection);
+    if (!book) {
+      return buildPageMetadata({
+        title: 'Hadith Collection Not Found',
+        description: 'The requested Hadith collection was not found.',
+        path: buildHadithCollectionPath(collection),
+        index: false,
+      });
+    }
+    chapters = await getChaptersByCollectionOrThrow(collection);
+  } catch {
+    return buildPageMetadata({
+      title: 'Hadith Collection Temporarily Unavailable',
+      description: 'This Hadith collection could not be loaded from the data provider.',
+      path: buildHadithCollectionPath(collection),
+      index: false,
+    });
+  }
   const path = buildHadithCollectionPath(collection);
   const title = `${book.bookName} – Read Online (English & Urdu)`;
   const description = `Browse all chapters and hadiths from ${book.bookName} by ${book.writerName}. ${book.hadiths_count.toLocaleString()} hadiths with Arabic, English and Urdu translations.`;
@@ -57,6 +76,7 @@ export async function generateMetadata({
     ogType: 'article',
     keywords: buildHadithCollectionKeywords(book.bookName, book.writerName),
     imageUrl: buildHadithOgImagePath({ variant: 'collection', bookName: book.bookName }),
+    index: chapters.length > 0,
   });
 }
 
@@ -66,12 +86,46 @@ export default async function CollectionPage({
   params: Promise<{ collection: string }>;
 }) {
   const { collection } = await params;
-  const [book, chapters] = await Promise.all([
-    getCollectionBySlug(collection),
-    getChaptersByCollection(collection),
-  ]);
+  let book: Awaited<ReturnType<typeof getCollectionBySlugOrThrow>>;
+  let chapters: Awaited<ReturnType<typeof getChaptersByCollectionOrThrow>>;
+  try {
+    book = await getCollectionBySlugOrThrow(collection);
+  } catch {
+    return (
+      <PublicContentState
+        title="This Hadith collection is temporarily unavailable"
+        description="The data provider could not load this collection. Please retry shortly; the incomplete page is excluded from indexing."
+        primaryHref={buildHadithCollectionPath(collection)}
+        primaryLabel="Try collection again"
+      />
+    );
+  }
 
   if (!book) notFound();
+
+  try {
+    chapters = await getChaptersByCollectionOrThrow(collection);
+  } catch {
+    return (
+      <PublicContentState
+        title="This Hadith collection is temporarily unavailable"
+        description="The data provider could not load this collection. Please retry shortly; the incomplete page is excluded from indexing."
+        primaryHref={buildHadithCollectionPath(collection)}
+        primaryLabel="Try collection again"
+      />
+    );
+  }
+
+  if (chapters.length === 0) {
+    return (
+      <PublicContentState
+        title="Collection chapters are temporarily unavailable"
+        description="No chapters were returned for this collection, so the incomplete page is excluded from indexing."
+        primaryHref={buildHadithCollectionPath(collection)}
+        primaryLabel="Try collection again"
+      />
+    );
+  }
 
   const collectionPath = buildHadithCollectionPath(collection);
   const breadcrumbs = buildBreadcrumbJsonLd([

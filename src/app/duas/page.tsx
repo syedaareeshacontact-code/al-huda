@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import { DuaCategoryGrid } from '@/components/duas/dua-card';
+import PublicContentState from '@/components/errors/public-content-state';
 import { getAllDuasOverview } from '@/lib/ummah-api';
 import {
   buildDuasMetadata,
@@ -11,10 +12,41 @@ import {
 
 export const revalidate = 86400;
 
-export const metadata = buildDuasMetadata();
+export async function generateMetadata() {
+  try {
+    const { total, categories } = await getAllDuasOverview();
+    return buildDuasMetadata(undefined, undefined, total > 0 && categories.length > 0);
+  } catch {
+    return buildDuasMetadata(undefined, undefined, false);
+  }
+}
 
 export default async function DuasPage() {
-  const { total, categories } = await getAllDuasOverview();
+  let overview: Awaited<ReturnType<typeof getAllDuasOverview>>;
+  try {
+    overview = await getAllDuasOverview();
+  } catch {
+    return (
+      <PublicContentState
+        title="Duas are temporarily unavailable"
+        description="The duas data provider could not be reached. Please try this directory again shortly; no incomplete page will be indexed."
+        primaryHref="/duas"
+        primaryLabel="Try duas again"
+      />
+    );
+  }
+
+  const { total, categories } = overview;
+  if (total < 1 || categories.length === 0) {
+    return (
+      <PublicContentState
+        title="Duas are temporarily unavailable"
+        description="The provider returned no dua categories, so this incomplete version is not being shown or indexed."
+        primaryHref="/duas"
+        primaryLabel="Try duas again"
+      />
+    );
+  }
   const breadcrumb = buildIslamicToolsBreadcrumb([{ name: 'Duas', path: '/duas' }]);
   const faqItems = getDuasFaqItems();
   const faq = buildDuasFaq();

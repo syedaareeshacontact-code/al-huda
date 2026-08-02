@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import DuaCard from '@/components/duas/dua-card';
-import { getDuasByCategory, getDuaCategories } from '@/lib/ummah-api';
+import PublicContentState from '@/components/errors/public-content-state';
+import { getDuasByCategory, getDuaCategories, UmmahApiError } from '@/lib/ummah-api';
 import {
   buildDuasMetadata,
   buildIslamicToolsBreadcrumb,
 } from '@/lib/islamic-tools-seo';
-import { buildFaqJsonLd } from '@/lib/seo';
+import { buildFaqJsonLd, buildPageMetadata } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -28,10 +29,19 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps) {
   const { category: id } = await params;
   try {
-    const { category } = await getDuasByCategory(id);
-    return buildDuasMetadata(id, category.name);
-  } catch {
-    return {};
+    const { category, duas } = await getDuasByCategory(id);
+    return buildDuasMetadata(id, category.name, duas.length > 0);
+  } catch (error) {
+    const missing = error instanceof UmmahApiError && error.status === 404;
+    return buildPageMetadata({
+      title: missing ? 'Dua Category Not Found' : 'Dua Content Temporarily Unavailable',
+      description: missing
+        ? 'The requested dua category was not found.'
+        : 'This dua category could not be loaded from the data provider.',
+      path: `/duas/${id}`,
+      index: false,
+      follow: true,
+    });
   }
 }
 
@@ -41,11 +51,32 @@ export default async function DuaCategoryPage({ params }: PageProps) {
   let data;
   try {
     data = await getDuasByCategory(id);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof UmmahApiError && error.status === 404) {
+      notFound();
+    }
+
+    return (
+      <PublicContentState
+        title="This dua category is temporarily unavailable"
+        description="The data provider could not load this category. Please retry shortly; the incomplete page is excluded from indexing."
+        primaryHref={`/duas/${id}`}
+        primaryLabel="Try this category again"
+      />
+    );
   }
 
   const { category, duas } = data;
+  if (duas.length === 0) {
+    return (
+      <PublicContentState
+        title="No duas are available in this category"
+        description="The provider returned an empty category. Browse the main directory while its content is checked."
+        primaryHref="/duas"
+        primaryLabel="Browse all duas"
+      />
+    );
+  }
   const breadcrumb = buildIslamicToolsBreadcrumb([
     { name: 'Duas', path: '/duas' },
     { name: category.name, path: `/duas/${id}` },

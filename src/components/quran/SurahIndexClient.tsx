@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   BookOpen,
   BookOpenText,
@@ -18,7 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import SurahFeatureTour from '@/components/quran/surah-feature-tour';
 import QuranSettingsPanel from '@/components/quran/quran-settings-panel';
 import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
 import FilterDrawer from '@/components/ui/filter-drawer';
@@ -169,17 +168,8 @@ export default function SurahIndexClient({ initialSurahs, initialSearchQuery = '
     sortDirection !== 'asc',
   ].filter(Boolean).length;
 
-  const handleTourStepChange = useCallback((stepId: string) => {
-    setIsFiltersOpen(stepId === 'filters');
-  }, []);
-
-  const handleTourClose = useCallback(() => {
-    setIsFiltersOpen(false);
-  }, []);
-
   return (
     <div className="space-y-6">
-      <SurahFeatureTour onStepChange={handleTourStepChange} onClose={handleTourClose} />
       {/* Search Bar & Advanced Toggle Row */}
       <StickySearchShell className="-mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
         <div className="flex gap-2">

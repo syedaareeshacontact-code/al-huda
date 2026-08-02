@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import DuaCard from '@/components/duas/dua-card';
+import PublicContentState from '@/components/errors/public-content-state';
 import { getDuasByCategory, AZKAR_CATEGORY_IDS } from '@/lib/ummah-api';
 import {
   buildAzkarMetadata,
@@ -9,10 +10,10 @@ import {
 
 export const revalidate = 86400;
 
-export const metadata = buildAzkarMetadata();
+type AzkarSection = Awaited<ReturnType<typeof getDuasByCategory>>;
 
-export default async function AzkarPage() {
-  const azkarData = await Promise.all(
+async function getAzkarSections() {
+  const results = await Promise.all(
     AZKAR_CATEGORY_IDS.slice(0, 4).map(async (id) => {
       try {
         return await getDuasByCategory(id);
@@ -22,7 +23,28 @@ export default async function AzkarPage() {
     })
   );
 
-  const validData = azkarData.filter(Boolean);
+  return results.filter(
+    (section): section is AzkarSection => Boolean(section && section.duas.length > 0)
+  );
+}
+
+export async function generateMetadata() {
+  const sections = await getAzkarSections();
+  return buildAzkarMetadata(sections.length > 0);
+}
+
+export default async function AzkarPage() {
+  const validData = await getAzkarSections();
+  if (validData.length === 0) {
+    return (
+      <PublicContentState
+        title="Azkar are temporarily unavailable"
+        description="The daily remembrance data could not be loaded. Please retry shortly; an empty content page will not be indexed."
+        primaryHref="/azkar"
+        primaryLabel="Try azkar again"
+      />
+    );
+  }
   const breadcrumb = buildIslamicToolsBreadcrumb([{ name: 'Azkar', path: '/azkar' }]);
 
   return (
@@ -46,7 +68,7 @@ export default async function AzkarPage() {
       />
 
       {validData.map((section) =>
-        section ? (
+        (
           <section key={section.category.id} className="mb-10">
             <h2 className="mb-4 font-display text-xl font-semibold text-[var(--color-heading)]">
               {section.category.name}
@@ -63,7 +85,7 @@ export default async function AzkarPage() {
               View all {section.category.count} →
             </Link>
           </section>
-        ) : null
+        )
       )}
 
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">

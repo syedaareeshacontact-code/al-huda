@@ -80,7 +80,7 @@ export default function InstagramLanding({
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6 sm:pb-20 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6 sm:pb-20 lg:px-8">
         <section
           className={`${styles.heroPanel} grid items-center gap-6 px-5 py-6 sm:px-8 sm:py-9 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10 lg:px-11 lg:py-11`}
           aria-labelledby="instagram-heading"
@@ -215,7 +215,7 @@ export default function InstagramLanding({
             </p>
           </div>
         </section>
-      </main>
+      </div>
 
       <footer className="relative z-10 border-t border-[var(--ig-border)] bg-[var(--ig-footer)]">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-4 py-7 text-center sm:flex-row sm:justify-between sm:px-6 sm:text-left lg:px-8">
