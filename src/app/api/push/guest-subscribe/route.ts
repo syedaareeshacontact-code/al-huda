@@ -110,6 +110,7 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (user) {
     const subscription = await upsertUserPushSubscription(user.id, {
+      deviceId: parsed.data.deviceId,
       endpoint: parsed.data.endpoint,
       keys: parsed.data.keys,
       userAgent: request.headers.get('user-agent'),

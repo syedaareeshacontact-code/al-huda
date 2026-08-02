@@ -6,6 +6,7 @@ import {
   isAllowedDashboardOrigin,
 } from '@/lib/auth/dashboard-access';
 import { getCurrentAdminUser } from '@/lib/auth/current-user';
+import { listSiteDeviceVisitsForAdmin } from '@/lib/engagement/site-device-store';
 import { listUserPushDevicesForAdmin } from '@/lib/auth/users-store';
 import {
   listGuestPushDevicesForAdmin,
@@ -47,10 +48,28 @@ export async function GET(request: NextRequest) {
       ...device,
       ownerType: 'guest' as const,
     }));
-    const devices: AdminNotificationDevice[] = dedupeAdminNotificationDevices([
+    const notificationDevices: AdminNotificationDevice[] = dedupeAdminNotificationDevices([
       ...userDevices,
       ...normalizedGuestDevices,
     ]);
+    const siteVisits = await listSiteDeviceVisitsForAdmin(
+      notificationDevices
+        .map((device) => device.deviceId)
+        .filter((deviceId): deviceId is string => Boolean(deviceId))
+    );
+    const visitsByDeviceId = new Map(
+      siteVisits.map((visit) => [visit.deviceId, visit])
+    );
+    const devices = notificationDevices.map((device) => {
+      const visit = device.deviceId
+        ? visitsByDeviceId.get(device.deviceId)
+        : undefined;
+      return {
+        ...device,
+        totalVisitCount: visit?.totalVisitCount ?? 0,
+        lastTotalVisitAt: visit?.lastVisitAt ?? null,
+      };
+    });
     const dedupedUserDevices = devices.filter(
       (device) => device.ownerType === 'user'
     );
@@ -73,12 +92,12 @@ export async function GET(request: NextRequest) {
         }
         result.notificationsSent += device.notificationSentCount;
         result.notificationVisits += device.notificationVisitCount;
-        result.siteVisits += device.siteVisitCount;
+        result.totalVisits += device.totalVisitCount;
         if (device.notificationVisitCount > 0) {
           result.devicesWithVisits += 1;
         }
-        if (device.siteVisitCount > 0) {
-          result.devicesWithSiteVisits += 1;
+        if (device.totalVisitCount > 0) {
+          result.devicesWithTotalVisits += 1;
         }
         if (
           device.lastNotificationVisitAt &&
@@ -90,11 +109,11 @@ export async function GET(request: NextRequest) {
           result.lastNotificationVisitAt = device.lastNotificationVisitAt;
         }
         if (
-          device.lastSiteVisitAt &&
-          (!result.lastSiteVisitAt ||
-            device.lastSiteVisitAt.localeCompare(result.lastSiteVisitAt) > 0)
+          device.lastTotalVisitAt &&
+          (!result.lastTotalVisitAt ||
+            device.lastTotalVisitAt.localeCompare(result.lastTotalVisitAt) > 0)
         ) {
-          result.lastSiteVisitAt = device.lastSiteVisitAt;
+          result.lastTotalVisitAt = device.lastTotalVisitAt;
         }
         return result;
       },
@@ -106,11 +125,11 @@ export async function GET(request: NextRequest) {
         devicesWithFailures: 0,
         notificationsSent: 0,
         notificationVisits: 0,
-        siteVisits: 0,
+        totalVisits: 0,
         devicesWithVisits: 0,
-        devicesWithSiteVisits: 0,
+        devicesWithTotalVisits: 0,
         lastNotificationVisitAt: null as string | null,
-        lastSiteVisitAt: null as string | null,
+        lastTotalVisitAt: null as string | null,
       }
     );
     const summaryWithRate = {

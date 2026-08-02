@@ -14,6 +14,7 @@ function createUserDevice(
   return {
     id: 'device-1',
     ownerType: 'user',
+    deviceId: null,
     userId: 'user-1',
     userName: 'Reader',
     userEmail: 'reader@example.com',
@@ -113,6 +114,15 @@ describe('dedupeAdminNotificationDevices', () => {
     ]);
 
     expect(devices).toHaveLength(4);
+  });
+
+  it('keeps signed-in subscriptions separate when their browser device ids differ', () => {
+    const devices = dedupeAdminNotificationDevices([
+      createUserDevice({ id: 'first-device', deviceId: 'browser-device-1' }),
+      createUserDevice({ id: 'second-device', deviceId: 'browser-device-2' }),
+    ]);
+
+    expect(devices).toHaveLength(2);
   });
 
   it('aggregates delivery and visit metrics for duplicate logical devices', () => {

@@ -18,6 +18,10 @@ function getLogicalDeviceKey(device: AdminNotificationDevice) {
     return `guest:${device.deviceId || device.id}`;
   }
 
+  if (device.deviceId) {
+    return `user:${device.userId}:${device.deviceId}`;
+  }
+
   const details = getPushDeviceDetails(device.userAgent);
   return `user:${device.userId}:${details.browser}:${details.platform}`;
 }

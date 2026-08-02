@@ -52,6 +52,11 @@ const GuestPushEnrollment = dynamic(
   { ssr: false }
 );
 
+const SiteDeviceVisitTracker = dynamic(
+  () => import('@/components/engagement/site-device-visit-tracker'),
+  { ssr: false }
+);
+
 const NAV_LINK_BASE =
   'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]';
 
@@ -451,6 +456,7 @@ export default function SiteHeader() {
         isAuthenticated={Boolean(sessionUser)}
         sessionReady={!authLoading}
       />
+      <SiteDeviceVisitTracker sessionReady={!authLoading} />
       <header
         ref={headerRef}
         data-site-header

@@ -30,6 +30,7 @@ export interface StoredLastReadEntry {
 }
 
 export interface StoredPushSubscription {
+  deviceId: string | null;
   endpoint: string;
   keys: {
     p256dh: string;
@@ -70,6 +71,7 @@ export interface PushSubscriptionForDelivery extends StoredPushSubscription {
 export interface AdminUserPushDevice {
   id: string;
   ownerType: 'user';
+  deviceId: string | null;
   userId: string;
   userName: string;
   userEmail: string;
@@ -473,6 +475,7 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
   const lastSeenAt = String(candidate.lastSeenAt ?? createdAt);
 
   return {
+    deviceId: candidate.deviceId ? String(candidate.deviceId).trim().slice(0, 80) : null,
     endpoint,
     keys: { p256dh, auth },
     userAgent: candidate.userAgent ? String(candidate.userAgent).slice(0, 320) : null,
@@ -758,6 +761,7 @@ const notificationSchema = new Schema<UserNotification>(
 
 const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
   {
+    deviceId: { type: String, default: null, index: true },
     endpoint: { type: String, required: true, trim: true },
     keys: {
       p256dh: { type: String, required: true, trim: true },
@@ -1245,6 +1249,7 @@ export async function upsertUserPushSubscription(
     Partial<
       Pick<
         StoredPushSubscription,
+        | 'deviceId'
         | 'userAgent'
         | 'timeZone'
         | 'contentPreference'
@@ -1265,6 +1270,7 @@ export async function upsertUserPushSubscription(
     (existingUser as { pushSubscriptions?: unknown } | null)?.pushSubscriptions
   ).find((subscription) => subscription.endpoint === input.endpoint);
   const normalized = normalizePushSubscription({
+    deviceId: input.deviceId ?? existingSubscription?.deviceId ?? null,
     endpoint: input.endpoint,
     keys: input.keys,
     userAgent: input.userAgent ?? null,
@@ -1548,6 +1554,7 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
       devices.push({
         id: buildAdminPushDeviceId(userId, subscription.endpoint),
         ownerType: 'user',
+        deviceId: subscription.deviceId,
         userId,
         userName,
         userEmail,

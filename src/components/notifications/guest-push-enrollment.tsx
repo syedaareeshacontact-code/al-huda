@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
+import { getSiteDeviceId } from '@/lib/engagement/client-device-id';
 import { getPushContentPreferenceFromPath } from '@/lib/push/engagement-types';
-import { SITE_VISIT_THROTTLE_MS } from '@/lib/push/site-visit-tracking';
 
 interface GuestPushEnrollmentProps {
   isAuthenticated: boolean;
@@ -20,36 +20,11 @@ interface GuestSubscriptionResponse {
   owner?: 'guest' | 'user';
 }
 
-const DEVICE_ID_KEY = 'alhuda:guest-push-device-id';
 const OWNER_KEY = 'alhuda:push-subscription-owner';
 const PROMPT_ATTEMPT_KEY = 'alhuda:guest-push-prompt-attempted';
 const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
-const SITE_VISIT_RECORDED_AT_KEY = 'alhuda:push-site-visit-recorded-at';
 const PUSH_OPEN_TOKEN_QUERY_PARAM = 'push_open_token';
 const PENDING_PUSH_OPEN_TOKEN_KEY = 'alhuda:pending-push-open-token';
-
-function createDeviceId() {
-  if (typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
-    const randomValue = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
-    const value = character === 'x' ? randomValue : (randomValue & 0x3) | 0x8;
-    return value.toString(16);
-  });
-}
-
-function getDeviceId() {
-  const existing = window.localStorage.getItem(DEVICE_ID_KEY);
-  if (existing) {
-    return existing;
-  }
-
-  const deviceId = createDeviceId();
-  window.localStorage.setItem(DEVICE_ID_KEY, deviceId);
-  return deviceId;
-}
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -84,33 +59,6 @@ async function loadPushConfig() {
   }
 
   return payload.publicKey;
-}
-
-async function loadCurrentPushEndpoint() {
-  const storedEndpoint = window.localStorage.getItem(PUSH_ENDPOINT_KEY);
-  if (storedEndpoint) {
-    return storedEndpoint;
-  }
-
-  const registration = await navigator.serviceWorker.getRegistration();
-  const subscription = await registration?.pushManager.getSubscription();
-  if (subscription?.endpoint) {
-    window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
-    return subscription.endpoint;
-  }
-
-  return null;
-}
-
-function shouldRecordSiteVisit() {
-  const lastRecordedAt = Number(
-    window.localStorage.getItem(SITE_VISIT_RECORDED_AT_KEY) || 0
-  );
-
-  return (
-    !Number.isFinite(lastRecordedAt) ||
-    Date.now() - lastRecordedAt >= SITE_VISIT_THROTTLE_MS
-  );
 }
 
 function takePushOpenTokenFromUrl() {
@@ -256,7 +204,7 @@ export default function GuestPushEnrollment({
     let cancelled = false;
     let promptTimer: number | null = null;
     let removeGestureListeners = () => {};
-    const deviceId = getDeviceId();
+    const deviceId = getSiteDeviceId();
 
     const syncGrantedSubscription = async () => {
       const storedOwner = window.localStorage.getItem(OWNER_KEY);
@@ -392,75 +340,6 @@ export default function GuestPushEnrollment({
         window.clearTimeout(promptTimer);
       }
       removeGestureListeners();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [isAuthenticated, pathname, sessionReady]);
-
-  useEffect(() => {
-    if (
-      !sessionReady ||
-      process.env.NODE_ENV !== 'production' ||
-      typeof window === 'undefined' ||
-      !window.isSecureContext ||
-      !('serviceWorker' in navigator) ||
-      !('PushManager' in window) ||
-      !('Notification' in window) ||
-      Notification.permission !== 'granted'
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-    let trackTimer: number | null = null;
-    const deviceId = getDeviceId();
-
-    const recordSiteVisit = async () => {
-      if (cancelled || !shouldRecordSiteVisit()) {
-        return;
-      }
-
-      try {
-        const endpoint = await loadCurrentPushEndpoint();
-        if (cancelled || (isAuthenticated && !endpoint)) {
-          return;
-        }
-
-        const response = await fetch('/api/push/visit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          keepalive: true,
-          body: JSON.stringify({
-            deviceId,
-            ...(endpoint ? { endpoint } : {}),
-            timeZone: getBrowserTimeZone(),
-            contentPreference: getPushContentPreferenceFromPath(pathname),
-          }),
-        });
-
-        if (response.ok) {
-          window.localStorage.setItem(SITE_VISIT_RECORDED_AT_KEY, String(Date.now()));
-        }
-      } catch {
-        // Visit tracking should never interrupt the reader experience.
-      }
-    };
-
-    trackTimer = window.setTimeout(() => {
-      void recordSiteVisit();
-    }, 2500);
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void recordSiteVisit();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    return () => {
-      cancelled = true;
-      if (trackTimer !== null) {
-        window.clearTimeout(trackTimer);
-      }
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [isAuthenticated, pathname, sessionReady]);
