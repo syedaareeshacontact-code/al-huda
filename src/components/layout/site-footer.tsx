@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import navLinks, { popularSurahLinks } from '@/lib/navLinks';
+import PrivacyChoicesLink from '@/components/privacy/privacy-choices-link';
 
 const footerHighlights = [
   { label: 'Bookmark Ayahs', icon: BookMarked },
@@ -151,6 +152,7 @@ export default function SiteFooter() {
             <Link href="/editorial-policy" className="text-[var(--color-muted-text)] hover:text-[var(--color-accent)]">Sources</Link>
             <Link href="/corrections" className="text-[var(--color-muted-text)] hover:text-[var(--color-accent)]">Corrections</Link>
             <Link href="/privacy-policy" className="text-[var(--color-muted-text)] hover:text-[var(--color-accent)]">Privacy</Link>
+            <PrivacyChoicesLink className="text-[var(--color-muted-text)] hover:text-[var(--color-accent)]" />
             <Link href="/terms" className="text-[var(--color-muted-text)] hover:text-[var(--color-accent)]">Terms</Link>
             <Link href="/contact" className="text-[var(--color-muted-text)] hover:text-[var(--color-accent)]">Contact</Link>
           </nav>

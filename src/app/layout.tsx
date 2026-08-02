@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
 import {
 	Manrope,
 	Cormorant_Garamond,
@@ -38,6 +39,7 @@ const siteDescription =
 	'Read al Quran is a Quran-first web app for recitation, Urdu translation, bookmarks, audio playback, and progress tracking.';
 const ogImage = '/og?kind=surah-index';
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const adsenseClientId = 'ca-pub-2876888675525619';
 
 // Optimize font loading with preload strategy
 const bodyFont = Manrope({
@@ -100,7 +102,7 @@ export const metadata: Metadata = {
 		google: googleSiteVerification || undefined,
 	},
 	other: {
-		'google-adsense-account': 'ca-pub-2876888675525619',
+		'google-adsense-account': adsenseClientId,
 	},
 	openGraph: {
 		title: 'Read al Quran',
@@ -175,6 +177,13 @@ export default function RootLayout({
 			data-arabic-font="uthmaniHafs"
 			suppressHydrationWarning
 		>
+			<Script
+				id="google-adsense"
+				strategy="beforeInteractive"
+				async
+				crossOrigin="anonymous"
+				src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+			/>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 				{/* Resolve optional APIs cheaply; only the visible Quran font is preconnected. */}

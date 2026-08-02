@@ -1,9 +1,14 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 
 interface TrustSection {
   title: string;
   paragraphs: string[];
   items?: string[];
+  links?: Array<{
+    href: string;
+    label: string;
+  }>;
 }
 
 export default function TrustPage({
@@ -11,11 +16,13 @@ export default function TrustPage({
   intro,
   updated,
   sections,
+  children,
 }: {
   title: string;
   intro: string;
   updated: string;
   sections: TrustSection[];
+  children?: ReactNode;
 }) {
   return (
     <div className="pb-16 pt-10" data-slot="page-shell">
@@ -51,10 +58,28 @@ export default function TrustPage({
                     ))}
                   </ul>
                 ) : null}
+                {section.links ? (
+                  <ul className="space-y-2">
+                    {section.links.map((link) => (
+                      <li key={link.href}>
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-[var(--color-accent)] underline-offset-4 hover:underline"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             </section>
           ))}
         </div>
+
+        {children}
 
         <p className="mt-8 text-sm text-[var(--color-muted-text)]">
           Questions or corrections? Use the <Link className="font-semibold text-[var(--color-accent)] hover:underline" href="/feedback">feedback form</Link> or{' '}
