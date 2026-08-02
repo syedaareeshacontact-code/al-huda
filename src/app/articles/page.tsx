@@ -117,24 +117,24 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
         items={[{ label: 'Home', href: '/' }, { label: 'Articles' }]}
       />
 
-      <section className="relative mt-5 overflow-hidden rounded-[2rem] border border-teal-800/15 bg-[linear-gradient(135deg,#042f2e_0%,#115e59_56%,#047857_100%)] px-5 py-10 text-white shadow-[0_28px_70px_-38px_rgba(13,148,136,0.75)] sm:px-9 sm:py-14 lg:px-14">
+      <section className="relative mt-5 overflow-hidden rounded-[2rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),black_60%)_0%,color-mix(in_oklab,var(--color-accent),black_28%)_56%,var(--color-accent)_100%)] px-5 py-10 text-white shadow-[0_28px_70px_-38px_color-mix(in_oklab,var(--color-accent),transparent_25%)] sm:px-9 sm:py-14 lg:px-14">
         <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full border border-white/10" />
-        <div className="pointer-events-none absolute -bottom-32 right-20 size-64 rounded-full bg-emerald-300/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 right-20 size-64 rounded-full bg-[color-mix(in_oklab,var(--color-accent-soft),transparent_78%)] blur-3xl" />
         <div className="relative max-w-3xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-emerald-100 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-amber-50 backdrop-blur">
             <BookOpenText className="size-4" aria-hidden="true" />
             Read · Reflect · Verify
           </span>
           <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.02] text-white sm:text-5xl lg:text-6xl">
             Quran guidance with sources in view
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-teal-50/85 sm:text-lg">
+          <p className="mt-5 max-w-2xl text-base leading-7 text-amber-50/90 sm:text-lg">
             Explore practical Quran reading guides, Surah introductions, and referenced duas.
             Every article shows its sources, update date, and Islamic review status clearly.
           </p>
           <a
             href="#article-library"
-            className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold !text-teal-900 shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-50"
+            className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold !text-[#4a3702] shadow-lg transition hover:-translate-y-0.5 hover:bg-amber-50"
           >
             Browse the library
             <ArrowRight className="size-4" aria-hidden="true" />
@@ -145,7 +145,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       <section className="mt-14" aria-labelledby="featured-articles-heading">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
               Editor&apos;s selection
             </p>
             <h2
@@ -155,7 +155,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               Featured articles
             </h2>
           </div>
-          <Sparkles className="hidden size-7 text-teal-600 sm:block" aria-hidden="true" />
+          <Sparkles className="hidden size-7 text-[var(--color-accent)] sm:block" aria-hidden="true" />
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
           {featuredArticles.map((article, index) => (
@@ -171,11 +171,11 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
 
       <section className="mt-14" aria-labelledby="article-categories-heading">
         <div className="mb-6 flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_84%)] text-[var(--color-accent)]">
             <Layers3 className="size-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
               Find your topic
             </p>
             <h2
@@ -191,18 +191,18 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
             <Link
               key={category.slug}
               href={`/articles/category/${category.slug}`}
-              className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-soft)] transition hover:-translate-y-1 hover:border-teal-600/45 hover:shadow-[var(--shadow-card)]"
+              className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-soft)] transition hover:-translate-y-1 hover:border-[var(--color-accent-soft)] hover:shadow-[var(--shadow-card)]"
             >
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-teal-700 dark:text-teal-300">
+              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-accent)]">
                 {category.count} {category.count === 1 ? 'article' : 'articles'}
               </span>
-              <h3 className="mt-3 font-display text-2xl font-semibold text-[var(--color-heading)] transition group-hover:text-teal-700 dark:group-hover:text-teal-300">
+              <h3 className="mt-3 font-display text-2xl font-semibold text-[var(--color-heading)] transition group-hover:text-[var(--color-accent)]">
                 {category.name}
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--color-muted-text)]">
                 {category.description}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-teal-700 dark:text-teal-300">
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-accent)]">
                 Explore category
                 <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" />
               </span>
@@ -216,10 +216,10 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
         className="mt-16 scroll-mt-24"
         aria-labelledby="article-library-heading"
       >
-        <div className="rounded-[1.75rem] border border-teal-800/15 bg-[linear-gradient(145deg,rgba(13,148,136,0.10),var(--color-surface))] p-5 sm:p-7">
+        <div className="rounded-[1.75rem] border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_48%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%),var(--color-surface))] p-5 sm:p-7">
           <div className="grid gap-6 lg:grid-cols-[1fr_30rem] lg:items-end">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
                 Search the collection
               </p>
               <h2
@@ -250,12 +250,12 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
                   defaultValue={search}
                   placeholder="Search Surahs, duas, topics…"
                   maxLength={100}
-                  className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-10 pr-3 text-sm text-[var(--color-heading)] outline-none transition placeholder:text-[var(--color-muted-text)] focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                  className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-10 pr-3 text-sm text-[var(--color-heading)] outline-none transition placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-accent),transparent_75%)]"
                 />
               </span>
               <button
                 type="submit"
-                className="min-h-11 shrink-0 rounded-xl bg-teal-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+                className="min-h-11 shrink-0 rounded-xl bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-4 py-2 text-sm font-bold text-[var(--color-accent-foreground)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
               >
                 Search
               </button>
@@ -279,7 +279,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
             </p>
             <Link
               href="/articles#article-library"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-teal-700/30 px-4 py-2 text-sm font-bold text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/30"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] px-4 py-2 text-sm font-bold text-[var(--color-accent)] hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%)]"
             >
               Clear search
             </Link>
@@ -294,7 +294,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               tabIndex={results.hasPreviousPage ? undefined : -1}
               className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-sm font-bold transition ${
                 results.hasPreviousPage
-                  ? 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-teal-600/50'
+                  ? 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent-soft)]'
                   : 'pointer-events-none border-[var(--color-border)] opacity-45'
               }`}
             >
@@ -308,8 +308,8 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
                 aria-current={page === results.page ? 'page' : undefined}
                 className={`flex size-10 items-center justify-center rounded-xl border text-sm font-bold transition ${
                   page === results.page
-                    ? 'border-teal-700 bg-teal-700 text-white'
-                    : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-teal-600/50'
+                    ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-accent-foreground)]'
+                    : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent-soft)]'
                 }`}
               >
                 {page}
@@ -321,7 +321,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               tabIndex={results.hasNextPage ? undefined : -1}
               className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-sm font-bold transition ${
                 results.hasNextPage
-                  ? 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-teal-600/50'
+                  ? 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent-soft)]'
                   : 'pointer-events-none border-[var(--color-border)] opacity-45'
               }`}
             >
@@ -335,7 +335,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       <section className="mt-16" aria-labelledby="latest-articles-heading">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
               Recently published
             </p>
             <h2
@@ -356,7 +356,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       <section className="mt-16" aria-labelledby="popular-surah-guides-heading">
         <div className="overflow-hidden rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-7">
           <div className="mb-6 max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
               Continue reading
             </p>
             <h2
@@ -375,10 +375,10 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               <Link
                 key={surah.id}
                 href={buildSurahPath(surah.id, surah.surahName)}
-                className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 transition hover:border-teal-600/45 hover:bg-teal-50 dark:hover:bg-teal-950/25"
+                className="group flex items-center justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_91%)]"
               >
                 <span className="min-w-0">
-                  <span className="text-xs font-bold text-teal-700 dark:text-teal-300">
+                  <span className="text-xs font-bold text-[var(--color-accent)]">
                     Surah {surah.id} · {surah.totalAyah} Ayahs
                   </span>
                   <span className="mt-1 block truncate font-semibold text-[var(--color-heading)]">

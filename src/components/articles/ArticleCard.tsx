@@ -33,7 +33,7 @@ export function ArticleCard({
 
   return (
     <article
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-[var(--shadow-card)] ${
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:border-[var(--color-accent-soft)] hover:shadow-[var(--shadow-card)] ${
         featured ? 'ring-1 ring-white/5' : ''
       }`}
     >
@@ -59,7 +59,7 @@ export function ArticleCard({
           <Link
             href={`/articles/category/${article.categorySlug}`}
             prefetch={false}
-            className="rounded-full border border-teal-600/20 bg-teal-500/10 px-2.5 py-1 font-semibold text-teal-700 transition hover:border-teal-600/40 hover:bg-teal-500/15 dark:text-teal-300"
+            className="rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_48%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] px-2.5 py-1 font-semibold text-[var(--color-accent)] transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_82%)]"
           >
             {article.category}
           </Link>
@@ -73,7 +73,7 @@ export function ArticleCard({
             featured ? 'text-2xl sm:text-[1.7rem]' : 'text-xl'
           }`}
         >
-          <Link href={article.href} prefetch={false} className="hover:text-emerald-700 dark:hover:text-emerald-300">
+          <Link href={article.href} prefetch={false} className="hover:text-[var(--color-accent)]">
             {article.title}
           </Link>
         </h3>
@@ -88,10 +88,10 @@ export function ArticleCard({
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5 text-xs text-[var(--color-muted-text)]">
           <span className="inline-flex items-center gap-1.5">
-            <Clock3 className="size-3.5 text-teal-600 dark:text-teal-300" aria-hidden="true" />
+            <Clock3 className="size-3.5 text-[var(--color-accent)]" aria-hidden="true" />
             {article.readingTime.text}
           </span>
-          <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300">
+          <span className="inline-flex items-center gap-1 font-semibold text-[var(--color-accent)]">
             Read article
             <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </span>

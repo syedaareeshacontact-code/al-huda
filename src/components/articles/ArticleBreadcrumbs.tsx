@@ -24,7 +24,7 @@ export function ArticleBreadcrumbs({ items }: ArticleBreadcrumbsProps) {
             <li key={`${item.label}-${index}`} className="flex shrink-0 items-center gap-1.5">
               {index > 0 ? <ChevronRight className="size-3.5 text-[var(--color-border)]" aria-hidden="true" /> : null}
               {item.href && !current ? (
-                <Link href={item.href} prefetch={false} className="transition hover:text-teal-700 dark:hover:text-teal-300">
+                <Link href={item.href} prefetch={false} className="transition hover:text-[var(--color-accent)]">
                   {item.label}
                 </Link>
               ) : (
