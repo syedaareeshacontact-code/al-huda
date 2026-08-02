@@ -25,6 +25,8 @@ const OWNER_KEY = 'alhuda:push-subscription-owner';
 const PROMPT_ATTEMPT_KEY = 'alhuda:guest-push-prompt-attempted';
 const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
 const SITE_VISIT_RECORDED_AT_KEY = 'alhuda:push-site-visit-recorded-at';
+const PUSH_OPEN_TOKEN_QUERY_PARAM = 'push_open_token';
+const PENDING_PUSH_OPEN_TOKEN_KEY = 'alhuda:pending-push-open-token';
 
 function createDeviceId() {
   if (typeof crypto.randomUUID === 'function') {
@@ -111,6 +113,22 @@ function shouldRecordSiteVisit() {
   );
 }
 
+function takePushOpenTokenFromUrl() {
+  const url = new URL(window.location.href);
+  const trackingToken = url.searchParams.get(PUSH_OPEN_TOKEN_QUERY_PARAM)?.trim();
+  if (!trackingToken) {
+    return null;
+  }
+
+  url.searchParams.delete(PUSH_OPEN_TOKEN_QUERY_PARAM);
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${url.pathname}${url.search}${url.hash}`
+  );
+  return trackingToken;
+}
+
 async function saveSubscription(
   subscription: PushSubscription,
   deviceId: string,
@@ -161,6 +179,66 @@ export default function GuestPushEnrollment({
   sessionReady,
 }: GuestPushEnrollmentProps) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production' || typeof window === 'undefined') {
+      return;
+    }
+
+    const tokenFromUrl = takePushOpenTokenFromUrl();
+    if (tokenFromUrl) {
+      try {
+        window.sessionStorage.setItem(PENDING_PUSH_OPEN_TOKEN_KEY, tokenFromUrl);
+      } catch {
+        // The URL token is still used for this page load when storage is unavailable.
+      }
+    }
+
+    const trackingToken =
+      tokenFromUrl ??
+      (() => {
+        try {
+          return window.sessionStorage.getItem(PENDING_PUSH_OPEN_TOKEN_KEY);
+        } catch {
+          return null;
+        }
+      })();
+    if (!trackingToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const recordOpen = async () => {
+      try {
+        const response = await fetch('/api/push/open', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+          keepalive: true,
+          body: JSON.stringify({ token: trackingToken }),
+        });
+
+        if (!cancelled && (response.ok || response.status === 400 || response.status === 401)) {
+          try {
+            window.sessionStorage.removeItem(PENDING_PUSH_OPEN_TOKEN_KEY);
+          } catch {
+            // The backend deduplicates delivery IDs if this cleanup is unavailable.
+          }
+        }
+      } catch {
+        // Keep the token in session storage and retry when the browser reconnects.
+      }
+    };
+
+    void recordOpen();
+    window.addEventListener('online', recordOpen);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', recordOpen);
+    };
+  }, []);
 
   useEffect(() => {
     if (

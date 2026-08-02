@@ -4,6 +4,7 @@ const buildVersion = workerUrl.searchParams.get('v') || 'v3';
 const STATIC_CACHE = `${CACHE_PREFIX}${buildVersion}-static`;
 const API_CACHE = `${CACHE_PREFIX}${buildVersion}-api`;
 const OFFLINE_URL = '/offline.html';
+const PUSH_OPEN_TOKEN_QUERY_PARAM = 'push_open_token';
 
 const STATIC_PATH_PREFIXES = ['/logos/', '/banner/', '/basmalah/'];
 const CACHEABLE_EXTERNAL_HOSTS = new Set([
@@ -189,6 +190,14 @@ self.addEventListener('notificationclick', (event) => {
 
   const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
   const trackingToken = event.notification.data?.trackingToken;
+  const openedUrl = new URL(targetUrl);
+
+  // The background request below can be interrupted by the browser. The page
+  // receives this signed token as a second, reliable chance to record the open.
+  if (trackingToken && openedUrl.origin === self.location.origin) {
+    openedUrl.searchParams.set(PUSH_OPEN_TOKEN_QUERY_PARAM, trackingToken);
+  }
+  const trackedTargetUrl = openedUrl.href;
 
   event.waitUntil(
     Promise.allSettled([
@@ -208,12 +217,20 @@ self.addEventListener('notificationclick', (event) => {
 
         for (const client of clientsList) {
           if (client.url === targetUrl && 'focus' in client) {
-            return client.focus();
+            try {
+              await client.focus();
+              if (trackedTargetUrl !== targetUrl && 'navigate' in client) {
+                return (await client.navigate(trackedTargetUrl)) || client;
+              }
+              return client;
+            } catch {
+              break;
+            }
           }
         }
 
         if (self.clients.openWindow) {
-          return self.clients.openWindow(targetUrl);
+          return self.clients.openWindow(trackedTargetUrl);
         }
         return undefined;
       })(),
