@@ -334,6 +334,13 @@ export const EXPLORE_MEGA_NAV: MegaNavGroup = {
       title: 'Platform',
       items: [
         {
+          label: 'Articles & Guides',
+          description: 'Referenced Surah guides, duas & Quran learning',
+          href: '/articles',
+          icon: ScrollText,
+          exact: true,
+        },
+        {
           label: 'Read Quran Online',
           description: 'Start reading with translations',
           href: '/read-quran-online',

@@ -46,6 +46,7 @@ async function renderSitemapIndexXml() {
 
   const extraSitemaps = [
     `${origin}/islamic-tools-sitemap.xml`,
+    `${origin}/articles-sitemap.xml`,
   ];
 
   const chunkItems = names

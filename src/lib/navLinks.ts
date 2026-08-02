@@ -12,10 +12,11 @@ const navLinks: NavLinkItem[] = [
   { id: 1, name: 'Quran', link: '/surah' },
   { id: 2, name: 'Tafseer', link: '/tafsir' },
   { id: 3, name: 'Hadith', link: '/hadith' },
-  { id: 4, name: 'Read Online', link: '/read-quran-online' },
-  { id: 5, name: 'About', link: '/about' },
-  { id: 6, name: 'Contact', link: '/contact' },
-  { id: 7, name: 'Feedback', link: '/feedback' },
+  { id: 4, name: 'Articles', link: '/articles' },
+  { id: 5, name: 'Read Online', link: '/read-quran-online' },
+  { id: 6, name: 'About', link: '/about' },
+  { id: 7, name: 'Contact', link: '/contact' },
+  { id: 8, name: 'Feedback', link: '/feedback' },
 ];
 
 function buildPopularSurahLink(surahId: number, ayahNumber?: number) {
