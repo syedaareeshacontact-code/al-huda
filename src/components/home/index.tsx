@@ -21,7 +21,7 @@ import {
 import SurahSearchAutocomplete from '@/components/quran/surah-search-autocomplete';
 import { AUTH_CHANGED_EVENT } from '@/lib/quran-user-state';
 import { getAllSurahs, getSurahById } from '@/lib/quran-index';
-import { buildSurahPath } from '@/lib/quran-routing';
+import { buildAyahPath, buildSurahPath } from '@/lib/quran-routing';
 import { getClientSession, invalidateClientSession } from '@/lib/client-session';
 import type { AyahBookmark, LastReadEntry } from '@/types/quran';
 
@@ -37,6 +37,7 @@ const ALL_SURAHS = getAllSurahs();
 const POPULAR_SURAHS = POPULAR_SURAH_IDS.map((id) => getSurahById(id)).filter(
   (surah) => surah !== null
 );
+const AYATUL_KURSI_SURAH = getSurahById(2);
 type LibraryPanel = 'favorites' | 'bookmarks';
 
 export default function HomeRoot({ children }: { children?: ReactNode }) {
@@ -280,7 +281,23 @@ export default function HomeRoot({ children }: { children?: ReactNode }) {
           </Link>
         </div>
 
-        <div className="flex snap-x gap-3 overflow-x-auto pb-3 pl-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6 [&::-webkit-scrollbar]:hidden">
+        <div className="flex snap-x gap-3 overflow-x-auto pb-3 pl-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-7 [&::-webkit-scrollbar]:hidden">
+          {AYATUL_KURSI_SURAH && (
+            <Link
+              href={buildAyahPath(AYATUL_KURSI_SURAH.id, AYATUL_KURSI_SURAH.surahName, 255)}
+              prefetch={false}
+              className="group min-w-[9.5rem] snap-start rounded-2xl border border-[var(--color-accent-soft)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-highlight),var(--color-surface-elevated)_76%),var(--color-surface-elevated))] p-4 shadow-[var(--shadow-soft)] ring-1 ring-[color-mix(in_oklab,var(--color-accent-soft),transparent_58%)] hover:border-[var(--color-accent)] sm:min-w-0"
+            >
+              <span className="surah-arabic-name block text-right text-2xl leading-relaxed text-[var(--color-accent)]" dir="rtl" lang="ar">
+                آيَةُ ٱلْكُرْسِيِّ
+              </span>
+              <span className="mt-3 block text-sm font-semibold text-[var(--color-heading)]">Ayatul Kursi</span>
+              <span className="mt-1 flex items-center justify-between text-xs text-[var(--color-muted-text)]">
+                Al-Baqarah · 2:255
+                <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          )}
           {POPULAR_SURAHS.map((surah) => (
             <Link
               key={surah.id}
