@@ -23,6 +23,7 @@ export interface PushPayload {
   tag?: string;
   icon?: string;
   badge?: string;
+  renotify?: boolean;
   ttlSeconds?: number;
   urgency?: 'very-low' | 'low' | 'normal' | 'high';
   data?: Record<string, string | number | boolean | null>;
@@ -110,6 +111,7 @@ export async function sendPushNotificationToSubscriptions(
       icon: payload.icon || '/logos/pwa-192.png',
       badge: payload.badge || '/logos/favicon-48.png',
       tag: payload.tag || 'read-al-quran-notification',
+      renotify: Boolean(payload.renotify),
       url: payload.url || '/',
       data: {
         url: payload.url || '/',
