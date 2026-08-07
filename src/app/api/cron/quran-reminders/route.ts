@@ -121,9 +121,10 @@ async function deliverCampaignBuckets(buckets: CampaignBucket[]) {
             title: bucket.campaign.title,
             body: bucket.campaign.body,
             url: bucket.campaign.href,
-            tag: 'daily-reading-engagement',
+            tag: `daily-reading-engagement-${bucket.campaign.id}`,
+            renotify: true,
             ttlSeconds: 43_200,
-            urgency: 'normal',
+            urgency: 'high',
             data: {
               campaignId: bucket.campaign.id,
               kind: bucket.campaign.kind,
