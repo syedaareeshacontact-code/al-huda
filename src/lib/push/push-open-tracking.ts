@@ -1,13 +1,15 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
-const TRACKING_TOKEN_VERSION = 1;
-const TRACKING_TOKEN_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+const TRACKING_TOKEN_VERSION = 2;
+const SUPPORTED_TRACKING_TOKEN_VERSIONS = new Set([1, 2]);
+const TRACKING_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface BaseTrackingClaims {
-  version: typeof TRACKING_TOKEN_VERSION;
+  version: 1 | typeof TRACKING_TOKEN_VERSION;
   deliveryId: string;
   campaignId: string;
   notificationKind: string;
+  engagementLocalDateKey?: string;
   issuedAt: number;
 }
 
@@ -58,6 +60,9 @@ export function createPushTrackingToken(
           deliveryId: input.deliveryId,
           campaignId: input.campaignId,
           notificationKind: input.notificationKind,
+          ...(input.engagementLocalDateKey
+            ? { engagementLocalDateKey: input.engagementLocalDateKey }
+            : {}),
           issuedAt: Date.now(),
         }
       : {
@@ -68,6 +73,9 @@ export function createPushTrackingToken(
           deliveryId: input.deliveryId,
           campaignId: input.campaignId,
           notificationKind: input.notificationKind,
+          ...(input.engagementLocalDateKey
+            ? { engagementLocalDateKey: input.engagementLocalDateKey }
+            : {}),
           issuedAt: Date.now(),
         };
   const encodedClaims = Buffer.from(JSON.stringify(claims)).toString('base64url');
@@ -110,12 +118,14 @@ export function verifyPushTrackingToken(
     const issuedAt = Number(claims.issuedAt);
     const age = now - issuedAt;
     const commonClaimsAreValid =
-      claims.version === TRACKING_TOKEN_VERSION &&
+      SUPPORTED_TRACKING_TOKEN_VERSIONS.has(Number(claims.version)) &&
       (claims.ownerType === 'guest' || claims.ownerType === 'user') &&
       isValidClaimText(claims.ownerId, 160) &&
       isValidClaimText(claims.deliveryId, 80) &&
       isValidClaimText(claims.campaignId, 180) &&
       isValidClaimText(claims.notificationKind, 80) &&
+      (claims.engagementLocalDateKey === undefined ||
+        isValidClaimText(claims.engagementLocalDateKey, 32)) &&
       Number.isFinite(issuedAt) &&
       age >= -5 * 60 * 1000 &&
       age <= TRACKING_TOKEN_MAX_AGE_MS;

@@ -5,6 +5,10 @@ const STATIC_CACHE = `${CACHE_PREFIX}${buildVersion}-static`;
 const API_CACHE = `${CACHE_PREFIX}${buildVersion}-api`;
 const OFFLINE_URL = '/offline.html';
 const PUSH_OPEN_TOKEN_QUERY_PARAM = 'push_open_token';
+const PUSH_RECEIPT_DB_NAME = 'alhuda-push-receipts';
+const PUSH_RECEIPT_STORE = 'receipts';
+const PUSH_RECEIPT_SYNC_TAG = 'alhuda-push-receipts';
+const PUSH_RECEIPT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const STATIC_PATH_PREFIXES = ['/logos/', '/banner/', '/basmalah/'];
 const CACHEABLE_EXTERNAL_HOSTS = new Set([
@@ -35,6 +39,7 @@ self.addEventListener('activate', (event) => {
 
       await Promise.all(staleKeys.map((key) => caches.delete(key)));
       await self.clients.claim();
+      await flushQueuedPushReceipts();
 
       // Existing production users can still be controlled by the unsafe v2
       // worker. Refresh those tabs once after its caches have been removed.
@@ -117,6 +122,127 @@ async function staleWhileRevalidate(event, request) {
   return network;
 }
 
+async function postPushReceiptWithRetry(
+  pathname,
+  trackingToken,
+  queueOnFailure = true
+) {
+  const retryDelays = [0, 250, 1_000];
+
+  for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+    if (retryDelays[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelays[attempt]));
+    }
+
+    try {
+      const response = await fetch(pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: trackingToken }),
+        keepalive: true,
+      });
+      if (response.ok || response.status === 400 || response.status === 401) {
+        return true;
+      }
+    } catch {
+      // A later bounded attempt can recover a short network interruption.
+    }
+  }
+
+  if (queueOnFailure) {
+    await queuePushReceipt(pathname, trackingToken);
+  }
+  return false;
+}
+
+function openPushReceiptDatabase() {
+  if (!self.indexedDB) {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = self.indexedDB.open(PUSH_RECEIPT_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(PUSH_RECEIPT_STORE)) {
+        database.createObjectStore(PUSH_RECEIPT_STORE, { keyPath: 'key' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function queuePushReceipt(pathname, trackingToken) {
+  try {
+    const database = await openPushReceiptDatabase();
+    if (!database) return;
+
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(PUSH_RECEIPT_STORE, 'readwrite');
+      transaction.objectStore(PUSH_RECEIPT_STORE).put({
+        key: `${pathname}:${trackingToken}`,
+        pathname,
+        trackingToken,
+        queuedAt: Date.now(),
+      });
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+    await self.registration.sync
+      ?.register(PUSH_RECEIPT_SYNC_TAG)
+      .catch(() => undefined);
+  } catch {
+    // IndexedDB/background sync are enhancements; notification display wins.
+  }
+}
+
+async function listQueuedPushReceipts() {
+  const database = await openPushReceiptDatabase();
+  if (!database) return [];
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(PUSH_RECEIPT_STORE, 'readonly');
+    const request = transaction.objectStore(PUSH_RECEIPT_STORE).getAll();
+    request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function deleteQueuedPushReceipt(key) {
+  const database = await openPushReceiptDatabase();
+  if (!database) return;
+
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(PUSH_RECEIPT_STORE, 'readwrite');
+    transaction.objectStore(PUSH_RECEIPT_STORE).delete(key);
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function flushQueuedPushReceipts() {
+  try {
+    const receipts = await listQueuedPushReceipts();
+    for (const receipt of receipts.slice(0, 20)) {
+      const expired =
+        Date.now() - Number(receipt.queuedAt || 0) > PUSH_RECEIPT_MAX_AGE_MS;
+      const recorded = expired
+        ? true
+        : await postPushReceiptWithRetry(
+            String(receipt.pathname || ''),
+            String(receipt.trackingToken || ''),
+            false
+          );
+      if (recorded) {
+        await deleteQueuedPushReceipt(receipt.key);
+      }
+    }
+  } catch {
+    // A later sync/push/click event gets another chance to flush the queue.
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') {
@@ -182,7 +308,21 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(title, options);
+
+      const trackingToken = payload.data?.trackingToken;
+      if (!trackingToken) {
+        return;
+      }
+
+      await Promise.allSettled([
+        flushQueuedPushReceipts(),
+        postPushReceiptWithRetry('/api/push/displayed', trackingToken),
+      ]);
+    })()
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -193,21 +333,24 @@ self.addEventListener('notificationclick', (event) => {
   const openedUrl = new URL(targetUrl);
 
   // The background request below can be interrupted by the browser. The page
-  // receives this signed token as a second, reliable chance to record the open.
+  // receives this signed token in the URL fragment as a second, reliable
+  // chance to record the open. Fragments are not sent in HTTP requests or
+  // referrers, so the signed receipt is kept out of server/CDN logs.
   if (trackingToken && openedUrl.origin === self.location.origin) {
-    openedUrl.searchParams.set(PUSH_OPEN_TOKEN_QUERY_PARAM, trackingToken);
+    const originalHash = openedUrl.hash.slice(1);
+    const receiptFragment = new URLSearchParams({
+      [PUSH_OPEN_TOKEN_QUERY_PARAM]: trackingToken,
+      ...(originalHash ? { target_hash: originalHash } : {}),
+    });
+    openedUrl.hash = receiptFragment.toString();
   }
   const trackedTargetUrl = openedUrl.href;
 
   event.waitUntil(
     Promise.allSettled([
+      flushQueuedPushReceipts(),
       trackingToken
-        ? fetch('/api/push/open', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: trackingToken }),
-            keepalive: true,
-          })
+        ? postPushReceiptWithRetry('/api/push/open', trackingToken)
         : Promise.resolve(),
       (async () => {
         const clientsList = await self.clients.matchAll({
@@ -236,4 +379,10 @@ self.addEventListener('notificationclick', (event) => {
       })(),
     ])
   );
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === PUSH_RECEIPT_SYNC_TAG) {
+    event.waitUntil(flushQueuedPushReceipts());
+  }
 });

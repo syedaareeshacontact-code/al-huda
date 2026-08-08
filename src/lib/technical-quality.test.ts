@@ -39,7 +39,13 @@ describe('technical quality regressions', () => {
     const home = readSource('src/components/home/index.tsx');
     const surahIndex = readSource('src/components/quran/SurahIndexClient.tsx');
 
-    expect(guestEnrollment).not.toContain('Notification.requestPermission');
+    const permissionRequest = 'const permission = await Notification.requestPermission()';
+    expect(guestEnrollment).toContain('const enableNotifications = async () =>');
+    expect(guestEnrollment).toContain(permissionRequest);
+    expect(guestEnrollment.indexOf(permissionRequest)).toBeGreaterThan(
+      guestEnrollment.indexOf('const enableNotifications = async () =>')
+    );
+    expect(guestEnrollment.match(/Notification\.requestPermission/g)).toHaveLength(1);
     expect(guestEnrollment).not.toContain("addEventListener('pointerdown'");
     expect(hadithNudge).not.toContain("'use client'");
     expect(hadithNudge).not.toContain('className="fixed');

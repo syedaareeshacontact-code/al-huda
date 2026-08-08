@@ -13,6 +13,119 @@ export const getNotificationDeviceDetails: (
   userAgent: string | null
 ) => PushDeviceDetails = getPushDeviceDetails;
 
+export function reconcileNotificationDeviceOwnership(
+  guestDevices: GuestPushDeviceForAdmin[],
+  userDevices: AdminUserPushDevice[]
+): AdminNotificationDevice[] {
+  const dedupedUsers = dedupeAdminNotificationDevices(userDevices).filter(
+    (device): device is AdminUserPushDevice => device.ownerType === 'user'
+  );
+  const dedupedGuests = dedupeAdminNotificationDevices(
+    guestDevices.map((device) => ({ ...device, ownerType: 'guest' as const }))
+  ).filter(
+    (
+      device
+    ): device is GuestPushDeviceForAdmin & { ownerType: 'guest' } =>
+      device.ownerType === 'guest'
+  );
+  const guestByDeviceId = new Map(
+    dedupedGuests
+      .filter(
+        (device) =>
+          !device.enabled &&
+          device.disabledReason === 'signed-in-owner-migration'
+      )
+      .map((device) => [device.deviceId, device])
+  );
+  const mergedUsers = dedupedUsers.map((userDevice) => {
+    const guestDevice = userDevice.deviceId
+      ? guestByDeviceId.get(userDevice.deviceId)
+      : undefined;
+    if (!guestDevice) {
+      return userDevice;
+    }
+
+    const userNotificationAt = latestNullableIso(
+      userDevice.lastNotificationVisitAt,
+      latestNullableIso(
+        userDevice.lastNotificationDisplayedAt,
+        userDevice.lastSentAt
+      )
+    );
+    const guestNotificationAt = latestNullableIso(
+      guestDevice.lastNotificationVisitAt,
+      latestNullableIso(
+        guestDevice.lastNotificationDisplayedAt,
+        guestDevice.lastSentAt
+      )
+    );
+    const latestNotification =
+      String(guestNotificationAt ?? '').localeCompare(
+        String(userNotificationAt ?? '')
+      ) > 0
+        ? guestDevice
+        : userDevice;
+    const guestHasLatestEngagement =
+      String(guestDevice.lastEngagementAt ?? '').localeCompare(
+        String(userDevice.lastEngagementAt ?? '')
+      ) > 0;
+
+    return {
+      ...userDevice,
+      lastSentAt: latestNullableIso(
+        userDevice.lastSentAt,
+        guestDevice.lastSentAt
+      ),
+      lastEngagementAt: latestNullableIso(
+        userDevice.lastEngagementAt,
+        guestDevice.lastEngagementAt
+      ),
+      lastEngagementKind: guestHasLatestEngagement
+        ? guestDevice.lastEngagementKind
+        : userDevice.lastEngagementKind,
+      notificationSentCount:
+        userDevice.notificationSentCount + guestDevice.notificationSentCount,
+      notificationTrackedSentCount:
+        userDevice.notificationTrackedSentCount +
+        guestDevice.notificationTrackedSentCount,
+      notificationDisplayedCount:
+        userDevice.notificationDisplayedCount +
+        guestDevice.notificationDisplayedCount,
+      notificationVisitCount:
+        userDevice.notificationVisitCount + guestDevice.notificationVisitCount,
+      notificationTrackedVisitCount:
+        userDevice.notificationTrackedVisitCount +
+        guestDevice.notificationTrackedVisitCount,
+      siteVisitCount: Math.max(
+        userDevice.siteVisitCount,
+        guestDevice.siteVisitCount
+      ),
+      lastSiteVisitAt: latestNullableIso(
+        userDevice.lastSiteVisitAt,
+        guestDevice.lastSiteVisitAt
+      ),
+      lastNotificationVisitAt: latestNullableIso(
+        userDevice.lastNotificationVisitAt,
+        guestDevice.lastNotificationVisitAt
+      ),
+      lastNotificationDisplayedAt: latestNullableIso(
+        userDevice.lastNotificationDisplayedAt,
+        guestDevice.lastNotificationDisplayedAt
+      ),
+      lastNotificationCampaignId:
+        latestNotification.lastNotificationCampaignId,
+      lastNotificationKind: latestNotification.lastNotificationKind,
+    };
+  });
+
+  return [
+    ...mergedUsers,
+    ...dedupedGuests.filter(
+      (device) => guestByDeviceId.get(device.deviceId)?.id !== device.id
+    ),
+  ].sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt));
+}
+
 function getLogicalDeviceKey(device: AdminNotificationDevice) {
   if (device.ownerType === 'guest') {
     return `guest:${device.deviceId || device.id}`;
@@ -54,19 +167,39 @@ export function dedupeAdminNotificationDevices(
       ) >= 0
         ? device
         : existing;
+    const latestEngagement =
+      String(device.lastEngagementAt ?? '').localeCompare(
+        String(existing.lastEngagementAt ?? '')
+      ) >= 0
+        ? device
+        : existing;
     logicalDevices.set(key, {
       ...latest,
-      failureCount: Math.max(existing.failureCount, device.failureCount),
+      enabled: latest.enabled,
+      failureCount: latest.failureCount,
       lastSentAt: latestNullableIso(existing.lastSentAt, device.lastSentAt),
       lastEngagementAt: latestNullableIso(
         existing.lastEngagementAt,
         device.lastEngagementAt
       ),
+      lastEngagementKind: latestEngagement.lastEngagementKind,
       notificationSentCount:
         existing.notificationSentCount + device.notificationSentCount,
+      notificationTrackedSentCount:
+        (Number(existing.notificationTrackedSentCount) || 0) +
+        (Number(device.notificationTrackedSentCount) || 0),
+      notificationDisplayedCount:
+        (Number(existing.notificationDisplayedCount) || 0) +
+        (Number(device.notificationDisplayedCount) || 0),
       notificationVisitCount:
         existing.notificationVisitCount + device.notificationVisitCount,
-      siteVisitCount: existing.siteVisitCount + device.siteVisitCount,
+      notificationTrackedVisitCount:
+        (Number(existing.notificationTrackedVisitCount) || 0) +
+        (Number(device.notificationTrackedVisitCount) || 0),
+      siteVisitCount:
+        latest.ownerType === 'guest'
+          ? Math.max(existing.siteVisitCount, device.siteVisitCount)
+          : existing.siteVisitCount + device.siteVisitCount,
       lastSiteVisitAt: latestNullableIso(
         existing.lastSiteVisitAt,
         device.lastSiteVisitAt
@@ -74,6 +207,10 @@ export function dedupeAdminNotificationDevices(
       lastNotificationVisitAt: latestNullableIso(
         existing.lastNotificationVisitAt,
         device.lastNotificationVisitAt
+      ),
+      lastNotificationDisplayedAt: latestNullableIso(
+        existing.lastNotificationDisplayedAt,
+        device.lastNotificationDisplayedAt
       ),
       lastNotificationCampaignId: latestVisit.lastNotificationCampaignId,
       lastNotificationKind: latestVisit.lastNotificationKind,

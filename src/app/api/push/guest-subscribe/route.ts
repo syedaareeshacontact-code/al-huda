@@ -130,6 +130,8 @@ export async function POST(request: Request) {
     await removeGuestPushSubscription({
       deviceId: parsed.data.deviceId,
       endpoint: parsed.data.endpoint,
+      reason: 'signed-in-owner-migration',
+      preserveHistory: true,
     });
 
     return NextResponse.json({ ok: true, owner: 'user' });
@@ -142,6 +144,8 @@ export async function POST(request: Request) {
     await removeGuestPushSubscription({
       deviceId: parsed.data.deviceId,
       endpoint: parsed.data.endpoint,
+      reason: 'signed-in-owner-migration',
+      preserveHistory: true,
     });
     return NextResponse.json({ ok: true, owner: 'user' });
   }
@@ -199,6 +203,7 @@ export async function DELETE(request: Request) {
   const removedGuestDevice = await removeGuestPushSubscription({
     deviceId: parsed.data.deviceId,
     endpoint: parsed.data.endpoint,
+    reason: 'permission-removed',
   });
 
   return NextResponse.json({

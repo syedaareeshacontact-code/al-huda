@@ -47,12 +47,18 @@ export interface StoredPushSubscription {
   lastEngagementKind: PushEngagementKind | null;
   lastSentAt: string | null;
   notificationSentCount: number;
+  notificationTrackedSentCount: number;
+  notificationDisplayedCount: number;
   notificationVisitCount: number;
+  notificationTrackedVisitCount: number;
   siteVisitCount: number;
   lastSiteVisitAt: string | null;
   lastNotificationVisitAt: string | null;
+  lastNotificationDisplayedAt: string | null;
   lastNotificationCampaignId: string | null;
   lastNotificationKind: string | null;
+  acceptedDeliveryIds: string[];
+  displayedDeliveryIds: string[];
   openedDeliveryIds: string[];
   failureCount: number;
   createdAt: string;
@@ -61,6 +67,7 @@ export interface StoredPushSubscription {
 }
 
 export type UserTrafficSource = 'instagram';
+const PUSH_DELIVERY_ID_RETENTION_LIMIT = 512;
 
 export interface PushSubscriptionForDelivery extends StoredPushSubscription {
   userId: string;
@@ -71,6 +78,7 @@ export interface PushSubscriptionForDelivery extends StoredPushSubscription {
 export interface AdminUserPushDevice {
   id: string;
   ownerType: 'user';
+  endpointHash: string;
   deviceId: string | null;
   userId: string;
   userName: string;
@@ -89,10 +97,14 @@ export interface AdminUserPushDevice {
   lastEngagementAt: string | null;
   lastEngagementKind: PushEngagementKind | null;
   notificationSentCount: number;
+  notificationTrackedSentCount: number;
+  notificationDisplayedCount: number;
   notificationVisitCount: number;
+  notificationTrackedVisitCount: number;
   siteVisitCount: number;
   lastSiteVisitAt: string | null;
   lastNotificationVisitAt: string | null;
+  lastNotificationDisplayedAt: string | null;
   lastNotificationCampaignId: string | null;
   lastNotificationKind: string | null;
 }
@@ -509,9 +521,21 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
       0,
       Math.floor(Number(candidate.notificationSentCount ?? 0) || 0)
     ),
+    notificationTrackedSentCount: Math.max(
+      0,
+      Math.floor(Number(candidate.notificationTrackedSentCount ?? 0) || 0)
+    ),
+    notificationDisplayedCount: Math.max(
+      0,
+      Math.floor(Number(candidate.notificationDisplayedCount ?? 0) || 0)
+    ),
     notificationVisitCount: Math.max(
       0,
       Math.floor(Number(candidate.notificationVisitCount ?? 0) || 0)
+    ),
+    notificationTrackedVisitCount: Math.max(
+      0,
+      Math.floor(Number(candidate.notificationTrackedVisitCount ?? 0) || 0)
     ),
     siteVisitCount: Math.max(
       0,
@@ -526,12 +550,35 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
       candidate.lastNotificationVisitAt === undefined
         ? null
         : String(candidate.lastNotificationVisitAt),
+    lastNotificationDisplayedAt:
+      candidate.lastNotificationDisplayedAt === null ||
+      candidate.lastNotificationDisplayedAt === undefined
+        ? null
+        : String(candidate.lastNotificationDisplayedAt),
     lastNotificationCampaignId: candidate.lastNotificationCampaignId
       ? String(candidate.lastNotificationCampaignId).slice(0, 180)
       : null,
     lastNotificationKind: candidate.lastNotificationKind
       ? String(candidate.lastNotificationKind).slice(0, 80)
       : null,
+    acceptedDeliveryIds: Array.isArray(candidate.acceptedDeliveryIds)
+      ? Array.from(
+          new Set(
+            candidate.acceptedDeliveryIds
+              .map((value) => String(value).trim())
+              .filter(Boolean)
+          )
+        ).slice(-PUSH_DELIVERY_ID_RETENTION_LIMIT)
+      : [],
+    displayedDeliveryIds: Array.isArray(candidate.displayedDeliveryIds)
+      ? Array.from(
+          new Set(
+            candidate.displayedDeliveryIds
+              .map((value) => String(value).trim())
+              .filter(Boolean)
+          )
+        ).slice(-PUSH_DELIVERY_ID_RETENTION_LIMIT)
+      : [],
     openedDeliveryIds: Array.isArray(candidate.openedDeliveryIds)
       ? Array.from(
           new Set(
@@ -539,7 +586,7 @@ function normalizePushSubscription(raw: unknown): StoredPushSubscription | null 
               .map((value) => String(value).trim())
               .filter(Boolean)
           )
-        ).slice(-50)
+        ).slice(-PUSH_DELIVERY_ID_RETENTION_LIMIT)
       : [],
     failureCount: Math.max(0, Math.floor(Number(candidate.failureCount ?? 0) || 0)),
     createdAt,
@@ -786,12 +833,18 @@ const pushSubscriptionSchema = new Schema<StoredPushSubscription>(
     },
     lastSentAt: { type: String, default: null },
     notificationSentCount: { type: Number, min: 0, default: 0 },
+    notificationTrackedSentCount: { type: Number, min: 0, default: 0 },
+    notificationDisplayedCount: { type: Number, min: 0, default: 0 },
     notificationVisitCount: { type: Number, min: 0, default: 0 },
+    notificationTrackedVisitCount: { type: Number, min: 0, default: 0 },
     siteVisitCount: { type: Number, min: 0, default: 0 },
     lastSiteVisitAt: { type: String, default: null },
     lastNotificationVisitAt: { type: String, default: null },
+    lastNotificationDisplayedAt: { type: String, default: null },
     lastNotificationCampaignId: { type: String, default: null },
     lastNotificationKind: { type: String, default: null },
+    acceptedDeliveryIds: { type: [String], default: [] },
+    displayedDeliveryIds: { type: [String], default: [] },
     openedDeliveryIds: { type: [String], default: [] },
     failureCount: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true },
@@ -1291,13 +1344,23 @@ export async function upsertUserPushSubscription(
     lastEngagementKind: existingSubscription?.lastEngagementKind ?? null,
     lastSentAt: existingSubscription?.lastSentAt ?? null,
     notificationSentCount: existingSubscription?.notificationSentCount ?? 0,
+    notificationTrackedSentCount:
+      existingSubscription?.notificationTrackedSentCount ?? 0,
+    notificationDisplayedCount:
+      existingSubscription?.notificationDisplayedCount ?? 0,
     notificationVisitCount: existingSubscription?.notificationVisitCount ?? 0,
+    notificationTrackedVisitCount:
+      existingSubscription?.notificationTrackedVisitCount ?? 0,
     siteVisitCount: existingSubscription?.siteVisitCount ?? 0,
     lastSiteVisitAt: existingSubscription?.lastSiteVisitAt ?? null,
     lastNotificationVisitAt: existingSubscription?.lastNotificationVisitAt ?? null,
+    lastNotificationDisplayedAt:
+      existingSubscription?.lastNotificationDisplayedAt ?? null,
     lastNotificationCampaignId:
       existingSubscription?.lastNotificationCampaignId ?? null,
     lastNotificationKind: existingSubscription?.lastNotificationKind ?? null,
+    acceptedDeliveryIds: existingSubscription?.acceptedDeliveryIds ?? [],
+    displayedDeliveryIds: existingSubscription?.displayedDeliveryIds ?? [],
     openedDeliveryIds: existingSubscription?.openedDeliveryIds ?? [],
   });
 
@@ -1554,6 +1617,9 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
       devices.push({
         id: buildAdminPushDeviceId(userId, subscription.endpoint),
         ownerType: 'user',
+        endpointHash: createHash('sha256')
+          .update(subscription.endpoint)
+          .digest('hex'),
         deviceId: subscription.deviceId,
         userId,
         userName,
@@ -1572,10 +1638,14 @@ export async function listUserPushDevicesForAdmin(): Promise<AdminUserPushDevice
         lastEngagementAt: subscription.lastEngagementAt,
         lastEngagementKind: subscription.lastEngagementKind,
         notificationSentCount: subscription.notificationSentCount,
+        notificationTrackedSentCount: subscription.notificationTrackedSentCount,
+        notificationDisplayedCount: subscription.notificationDisplayedCount,
         notificationVisitCount: subscription.notificationVisitCount,
+        notificationTrackedVisitCount: subscription.notificationTrackedVisitCount,
         siteVisitCount: subscription.siteVisitCount,
         lastSiteVisitAt: subscription.lastSiteVisitAt,
         lastNotificationVisitAt: subscription.lastNotificationVisitAt,
+        lastNotificationDisplayedAt: subscription.lastNotificationDisplayedAt,
         lastNotificationCampaignId: subscription.lastNotificationCampaignId,
         lastNotificationKind: subscription.lastNotificationKind,
       });
@@ -1650,7 +1720,8 @@ export async function markPushSubscriptionSent(
   endpoint: string,
   sentAt: string,
   engagementKind?: PushEngagementKind,
-  tracking?: PushDeliveryTracking
+  tracking?: PushDeliveryTracking,
+  displayTrackingEnabled = false
 ) {
   const User = await ensureUsersModel();
   const subscriptionUpdate: Record<string, unknown> = {
@@ -1672,26 +1743,128 @@ export async function markPushSubscriptionSent(
       tracking.notificationKind;
   }
 
+  if (tracking && displayTrackingEnabled) {
+    await User.updateOne(
+      {
+        id: userId,
+        pushSubscriptions: {
+          $elemMatch: {
+            endpoint,
+            acceptedDeliveryIds: { $ne: tracking.deliveryId },
+          },
+        },
+      },
+      {
+        $set: subscriptionUpdate,
+        $inc: {
+          'pushSubscriptions.$.notificationSentCount': 1,
+          'pushSubscriptions.$.notificationTrackedSentCount': 1,
+        },
+        $push: {
+          'pushSubscriptions.$.acceptedDeliveryIds': {
+            $each: [tracking.deliveryId],
+            $slice: -PUSH_DELIVERY_ID_RETENTION_LIMIT,
+          },
+        },
+      }
+    ).exec();
+    return;
+  }
+
   await User.findOneAndUpdate(
     { id: userId, 'pushSubscriptions.endpoint': endpoint },
     {
       $set: subscriptionUpdate,
-      $inc: {
-        'pushSubscriptions.$.notificationSentCount': 1,
-      },
+      $inc: { 'pushSubscriptions.$.notificationSentCount': 1 },
     }
   )
     .lean()
     .exec();
 }
 
-export async function recordUserPushNotificationVisit(input: {
+export async function ensureUserPushNotificationAccepted(input: {
   userId: string;
   endpointHash: string;
   deliveryId: string;
   campaignId: string;
   notificationKind: string;
-  visitedAt: string;
+  acceptedAt: string;
+  engagementLocalDateKey?: string;
+}) {
+  const User = await ensureUsersModel();
+  const rawUser = await User.findOne(
+    { id: input.userId },
+    { _id: 0, pushSubscriptions: 1 }
+  )
+    .lean()
+    .exec();
+  const subscription = normalizePushSubscriptions(
+    (rawUser as { pushSubscriptions?: unknown } | null)?.pushSubscriptions
+  ).find(
+    (candidate) =>
+      createHash('sha256').update(candidate.endpoint).digest('hex') ===
+      input.endpointHash
+  );
+
+  if (!subscription) {
+    return false;
+  }
+
+  const engagementKind =
+    input.engagementLocalDateKey &&
+    (input.notificationKind === 'hadith' ||
+      input.notificationKind === 'quran' ||
+      input.notificationKind === 'islamic')
+      ? input.notificationKind
+      : null;
+  const countResult = await User.updateOne(
+    {
+      id: input.userId,
+      pushSubscriptions: {
+        $elemMatch: {
+          endpoint: subscription.endpoint,
+          acceptedDeliveryIds: { $ne: input.deliveryId },
+        },
+      },
+    },
+    {
+      $inc: {
+        'pushSubscriptions.$.notificationSentCount': 1,
+        'pushSubscriptions.$.notificationTrackedSentCount': 1,
+      },
+      $set: {
+        'pushSubscriptions.$.lastSentAt': input.acceptedAt,
+        'pushSubscriptions.$.lastNotificationCampaignId': input.campaignId,
+        'pushSubscriptions.$.lastNotificationKind': input.notificationKind,
+        ...(engagementKind
+          ? {
+              'pushSubscriptions.$.lastEngagementAt': input.acceptedAt,
+              'pushSubscriptions.$.lastEngagementKind': engagementKind,
+            }
+          : {}),
+        'pushSubscriptions.$.failureCount': 0,
+        'pushSubscriptions.$.updatedAt': input.acceptedAt,
+        updatedAt: input.acceptedAt,
+      },
+      $push: {
+        'pushSubscriptions.$.acceptedDeliveryIds': {
+          $each: [input.deliveryId],
+          $slice: -PUSH_DELIVERY_ID_RETENTION_LIMIT,
+        },
+      },
+    }
+  ).exec();
+
+  return countResult.modifiedCount > 0;
+}
+
+export async function recordUserPushNotificationDisplayed(input: {
+  userId: string;
+  endpointHash: string;
+  deliveryId: string;
+  campaignId: string;
+  notificationKind: string;
+  displayedAt: string;
 }) {
   const User = await ensureUsersModel();
   const rawUser = await User.findOne(
@@ -1718,14 +1891,78 @@ export async function recordUserPushNotificationVisit(input: {
       pushSubscriptions: {
         $elemMatch: {
           endpoint: subscription.endpoint,
-          openedDeliveryIds: { $ne: input.deliveryId },
+          displayedDeliveryIds: { $ne: input.deliveryId },
         },
       },
     },
     {
       $inc: {
-        'pushSubscriptions.$.notificationVisitCount': 1,
+        'pushSubscriptions.$.notificationDisplayedCount': 1,
       },
+      $set: {
+        'pushSubscriptions.$.lastNotificationDisplayedAt': input.displayedAt,
+        'pushSubscriptions.$.lastNotificationCampaignId': input.campaignId,
+        'pushSubscriptions.$.lastNotificationKind': input.notificationKind,
+        updatedAt: input.displayedAt,
+      },
+      $push: {
+        'pushSubscriptions.$.displayedDeliveryIds': {
+          $each: [input.deliveryId],
+          $slice: -PUSH_DELIVERY_ID_RETENTION_LIMIT,
+        },
+      },
+    }
+  ).exec();
+
+  return result.modifiedCount > 0;
+}
+
+export async function recordUserPushNotificationVisit(input: {
+  userId: string;
+  endpointHash: string;
+  deliveryId: string;
+  campaignId: string;
+  notificationKind: string;
+  visitedAt: string;
+  countTracked?: boolean;
+}) {
+  const User = await ensureUsersModel();
+  const rawUser = await User.findOne(
+    { id: input.userId },
+    { _id: 0, pushSubscriptions: 1 }
+  )
+    .lean()
+    .exec();
+  const subscription = normalizePushSubscriptions(
+    (rawUser as { pushSubscriptions?: unknown } | null)?.pushSubscriptions
+  ).find(
+    (candidate) =>
+      createHash('sha256').update(candidate.endpoint).digest('hex') ===
+      input.endpointHash
+  );
+
+  if (!subscription) {
+    return false;
+  }
+
+  const increment: Record<string, number> = {
+    'pushSubscriptions.$.notificationVisitCount': 1,
+  };
+  if (input.countTracked) {
+    increment['pushSubscriptions.$.notificationTrackedVisitCount'] = 1;
+  }
+  const result = await User.updateOne(
+    {
+      id: input.userId,
+      pushSubscriptions: {
+        $elemMatch: {
+          endpoint: subscription.endpoint,
+          openedDeliveryIds: { $ne: input.deliveryId },
+        },
+      },
+    },
+    {
+      $inc: increment,
       $set: {
         'pushSubscriptions.$.lastNotificationVisitAt': input.visitedAt,
         'pushSubscriptions.$.lastNotificationCampaignId': input.campaignId,
@@ -1735,7 +1972,7 @@ export async function recordUserPushNotificationVisit(input: {
       $push: {
         'pushSubscriptions.$.openedDeliveryIds': {
           $each: [input.deliveryId],
-          $slice: -50,
+          $slice: -PUSH_DELIVERY_ID_RETENTION_LIMIT,
         },
       },
     }
@@ -1829,7 +2066,8 @@ export async function recordUserPushSiteVisit(input: {
 export async function markPushSubscriptionFailure(
   userId: string,
   endpoint: string,
-  disable = false
+  disable = false,
+  deliveryId?: string
 ) {
   const User = await ensureUsersModel();
   const nowIso = new Date().toISOString();
@@ -1843,7 +2081,17 @@ export async function markPushSubscriptionFailure(
   }
 
   await User.findOneAndUpdate(
-    { id: userId, 'pushSubscriptions.endpoint': endpoint },
+    {
+      id: userId,
+      pushSubscriptions: {
+        $elemMatch: {
+          endpoint,
+          ...(deliveryId
+            ? { acceptedDeliveryIds: { $ne: deliveryId } }
+            : {}),
+        },
+      },
+    },
     {
       $inc: {
         'pushSubscriptions.$.failureCount': 1,

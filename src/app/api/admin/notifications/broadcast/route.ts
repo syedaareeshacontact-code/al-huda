@@ -17,6 +17,7 @@ import { sendPushNotificationToSubscriptions } from '@/lib/push/send-push-notifi
 import type { NotificationType } from '@/types/notifications';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 const broadcastSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -118,22 +119,29 @@ export async function POST(request: NextRequest) {
       )
     : [];
   const pushResult = parsed.data.push
-    ? await sendPushNotificationToSubscriptions(pushSubscriptions, {
-        title: parsed.data.title,
-        body: parsed.data.message,
-        url: parsed.data.href ?? '/',
-        tag: `admin-broadcast-${Date.now()}`,
-        urgency: parsed.data.priority === 'high' ? 'high' : 'normal',
-        data: {
-          kind: 'admin-broadcast',
-          type: parsed.data.type,
+    ? await sendPushNotificationToSubscriptions(
+        pushSubscriptions,
+        {
+          title: parsed.data.title,
+          body: parsed.data.message,
+          url: parsed.data.href ?? '/',
+          tag: `admin-broadcast-${Date.now()}`,
+          renotify: true,
+          urgency: parsed.data.priority === 'low' ? 'normal' : 'high',
+          data: {
+            kind: 'admin-broadcast',
+            type: parsed.data.type,
+          },
         },
-      })
+        { deliverySource: 'admin-user-broadcast' }
+      )
     : {
-        sent: 0,
-        failed: 0,
-        disabled: 0,
-        unavailable: false,
+          sent: 0,
+          failed: 0,
+          disabled: 0,
+          retried: 0,
+          persistenceFailed: 0,
+          unavailable: false,
       };
 
   return NextResponse.json(

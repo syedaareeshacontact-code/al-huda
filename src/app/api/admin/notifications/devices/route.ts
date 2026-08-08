@@ -11,8 +11,9 @@ import { listUserPushDevicesForAdmin } from '@/lib/auth/users-store';
 import {
   listGuestPushDevicesForAdmin,
 } from '@/lib/push/guest-push-store';
+import { listRecentPushDeliveryAuditsForOwners } from '@/lib/push/push-delivery-audit-store';
 import {
-  dedupeAdminNotificationDevices,
+  reconcileNotificationDeviceOwnership,
   type AdminNotificationDevice,
 } from '@/lib/admin-notification-devices';
 
@@ -44,30 +45,100 @@ export async function GET(request: NextRequest) {
       listGuestPushDevicesForAdmin(),
       listUserPushDevicesForAdmin(),
     ]);
-    const normalizedGuestDevices = guestDevices.map((device) => ({
-      ...device,
-      ownerType: 'guest' as const,
-    }));
-    const notificationDevices: AdminNotificationDevice[] = dedupeAdminNotificationDevices([
-      ...userDevices,
-      ...normalizedGuestDevices,
+    const notificationDevices: AdminNotificationDevice[] =
+      reconcileNotificationDeviceOwnership(guestDevices, userDevices);
+    const [siteVisits, deliveryAudit] = await Promise.all([
+      listSiteDeviceVisitsForAdmin(
+        notificationDevices
+          .map((device) => device.deviceId)
+          .filter((deviceId): deviceId is string => Boolean(deviceId))
+      ),
+      listRecentPushDeliveryAuditsForOwners(
+        [
+          ...guestDevices.map((device) => ({
+            ownerType: 'guest' as const,
+            ownerId: device.id,
+          })),
+          ...Array.from(new Set(userDevices.map((device) => device.userId))).map(
+            (userId) => ({ ownerType: 'user' as const, ownerId: userId })
+          ),
+        ],
+        { limitPerOwner: 10, includeEndpointHash: true }
+      ).then(
+        (deliveries) => ({ available: true, deliveries }),
+        () => ({ available: false, deliveries: [] })
+      ),
     ]);
-    const siteVisits = await listSiteDeviceVisitsForAdmin(
-      notificationDevices
-        .map((device) => device.deviceId)
-        .filter((deviceId): deviceId is string => Boolean(deviceId))
-    );
+    const recentDeliveries = deliveryAudit.deliveries;
     const visitsByDeviceId = new Map(
       siteVisits.map((visit) => [visit.deviceId, visit])
     );
+    const guestDeviceIdByOwnerId = new Map(
+      guestDevices.map((device) => [device.id, device.deviceId])
+    );
+    const deliveriesByDeviceId = new Map<
+      string,
+      typeof recentDeliveries
+    >();
+    const deliveriesByEndpointHash = new Map<
+      string,
+      typeof recentDeliveries
+    >();
+    for (const delivery of recentDeliveries) {
+      const deviceId =
+        delivery.deviceId ||
+        (delivery.ownerType === 'guest' && delivery.ownerId
+          ? guestDeviceIdByOwnerId.get(delivery.ownerId)
+          : undefined);
+      if (deviceId) {
+        const deviceDeliveries = deliveriesByDeviceId.get(deviceId) ?? [];
+        deviceDeliveries.push(delivery);
+        deliveriesByDeviceId.set(deviceId, deviceDeliveries);
+      }
+      if (delivery.ownerType === 'user' && delivery.endpointHash) {
+        const endpointDeliveries =
+          deliveriesByEndpointHash.get(delivery.endpointHash) ?? [];
+        endpointDeliveries.push(delivery);
+        deliveriesByEndpointHash.set(
+          delivery.endpointHash,
+          endpointDeliveries
+        );
+      }
+    }
     const devices = notificationDevices.map((device) => {
       const visit = device.deviceId
         ? visitsByDeviceId.get(device.deviceId)
         : undefined;
+      const lastTotalVisitAt = [visit?.lastVisitAt, device.lastSiteVisitAt]
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1) ?? null;
+      const deviceDeliveries = (
+        device.deviceId
+          ? deliveriesByDeviceId.get(device.deviceId) ?? []
+          : device.ownerType === 'user'
+            ? deliveriesByEndpointHash.get(device.endpointHash) ?? []
+            : []
+      )
+        .slice(0, 10)
+        .map((delivery) => {
+          const { endpointHash: _endpointHash, ...safeDelivery } = delivery;
+          return safeDelivery;
+        });
+      const publicDevice =
+        device.ownerType === 'user'
+          ? (({ endpointHash: _endpointHash, ...safeDevice }) => safeDevice)(
+              device
+            )
+          : device;
       return {
-        ...device,
-        totalVisitCount: visit?.totalVisitCount ?? 0,
-        lastTotalVisitAt: visit?.lastVisitAt ?? null,
+        ...publicDevice,
+        totalVisitCount: Math.max(
+          visit?.totalVisitCount ?? 0,
+          device.siteVisitCount ?? 0
+        ),
+        lastTotalVisitAt,
+        recentDeliveries: deviceDeliveries,
       };
     });
     const dedupedUserDevices = devices.filter(
@@ -78,7 +149,11 @@ export async function GET(request: NextRequest) {
     );
     const summary = devices.reduce(
       (result, device) => {
-        result.enabledDevices += 1;
+        if (device.enabled) {
+          result.enabledDevices += 1;
+        } else {
+          result.disabledDevices += 1;
+        }
         if (device.ownerType === 'user') {
           result.signedInDevices += 1;
         } else {
@@ -91,7 +166,10 @@ export async function GET(request: NextRequest) {
           result.devicesWithFailures += 1;
         }
         result.notificationsSent += device.notificationSentCount;
+        result.notificationsTrackedSent += device.notificationTrackedSentCount;
+        result.notificationsDisplayed += device.notificationDisplayedCount;
         result.notificationVisits += device.notificationVisitCount;
+        result.notificationTrackedVisits += device.notificationTrackedVisitCount;
         result.totalVisits += device.totalVisitCount;
         if (device.notificationVisitCount > 0) {
           result.devicesWithVisits += 1;
@@ -119,12 +197,16 @@ export async function GET(request: NextRequest) {
       },
       {
         enabledDevices: 0,
+        disabledDevices: 0,
         signedInDevices: 0,
         guestDevices: 0,
         reachedDevices: 0,
         devicesWithFailures: 0,
         notificationsSent: 0,
+        notificationsTrackedSent: 0,
+        notificationsDisplayed: 0,
         notificationVisits: 0,
+        notificationTrackedVisits: 0,
         totalVisits: 0,
         devicesWithVisits: 0,
         devicesWithTotalVisits: 0,
@@ -140,6 +222,22 @@ export async function GET(request: NextRequest) {
               ((summary.notificationVisits / summary.notificationsSent) * 100).toFixed(1)
             )
           : 0,
+      notificationDisplayRate:
+        summary.notificationsTrackedSent > 0
+          ? Number(
+              ((summary.notificationsDisplayed /
+                summary.notificationsTrackedSent) *
+                100).toFixed(1)
+            )
+          : 0,
+      notificationDisplayedOpenRate:
+        summary.notificationsDisplayed > 0
+          ? Number(
+              ((summary.notificationTrackedVisits /
+                summary.notificationsDisplayed) *
+                100).toFixed(1)
+            )
+          : 0,
     };
 
     return NextResponse.json(
@@ -148,6 +246,7 @@ export async function GET(request: NextRequest) {
         guestDevices: dedupedGuestDevices,
         userDevices: dedupedUserDevices,
         summary: summaryWithRate,
+        deliveryAuditAvailable: deliveryAudit.available,
       },
       { headers: dashboardCorsHeaders(request) }
     );

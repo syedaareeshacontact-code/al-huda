@@ -14,6 +14,7 @@ import {
   type EngagementDecision,
 } from '@/lib/push/engagement-schedule';
 import {
+  claimGuestPushEngagement,
   listEnabledGuestPushSubscriptions,
   type GuestPushSubscriptionForDelivery,
 } from '@/lib/push/guest-push-store';
@@ -37,10 +38,12 @@ interface DueTarget {
 
 interface CampaignBucket {
   campaign: EngagementCampaign;
+  engagementLocalDateKey: string;
   subscriptions: DeliverySubscription[];
 }
 
 const CAMPAIGN_DELIVERY_CONCURRENCY = 4;
+const GUEST_CLAIM_CONCURRENCY = 24;
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -96,6 +99,7 @@ async function buildCampaignBuckets(targets: DueTarget[]) {
     } else {
       buckets.set(campaign.id, {
         campaign,
+        engagementLocalDateKey: target.decision.localDateKey,
         subscriptions: [target.subscription],
       });
     }
@@ -130,7 +134,11 @@ async function deliverCampaignBuckets(buckets: CampaignBucket[]) {
               kind: bucket.campaign.kind,
             },
           },
-          { engagementKind: bucket.campaign.kind }
+          {
+            engagementKind: bucket.campaign.kind,
+            engagementLocalDateKey: bucket.engagementLocalDateKey,
+            deliverySource: 'scheduled',
+          }
         );
       }
     })
@@ -141,10 +149,53 @@ async function deliverCampaignBuckets(buckets: CampaignBucket[]) {
       sent: summary.sent + result.sent,
       failed: summary.failed + result.failed,
       disabled: summary.disabled + result.disabled,
+      retried: summary.retried + result.retried,
+      persistenceFailed: summary.persistenceFailed + result.persistenceFailed,
       unavailable: summary.unavailable || result.unavailable,
     }),
-    { sent: 0, failed: 0, disabled: 0, unavailable: false }
+    {
+      sent: 0,
+      failed: 0,
+      disabled: 0,
+      retried: 0,
+      persistenceFailed: 0,
+      unavailable: false,
+    }
   );
+}
+
+async function claimDueGuestTargets(
+  subscriptions: GuestPushSubscriptionForDelivery[],
+  now: Date,
+  claimedAt: string
+) {
+  const candidates = subscriptions.flatMap((subscription) => {
+    const decision = getEngagementDecision(subscription, 'guest', now);
+    return decision ? [{ audience: 'guest' as const, decision, subscription }] : [];
+  });
+  const claimedTargets = new Array<DueTarget | null>(candidates.length).fill(null);
+  let nextIndex = 0;
+  const workerCount = Math.min(GUEST_CLAIM_CONCURRENCY, candidates.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < candidates.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        const target = candidates[index];
+        const claimed = await claimGuestPushEngagement({
+          guestDeviceId: target.subscription.guestDeviceId,
+          localDateKey: target.decision.localDateKey,
+          claimedAt,
+        });
+        if (claimed) {
+          claimedTargets[index] = target;
+        }
+      }
+    })
+  );
+
+  return claimedTargets.filter((target): target is DueTarget => Boolean(target));
 }
 
 export async function GET(request: Request) {
@@ -167,12 +218,7 @@ export async function GET(request: Request) {
     }
   }
 
-  for (const subscription of guestSubscriptions) {
-    const decision = getEngagementDecision(subscription, 'guest', now);
-    if (decision) {
-      dueTargets.push({ audience: 'guest', decision, subscription });
-    }
-  }
+  dueTargets.push(...(await claimDueGuestTargets(guestSubscriptions, now, nowIso)));
 
   const buckets = await buildCampaignBuckets(dueTargets);
   const delivery = await deliverCampaignBuckets(buckets);
@@ -184,23 +230,28 @@ export async function GET(request: Request) {
     dueTargets.filter((target) => target.audience === audience).length;
   const countKind = (kind: EngagementDecision['kind']) =>
     dueTargets.filter((target) => target.decision.kind === kind).length;
+  const everyDueDeliveryFailed =
+    dueTargets.length > 0 && delivery.sent === 0 && delivery.failed > 0;
 
-  return NextResponse.json({
-    ok: true,
-    checked: userSubscriptions.length + guestSubscriptions.length,
-    checkedUsers: userSubscriptions.length,
-    checkedGuests: guestSubscriptions.length,
-    due: dueTargets.length,
-    dueUsers: countTargets('user'),
-    dueGuests: countTargets('guest'),
-    content: {
-      hadith: countKind('hadith'),
-      quran: countKind('quran'),
-      islamic: countKind('islamic'),
+  return NextResponse.json(
+    {
+      ok: !everyDueDeliveryFailed,
+      checked: userSubscriptions.length + guestSubscriptions.length,
+      checkedUsers: userSubscriptions.length,
+      checkedGuests: guestSubscriptions.length,
+      due: dueTargets.length,
+      dueUsers: countTargets('user'),
+      dueGuests: countTargets('guest'),
+      content: {
+        hadith: countKind('hadith'),
+        quran: countKind('quran'),
+        islamic: countKind('islamic'),
+      },
+      campaigns: buckets.length,
+      schedule: 'guest-daily-local-9am-catch-up',
+      ...delivery,
+      at: nowIso,
     },
-    campaigns: buckets.length,
-    schedule: 'smart-local-9am',
-    ...delivery,
-    at: nowIso,
-  });
+    { status: everyDueDeliveryFailed ? 503 : 200 }
+  );
 }

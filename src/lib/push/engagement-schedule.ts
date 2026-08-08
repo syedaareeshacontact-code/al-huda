@@ -117,7 +117,11 @@ export function getEngagementDecision(
   const timeZone = normalizeReminderTimeZone(input.timeZone);
   const localNow = getLocalDateTimeParts(now, timeZone);
 
-  if (localNow.hour !== ENGAGEMENT_LOCAL_HOUR) {
+  const isDeliveryTime =
+    audience === 'guest'
+      ? localNow.hour >= ENGAGEMENT_LOCAL_HOUR
+      : localNow.hour === ENGAGEMENT_LOCAL_HOUR;
+  if (!isDeliveryTime) {
     return null;
   }
 
@@ -131,7 +135,8 @@ export function getEngagementDecision(
     }
   }
 
-  const cadence = getCadence(input.lastSeenAt, now);
+  const cadence =
+    audience === 'guest' ? 'daily' : getCadence(input.lastSeenAt, now);
   if (!isCadenceDay(cadence, localNow.dayOfWeek)) {
     return null;
   }

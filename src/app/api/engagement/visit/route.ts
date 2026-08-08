@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { recordSiteDeviceVisit } from '@/lib/engagement/site-device-store';
+import { recordGuestPushSiteVisit } from '@/lib/push/guest-push-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,13 +44,26 @@ export async function POST(request: Request) {
   }
 
   const user = await getCurrentUser();
+  const visitedAt = new Date().toISOString();
   const result = await recordSiteDeviceVisit({
     deviceId: parsed.data.deviceId,
     userId: user?.id ?? null,
     userAgent: request.headers.get('user-agent'),
     timeZone: parsed.data.timeZone,
     contentPreference: parsed.data.contentPreference,
+    visitedAt,
   });
+
+  if (!user) {
+    await recordGuestPushSiteVisit({
+      deviceId: parsed.data.deviceId,
+      userAgent: request.headers.get('user-agent'),
+      timeZone: parsed.data.timeZone,
+      contentPreference: parsed.data.contentPreference,
+      visitedAt,
+      canonicalTotalVisitCount: result.totalVisitCount,
+    });
+  }
 
   return NextResponse.json(
     { ok: true, ...result },

@@ -174,12 +174,14 @@ required production URL configuration.
 Set production environment values in the Vercel project. In particular,
 `NEXT_PUBLIC_SITE_URL` must be the canonical public HTTPS origin.
 
-`/api/cron/quran-reminders` is intentionally scheduled by an external service
-instead of Vercel Cron, because Vercel Hobby only permits a daily cron run.
-cron-job.org calls it every 15 minutes with
-`Authorization: Bearer <CRON_SECRET>`. The endpoint then uses each device's
-stored time zone to decide whether its local 9:00 AM reminder is due; the cron
-service itself must not be configured separately for every country.
+`https://www.readalquran.online/api/cron/quran-reminders` is intentionally
+scheduled by an external service instead of Vercel Cron, because Vercel Hobby
+only permits a daily cron run. cron-job.org calls it at least every 15 minutes
+with `Authorization: Bearer <CRON_SECRET>`. The endpoint uses each device's
+stored time zone. Enabled guests are eligible daily from local 9:00 AM onward,
+so a later authorized run catches up a missed 9:00 AM slot without sending
+twice that local day. Signed-in readers retain their activity-based cadence;
+the cron service itself must not be configured separately for every country.
 
 ### Docker
 

@@ -67,12 +67,20 @@ async function loadPushConfig() {
 
 function takePushOpenTokenFromUrl() {
   const url = new URL(window.location.href);
-  const trackingToken = url.searchParams.get(PUSH_OPEN_TOKEN_QUERY_PARAM)?.trim();
+  const fragmentParams = new URLSearchParams(url.hash.slice(1));
+  const trackingToken = (
+    url.searchParams.get(PUSH_OPEN_TOKEN_QUERY_PARAM) ??
+    fragmentParams.get(PUSH_OPEN_TOKEN_QUERY_PARAM)
+  )?.trim();
   if (!trackingToken) {
     return null;
   }
 
   url.searchParams.delete(PUSH_OPEN_TOKEN_QUERY_PARAM);
+  if (fragmentParams.has(PUSH_OPEN_TOKEN_QUERY_PARAM)) {
+    const originalHash = fragmentParams.get('target_hash')?.trim();
+    url.hash = originalHash ? `#${originalHash}` : '';
+  }
   window.history.replaceState(
     window.history.state,
     '',

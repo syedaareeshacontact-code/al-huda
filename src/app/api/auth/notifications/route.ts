@@ -60,18 +60,22 @@ export async function POST(request: Request) {
   }
 
   const subscriptions = await listEnabledPushSubscriptionsForUser(user.id);
-  const push = await sendPushNotificationToSubscriptions(subscriptions, {
-    title: notification.title,
-    body: notification.message,
-    url: notification.href ?? '/',
-    tag: `${notification.type}-${notification.id}`,
-    urgency: notification.priority === 'high' ? 'high' : 'normal',
-    data: {
-      kind: 'user-notification',
-      notificationId: notification.id,
-      type: notification.type,
+  const push = await sendPushNotificationToSubscriptions(
+    subscriptions,
+    {
+      title: notification.title,
+      body: notification.message,
+      url: notification.href ?? '/',
+      tag: `${notification.type}-${notification.id}`,
+      urgency: notification.priority === 'high' ? 'high' : 'normal',
+      data: {
+        kind: 'user-notification',
+        notificationId: notification.id,
+        type: notification.type,
+      },
     },
-  });
+    { deliverySource: 'user-notification' }
+  );
 
   return NextResponse.json({ notification, pushTargets: subscriptions.length, push }, { status: 201 });
 }

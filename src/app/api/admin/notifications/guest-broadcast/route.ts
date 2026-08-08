@@ -14,6 +14,7 @@ import {
 import { sendPushNotificationToSubscriptions } from '@/lib/push/send-push-notification';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 const guestBroadcastSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
   const subscriptions =
     targetDeviceIds.length > 0
       ? allSubscriptions.filter((subscription) =>
-          targetDeviceIdSet.has(subscription.guestDeviceId)
+          targetDeviceIdSet.has(subscription.guestDeviceId) ||
+          targetDeviceIdSet.has(subscription.deviceId)
         )
       : allSubscriptions;
 
@@ -96,18 +98,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const pushResult = await sendPushNotificationToSubscriptions(subscriptions, {
-    title: parsed.data.title,
-    body: parsed.data.message,
-    url: parsed.data.href ?? '/',
-    tag: `admin-guest-broadcast-${Date.now()}`,
-    urgency: parsed.data.priority === 'high' ? 'high' : 'normal',
-    data: {
-      kind: 'admin-guest-broadcast',
-      type: parsed.data.type,
-      adminId: admin.id,
+  const pushResult = await sendPushNotificationToSubscriptions(
+    subscriptions,
+    {
+      title: parsed.data.title,
+      body: parsed.data.message,
+      url: parsed.data.href ?? '/',
+      tag: `admin-guest-broadcast-${Date.now()}`,
+      renotify: true,
+      urgency: parsed.data.priority === 'low' ? 'normal' : 'high',
+      data: {
+        kind: 'admin-guest-broadcast',
+        type: parsed.data.type,
+        adminId: admin.id,
+      },
     },
-  });
+    { deliverySource: 'admin-guest-broadcast' }
+  );
 
   return NextResponse.json(
     {

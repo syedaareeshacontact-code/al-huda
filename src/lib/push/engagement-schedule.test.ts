@@ -21,6 +21,47 @@ describe('getEngagementDecision', () => {
     ).toBeNull();
   });
 
+  it('catches up guests after 9 AM without extending the user delivery window', () => {
+    const now = new Date('2026-08-03T05:30:00.000Z');
+    const subscription = {
+      timeZone: 'Asia/Karachi',
+      contentPreference: 'hadith' as const,
+      lastSeenAt: '2026-08-02T10:00:00.000Z',
+      lastEngagementAt: null,
+    };
+
+    expect(getEngagementDecision(subscription, 'guest', now)).toMatchObject({
+      cadence: 'daily',
+      localDateKey: '2026-08-03',
+    });
+    expect(getEngagementDecision(subscription, 'user', now)).toBeNull();
+    expect(
+      getEngagementDecision(
+        subscription,
+        'guest',
+        new Date('2026-08-03T03:59:00.000Z')
+      )
+    ).toBeNull();
+  });
+
+  it('keeps every guest on a daily cadence regardless of inactivity', () => {
+    const decision = getEngagementDecision(
+      {
+        timeZone: 'Asia/Karachi',
+        contentPreference: 'hadith',
+        lastSeenAt: '2026-01-01T00:00:00.000Z',
+        lastEngagementAt: null,
+      },
+      'guest',
+      new Date('2026-08-08T04:00:00.000Z')
+    );
+
+    expect(decision).toMatchObject({
+      cadence: 'daily',
+      localDateKey: '2026-08-08',
+    });
+  });
+
   it('does not deliver twice on the same local day', () => {
     const decision = getEngagementDecision(
       {
