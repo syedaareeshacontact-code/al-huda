@@ -8,10 +8,9 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
-import GoogleIcon from '@/components/icons/google-icon';
 import { GOOGLE_SIGNIN_SUCCESS_EVENT } from '@/lib/auth/events';
 import { invalidateClientSession } from '@/lib/client-session';
 import { resumePendingProtectedDownload } from '@/lib/protected-download-client';
@@ -61,7 +60,8 @@ export default function AuthModal({
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleButtonContainerRef = useRef<HTMLDivElement>(null);
+  const renderedGoogleButtonContainerRef = useRef<HTMLElement | null>(null);
 
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
@@ -111,12 +111,10 @@ export default function AuthModal({
     async (response: { credential?: string }) => {
       if (!response.credential) {
         setAuthError('Google sign-in failed.');
-        setGoogleLoading(false);
         return;
       }
 
       setAuthSubmitting(true);
-      setGoogleLoading(true);
       setAuthError(null);
 
       try {
@@ -142,25 +140,72 @@ export default function AuthModal({
         setAuthError('Unable to sign in with Google right now.');
       } finally {
         setAuthSubmitting(false);
-        setGoogleLoading(false);
       }
     },
     [completeAuthentication]
   );
 
   useEffect(() => {
-    if (!googleClientId || !open) return;
+    if (!googleClientId || !open) {
+      setGoogleReady(false);
+      renderedGoogleButtonContainerRef.current = null;
+      return;
+    }
+
+    setGoogleReady(false);
 
     const initializeGoogle = () => {
-      const google = (window as Window & { google?: { accounts?: { id?: { initialize: (config: object) => void; prompt: () => void } } } }).google;
-      if (!google?.accounts?.id) return;
+      const google = (window as Window & {
+        google?: {
+          accounts?: {
+            id?: {
+              initialize: (config: object) => void;
+              renderButton: (parent: HTMLElement, options: object) => void;
+            };
+          };
+        };
+      }).google;
+      const buttonContainer = googleButtonContainerRef.current;
+      if (
+        !google?.accounts?.id ||
+        typeof google.accounts.id.renderButton !== 'function' ||
+        !buttonContainer
+      ) {
+        return;
+      }
+      if (renderedGoogleButtonContainerRef.current === buttonContainer) {
+        setGoogleReady(true);
+        return;
+      }
 
       google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleGoogleCredentialResponse,
         ux_mode: 'popup',
       });
+
+      // Use Google's actual Sign in with Google button instead of calling
+      // One Tap's prompt() from inside the auth modal. On mobile Chrome the
+      // modal overlay can cover/suppress One Tap, while the rendered button
+      // starts the user-initiated popup reliably.
+      buttonContainer.replaceChildren();
+      google.accounts.id.renderButton(buttonContainer, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: Math.max(
+          200,
+          Math.min(400, Math.round(buttonContainer.getBoundingClientRect().width))
+        ),
+      });
+      renderedGoogleButtonContainerRef.current = buttonContainer;
       setGoogleReady(true);
+    };
+    const handleScriptError = () => {
+      setAuthError('Google sign-in could not load. Check your connection and try again.');
     };
 
     if ((window as Window & { google?: unknown }).google) {
@@ -171,7 +216,11 @@ export default function AuthModal({
     const existingScript = document.getElementById('google-identity-service');
     if (existingScript) {
       existingScript.addEventListener('load', initializeGoogle);
-      return () => existingScript.removeEventListener('load', initializeGoogle);
+      existingScript.addEventListener('error', handleScriptError);
+      return () => {
+        existingScript.removeEventListener('load', initializeGoogle);
+        existingScript.removeEventListener('error', handleScriptError);
+      };
     }
 
     const script = document.createElement('script');
@@ -180,6 +229,7 @@ export default function AuthModal({
     script.async = true;
     script.defer = true;
     script.onload = initializeGoogle;
+    script.onerror = handleScriptError;
     document.body.appendChild(script);
   }, [googleClientId, open, handleGoogleCredentialResponse]);
 
@@ -230,29 +280,6 @@ export default function AuthModal({
       setAuthError('Unable to create account right now.');
     } finally {
       setAuthSubmitting(false);
-    }
-  };
-
-  const handleGoogleSignIn = () => {
-    if (!googleClientId) {
-      setAuthError('Google sign-in is not configured.');
-      return;
-    }
-    if (!googleReady) {
-      setAuthError('Google sign-in is still loading.');
-      return;
-    }
-
-    setAuthError(null);
-    setGoogleLoading(true);
-
-    try {
-      const google = (window as Window & { google?: { accounts?: { id?: { prompt: () => void } } } }).google;
-      google?.accounts?.id?.prompt();
-      window.setTimeout(() => setGoogleLoading(false), 4500);
-    } catch {
-      setAuthError('Unable to start Google sign-in.');
-      setGoogleLoading(false);
     }
   };
 
@@ -319,15 +346,22 @@ export default function AuthModal({
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={!googleReady || authSubmitting}
-            className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm font-bold text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <GoogleIcon className="h-4 w-4" />
-            {googleLoading ? 'Opening Google...' : 'Sign in with Google'}
-          </button>
+          <div className="relative mb-3 min-h-12 w-full" aria-busy={!googleReady}>
+            <div
+              ref={googleButtonContainerRef}
+              className={cn(
+                'flex min-h-12 w-full items-center justify-center',
+                !googleReady && 'opacity-0',
+                authSubmitting && 'pointer-events-none opacity-55'
+              )}
+              aria-label="Sign in with Google"
+            />
+            {!googleReady && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-sm font-bold text-[var(--color-muted-text)]">
+                Loading Google sign-in…
+              </div>
+            )}
+          </div>
 
           <div className="mb-4 flex items-center gap-3 text-xs text-[var(--color-muted-text)]">
             <span className="h-px flex-1 bg-[var(--color-border)]" />
