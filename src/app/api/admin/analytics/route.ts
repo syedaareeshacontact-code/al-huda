@@ -91,6 +91,20 @@ function searchConsoleDefaultDateRange() {
   };
 }
 
+function getSearchConsoleDataFreshness(dateRange: {
+  startDate: string;
+  endDate: string;
+}) {
+  const latestCompleteDate = searchConsoleDefaultDateRange().endDate;
+  const isProcessing = dateRange.endDate > latestCompleteDate;
+
+  return {
+    isProcessing,
+    latestCompleteDate,
+    reportingLagDays: 3,
+  };
+}
+
 function searchConsoleReport(reports: SearchConsoleReport[], name: SearchConsoleReport['name']) {
   return reports.find((report) => report.name === name)?.rows || [];
 }
@@ -496,6 +510,7 @@ export async function GET(request: NextRequest) {
       const dateRange = hasCustomDateRange
         ? { startDate: requestedStartDate!, endDate: requestedEndDate! }
         : searchConsoleDefaultDateRange();
+      const dataFreshness = getSearchConsoleDataFreshness(dateRange);
       const siteUrl = getSearchConsoleSiteUrl();
       const reports = await loadSearchConsoleReports({ siteUrl, ...dateRange });
       const overview = searchConsoleReport(reports, 'overview')[0] || {
@@ -510,6 +525,7 @@ export async function GET(request: NextRequest) {
         siteUrl,
         generatedAt: new Date().toISOString(),
         dateRange,
+        dataFreshness,
         overview: {
           clicks: overview.clicks,
           impressions: overview.impressions,
