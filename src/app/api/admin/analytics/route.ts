@@ -17,6 +17,11 @@ import {
   getRealtimeActivity,
   realtimeActivityWithFallback,
 } from '@/lib/analytics/realtime-report';
+import {
+  getSearchConsoleSiteUrl,
+  loadSearchConsoleReports,
+  type SearchConsoleReport,
+} from '@/lib/search-console/search-console';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -71,6 +76,23 @@ function isIsoDate(value: string | null) {
   }
 
   return new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
+}
+
+function searchConsoleDefaultDateRange() {
+  const end = new Date();
+  end.setUTCDate(end.getUTCDate() - 3);
+
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 29);
+
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
+}
+
+function searchConsoleReport(reports: SearchConsoleReport[], name: SearchConsoleReport['name']) {
+  return reports.find((report) => report.name === name)?.rows || [];
 }
 
 function audienceTechnologyKey(row: unknown, offset = 0) {
@@ -436,16 +458,12 @@ export async function GET(request: NextRequest) {
 
   const propertyId = getGa4PropertyId();
 
-  if (!propertyId) {
-    return json(request, { message: 'GA4_PROPERTY_ID is not configured.' }, 500);
-  }
-
   const requestedStartDate = request.nextUrl.searchParams.get('startDate');
   const requestedEndDate = request.nextUrl.searchParams.get('endDate');
   const requestedView = request.nextUrl.searchParams.get('view') || 'full';
   const hasCustomDateRange = Boolean(requestedStartDate || requestedEndDate);
 
-  if (!['full', 'live', 'traffic'].includes(requestedView)) {
+  if (!['full', 'live', 'traffic', 'search'].includes(requestedView)) {
     return json(request, { message: 'Use a supported analytics view.' }, 400);
   }
 
@@ -462,6 +480,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (requestedView !== 'search' && !propertyId) {
+    return json(request, { message: 'GA4_PROPERTY_ID is not configured.' }, 500);
+  }
+
   const selectedDateRange = hasCustomDateRange
     ? { startDate: requestedStartDate!, endDate: requestedEndDate! }
     : { startDate: '30daysAgo', endDate: 'today' };
@@ -470,6 +492,68 @@ export async function GET(request: NextRequest) {
   const property = `properties/${propertyId}`;
 
   try {
+    if (requestedView === 'search') {
+      const dateRange = hasCustomDateRange
+        ? { startDate: requestedStartDate!, endDate: requestedEndDate! }
+        : searchConsoleDefaultDateRange();
+      const siteUrl = getSearchConsoleSiteUrl();
+      const reports = await loadSearchConsoleReports({ siteUrl, ...dateRange });
+      const overview = searchConsoleReport(reports, 'overview')[0] || {
+        clicks: 0,
+        impressions: 0,
+        ctr: 0,
+        position: 0,
+      };
+
+      return json(request, {
+        source: 'Google Search Console',
+        siteUrl,
+        generatedAt: new Date().toISOString(),
+        dateRange,
+        overview: {
+          clicks: overview.clicks,
+          impressions: overview.impressions,
+          ctr: overview.ctr,
+          position: overview.position,
+        },
+        daily: searchConsoleReport(reports, 'daily').map((row) => ({
+          date: row.keys[0] || '',
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        })),
+        topQueries: searchConsoleReport(reports, 'queries').map((row) => ({
+          query: row.keys[0] || '(not set)',
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        })),
+        topPages: searchConsoleReport(reports, 'pages').map((row) => ({
+          page: row.keys[0] || '(not set)',
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        })),
+        countries: searchConsoleReport(reports, 'countries').map((row) => ({
+          country: row.keys[0] || '(not set)',
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        })),
+        devices: searchConsoleReport(reports, 'devices').map((row) => ({
+          device: row.keys[0] || '(not set)',
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        })),
+      });
+    }
+
     if (requestedView === 'live') {
       const [[realtime], realtimeActivityRows] = await Promise.all([
         analyticsData.runRealtimeReport({
@@ -796,12 +880,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[admin analytics] Unable to load GA4 report', error);
+    console.error('[admin analytics] Unable to load analytics report', error);
 
     return json(
       request,
       {
-        message: 'Unable to load Google Analytics report.',
+        message: 'Unable to load analytics report from Google.',
       },
       500
     );

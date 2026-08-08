@@ -61,6 +61,7 @@ variables from Vercel. Never commit `.env` or `.env.local`.
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Optional Google Search Console verification value |
 | `NEXT_PUBLIC_GA_ID` | Optional Google Analytics measurement ID |
 | `GA4_PROPERTY_ID` | Google Analytics 4 property ID used by admin analytics APIs |
+| `SEARCH_CONSOLE_SITE_URL` | Optional URL-prefix Search Console property; defaults to `http://readalquran.online/` |
 | `ALHUDA_DASHBOARD_API_TOKEN` | Shared server-side token that allows the dashboard proxy to call admin APIs without an Al-Huda browser login |
 | `ANALYTICS_DASHBOARD_ORIGINS` | Optional comma-separated dashboard origins allowed for legacy browser-to-Al-Huda admin API access |
 | `ANALYTICS_DASHBOARD_URL` | Dashboard URL used to redirect legacy `/admin` paths; the admin UI lives in the dashboard |
@@ -94,6 +95,18 @@ only permits one Vercel cron run per day. Configure a cron-job.org task with:
 
 Store `CRON_SECRET` only in Vercel and cron-job.org. Never put it in the URL,
 source code, or a Git commit. A successful job returns JSON with `ok: true`.
+
+## Search Console dashboard data
+
+`GET /api/admin/analytics?view=search` returns live Search Console data for the
+dashboard; it does not store report snapshots in MongoDB. It includes aggregate,
+daily, query, page, country, and device reports. The default range is the 30 days
+ending three days ago, because Search Console data is delayed.
+
+The Search Console API must be enabled in the same Google Cloud project, and the
+existing Analytics service-account email must be added to the Search Console
+property as a user. Use the exact URL-prefix property, including its protocol
+and trailing slash; for this project it is `http://readalquran.online/`.
 
 ## Commands
 

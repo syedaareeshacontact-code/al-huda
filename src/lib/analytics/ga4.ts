@@ -1,6 +1,6 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
-type ServiceAccountCredentials = {
+export type GoogleServiceAccountCredentials = {
   client_email: string;
   private_key: string;
 };
@@ -38,14 +38,14 @@ function parseServiceAccountJson(rawValue: string) {
     return {
       client_email: clientEmail,
       private_key: privateKey,
-    } satisfies ServiceAccountCredentials;
+    } satisfies GoogleServiceAccountCredentials;
   } catch (error) {
     console.error('[ga4] Unable to parse service-account JSON.', error);
     return null;
   }
 }
 
-function getServiceAccountCredentials() {
+export function getGoogleServiceAccountCredentials() {
   const jsonCredentials =
     process.env.GA4_SERVICE_ACCOUNT_JSON ||
     process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
@@ -91,7 +91,7 @@ function getServiceAccountCredentials() {
   return {
     client_email: clientEmail,
     private_key: privateKey,
-  } satisfies ServiceAccountCredentials;
+  } satisfies GoogleServiceAccountCredentials;
 }
 
 export function getGa4PropertyId() {
@@ -103,7 +103,7 @@ export function getGa4PropertyId() {
 
 export function getAnalyticsDataClient() {
   if (!analyticsDataClient) {
-    const credentials = getServiceAccountCredentials();
+    const credentials = getGoogleServiceAccountCredentials();
 
     analyticsDataClient = credentials
       ? new BetaAnalyticsDataClient({ credentials })
