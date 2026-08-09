@@ -104,6 +104,13 @@ describe('service worker display receipts', () => {
     await dispatchPush(pushHandler);
 
     expect(showNotification).toHaveBeenCalledTimes(1);
+    expect(showNotification).toHaveBeenCalledWith(
+      'Reminder',
+      expect.objectContaining({
+        icon: '/logos/pwa-192.png',
+        badge: '/logos/notification-badge-96.png',
+      })
+    );
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock).toHaveBeenLastCalledWith(
       '/api/push/displayed',

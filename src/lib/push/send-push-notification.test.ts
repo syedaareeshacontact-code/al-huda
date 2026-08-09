@@ -120,6 +120,13 @@ describe('sendPushNotificationToSubscriptions', () => {
         topic: expect.stringMatching(/^[A-Za-z0-9_-]{32}$/),
       })
     );
+    const serializedPayload = String(
+      mocks.sendNotification.mock.calls.at(-1)?.[1]
+    );
+    expect(JSON.parse(serializedPayload)).toMatchObject({
+      icon: '/logos/pwa-192.png',
+      badge: '/logos/notification-badge-96.png',
+    });
     expect(mocks.recordPushDeliveryPending).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerType: 'guest',

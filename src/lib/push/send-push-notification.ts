@@ -250,7 +250,7 @@ export async function sendPushNotificationToSubscriptions(
       title: payload.title,
       body: payload.body,
       icon: payload.icon || '/logos/pwa-192.png',
-      badge: payload.badge || '/logos/favicon-48.png',
+      badge: payload.badge || '/logos/notification-badge-96.png',
       tag: payload.tag || 'read-al-quran-notification',
       renotify: Boolean(payload.renotify),
       url: payload.url || '/',

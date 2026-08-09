@@ -299,7 +299,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || 'Open your Quran reminder.',
     icon: payload.icon || '/logos/pwa-192.png',
-    badge: payload.badge || '/logos/favicon-48.png',
+    badge: payload.badge || '/logos/notification-badge-96.png',
     tag: payload.tag || 'read-al-quran-reminder',
     renotify: Boolean(payload.renotify),
     data: {
