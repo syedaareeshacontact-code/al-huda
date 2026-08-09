@@ -12,6 +12,12 @@ const ARTICLE_EXTENSION = '.mdx';
 const DEFAULT_PAGE_SIZE = 8;
 const MAX_PAGE_SIZE = 24;
 const WORDS_PER_MINUTE = 200;
+const DEFAULT_SURAH_ARTICLE_SLUGS = [
+  'how-to-read-the-quran-with-understanding',
+  'how-to-start-reading-the-quran',
+  'daily-quran-reading-plan',
+  'what-is-tajweed',
+] as const;
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   'surah-guides':
@@ -475,6 +481,37 @@ export function getPopularSurahGuides(limit = 4): ArticleSummary[] {
   return getAllArticleSummaries()
     .filter((article) => article.categorySlug === 'surah-guides')
     .slice(0, Math.max(0, limit));
+}
+
+export function getArticlesForSurah(
+  surahId: number,
+  limit = 3
+): ArticleSummary[] {
+  const safeLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0;
+  if (!Number.isInteger(surahId) || surahId < 1 || surahId > 114 || safeLimit === 0) {
+    return [];
+  }
+
+  const summaries = getAllArticleSummaries();
+  const exactMatches = summaries
+    .filter((article) => article.relatedSurahs.includes(surahId))
+    .sort((left, right) => {
+      const leftIsSurahGuide = left.categorySlug === 'surah-guides' ? 1 : 0;
+      const rightIsSurahGuide = right.categorySlug === 'surah-guides' ? 1 : 0;
+      return rightIsSurahGuide - leftIsSurahGuide;
+    });
+  const selectedSlugs = new Set(exactMatches.map((article) => article.slug));
+  const bySlug = new Map(
+    summaries.map((article) => [article.slug, article] as const)
+  );
+  const fallbackArticles = DEFAULT_SURAH_ARTICLE_SLUGS
+    .map((slug) => bySlug.get(slug))
+    .filter(
+      (article): article is ArticleSummary =>
+        Boolean(article) && !selectedSlugs.has(article.slug)
+    );
+
+  return [...exactMatches, ...fallbackArticles].slice(0, safeLimit);
 }
 
 export function getRelatedArticles(

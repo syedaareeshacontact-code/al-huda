@@ -6,6 +6,8 @@ import SurahReader from '@/components/quran/surah-reader';
 import AyahDetailOverlay from '@/components/quran/ayah-detail-overlay';
 import SurahCrawlableContent from '@/components/quran/surah-crawlable-content';
 import SurahPageHero from '@/components/quran/surah-page-hero';
+import RelatedArticles from '@/components/articles/RelatedArticles';
+import { getArticlesForSurah } from '@/lib/articles';
 import { resolveSurahParam } from '@/lib/quran-index';
 import { getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
 import { buildSurahPath } from '@/lib/quran-routing';
@@ -116,6 +118,10 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
     getSurahMetaDescription(surah),
     initialSurahDetail?.numberOfAyahs ?? surah.totalAyah
   );
+  const relatedArticles = getArticlesForSurah(surah.id, 3);
+  const hasSurahSpecificArticle = relatedArticles.some((article) =>
+    article.relatedSurahs.includes(surah.id)
+  );
 
   return (
     <>
@@ -155,6 +161,21 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
         />
       </Suspense>
       <SurahCrawlableContent surah={surah} />
+      <div className="pb-6" data-slot="page-shell">
+        <RelatedArticles
+          articles={relatedArticles}
+          eyebrow="Explore and reflect"
+          title={`Continue learning after Surah ${surah.surahName}`}
+          description={
+            hasSurahSpecificArticle
+              ? 'Explore guides connected to this Surah, followed by practical resources for understanding and reading the Quran.'
+              : 'Build your understanding and a consistent reading practice with these practical Quran learning guides.'
+          }
+          headingId={`surah-${surah.id}-related-guides-heading`}
+          viewAllHref="/articles"
+          viewAllLabel="Explore all guides"
+        />
+      </div>
     </>
   );
 }
