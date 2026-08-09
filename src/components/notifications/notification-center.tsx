@@ -9,14 +9,18 @@ import {
   BookOpen,
   Check,
   CheckCheck,
+  ChevronRight,
   Clock3,
   Headphones,
   Loader2,
   MapPin,
   MoonStar,
+  RefreshCw,
   Search,
   Settings2,
   ShieldCheck,
+  Smartphone,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -89,6 +93,8 @@ interface NotificationSettings {
   prayerCountry: string;
   reminderMinutes: number;
 }
+
+type NotificationPanelView = 'inbox' | 'preferences';
 
 const SETTINGS_KEY = 'alhuda-notification-settings';
 const PRAYER_SENT_KEY = 'alhuda-prayer-notifications-sent';
@@ -352,7 +358,9 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState('');
+  const [activeView, setActiveView] = useState<NotificationPanelView>('inbox');
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelContentRef = useRef<HTMLElement | null>(null);
   const pushSuccessTimeoutRef = useRef<number | null>(null);
   const prayerSettingsSaveRef = useRef(Promise.resolve());
 
@@ -672,12 +680,26 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   useEffect(() => {
     setOpen(false);
     setLocationPickerOpen(false);
+    setActiveView('inbox');
   }, [pathname]);
 
   useEffect(() => {
     if (!open) {
       setLocationPickerOpen(false);
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !window.matchMedia('(max-width: 639px)').matches) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open]);
 
   useEffect(() => {
@@ -688,7 +710,11 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         return;
       }
 
-      if (!panelRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !panelRef.current?.contains(target) &&
+        !panelContentRef.current?.contains(target)
+      ) {
         setOpen(false);
       }
     };
@@ -938,7 +964,6 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   };
 
   const isPushSuccessMessage = pushMessage === PUSH_ENABLE_SUCCESS_MESSAGE;
-  const shouldShowPushCard = !pushEnabled || Boolean(pushMessage);
 
   if (!isAuthenticated) {
     return null;
@@ -949,8 +974,9 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        aria-label="Open notifications"
+        aria-label={open ? 'Close notifications' : 'Open notifications'}
         aria-expanded={open}
+        aria-controls="notification-center-panel"
         className={cn(
           'relative inline-flex h-9 w-9 items-center justify-center rounded-xl border transition',
           open
@@ -966,223 +992,504 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         ) : null}
       </button>
 
-      {open ? (
-        <>
-        <div className="fixed left-1/2 top-4 z-[160] flex max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(0,0,0,0.38)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:max-h-[min(38rem,calc(100dvh-7rem))] sm:translate-x-0">
-          <div className="shrink-0 border-b border-[var(--color-border)] bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent),transparent_86%),transparent)] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-accent-soft)]">
-                  Notifications
-                </p>
-                <h2 className="mt-1 font-display text-xl font-semibold text-[var(--color-heading)]">
-                  Prayer, Quran & Hadith alerts
-                </h2>
-              </div>
-              <Badge variant={unreadCount > 0 ? 'default' : 'outline'} className="shrink-0">
-                {unreadCount} unread
-              </Badge>
-            </div>
-
-          </div>
-
-          <div className="shrink-0 border-b border-[var(--color-border)] p-3">
-            <div className="grid grid-cols-[1fr_auto] gap-2">
-              <div className="min-w-0">
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
-                  Prayer location
-                </span>
-                <button
-                  type="button"
-                  onClick={openPrayerLocationPicker}
-                  className="flex h-9 w-full items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-left text-xs text-[var(--color-text)] outline-none transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),transparent_92%)] focus:border-[var(--color-accent-soft)]"
-                >
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate">{prayerLocationLabel}</span>
-                  <span className="shrink-0 text-[10px] font-semibold text-[var(--color-accent-soft)]">
-                    Change
-                  </span>
-                </button>
-              </div>
-              <label>
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
-                  Before
-                </span>
-                <select
-                  value={settings.reminderMinutes}
-                  onChange={(event) =>
-                    updateSettings({ ...settings, reminderMinutes: Number(event.target.value) })
-                  }
-                  className="h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-accent-soft)]"
-                >
-                  {[0, 5, 10, 15, 20, 30].map((minute) => (
-                    <option key={minute} value={minute}>
-                      {minute}m
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-xs">
-              <span className="font-semibold text-[var(--color-heading)]">Daily prayer reminders</span>
-              <input
-                type="checkbox"
-                checked={settings.prayerEnabled}
-                onChange={(event) => updateSettings({ ...settings, prayerEnabled: event.target.checked })}
-                className="h-4 w-4 accent-[var(--color-accent)]"
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div className="fixed inset-0 z-[160]">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close notification center"
+                className="absolute inset-0 h-full w-full border-0 bg-black/55 backdrop-blur-[2px] sm:bg-black/35"
               />
-            </label>
-            {shouldShowPushCard ? (
-              <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2">
-                {isPushSuccessMessage ? (
-                  <p className="text-xs font-semibold text-[var(--color-heading)]">
-                    {PUSH_ENABLE_SUCCESS_MESSAGE}
-                  </p>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold text-[var(--color-heading)]">
-                          Website push notifications
+
+              <section
+                ref={panelContentRef}
+                id="notification-center-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="notification-center-title"
+                className="absolute inset-x-0 bottom-0 z-10 flex h-[min(92dvh,44rem)] flex-col overflow-hidden rounded-t-[1.75rem] border border-b-0 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[var(--color-surface)] shadow-[0_-24px_70px_rgba(0,0,0,0.42)] animate-fade-up sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-[calc(var(--site-header-visible-offset,4.25rem)_+_0.65rem)] sm:h-auto sm:max-h-[min(42rem,calc(100dvh-7rem))] sm:w-[25rem] sm:rounded-2xl sm:border sm:shadow-[0_24px_70px_rgba(0,0,0,0.38)]"
+              >
+                <header className="relative shrink-0 overflow-hidden border-b border-[var(--color-border)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%),var(--color-surface))] px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))] sm:pt-4">
+                  <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-[var(--color-accent)]/10 blur-3xl" />
+                  <div className="relative flex items-start gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_80%)] text-[var(--color-accent-soft)] shadow-[var(--shadow-soft)]">
+                      <BellRing className="h-4.5 w-4.5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">
+                          Notification center
                         </p>
-                        <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
-                          Sends Quran, Hadith, account, saved ayah, Islamic, and admin alerts.
-                        </p>
+                        <Badge
+                          variant={unreadCount > 0 ? 'default' : 'outline'}
+                          className="px-2 py-0 text-[9px] tracking-[0.1em]"
+                        >
+                          {unreadCount} unread
+                        </Badge>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={pushBusy || !pushSupported || !webPushConfigured}
-                        onClick={() => {
-                          void enableWebsitePush();
-                        }}
-                        className="shrink-0"
+                      <h2
+                        id="notification-center-title"
+                        className="mt-1 font-display text-xl font-semibold leading-tight text-[var(--color-heading)]"
                       >
-                        {pushBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                        Enable
-                      </Button>
+                        Stay connected to your journey
+                      </h2>
+                      <p className="mt-1 text-[11px] leading-relaxed text-[var(--color-muted-text)]">
+                        Prayer, Quran, Hadith, saved activity and account updates in one place.
+                      </p>
                     </div>
-                    {!pushSupported ? (
-                      <p className="mt-2 text-[10px] text-[var(--color-danger)]">
-                        This browser does not support web push.
-                      </p>
-                    ) : !webPushConfigured ? (
-                      <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">
-                        Add Web Push VAPID keys on the server to enable closed-app reminders.
-                      </p>
-                    ) : pushMessage === PUSH_PERMISSION_DENIED_MESSAGE ? (
-                      <PushPermissionResetHelp />
-                    ) : pushMessage ? (
-                      <p className="mt-2 text-[10px] text-[var(--color-muted-text)]">
-                        {pushMessage}
-                      </p>
-                    ) : null}
-                  </>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            {loading ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-sm text-[var(--color-muted-text)]">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading notifications
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="py-9 text-center">
-                <Bell className="mx-auto h-8 w-8 text-[var(--color-muted-text)]" />
-                <p className="mt-3 text-sm font-semibold text-[var(--color-heading)]">No notifications yet</p>
-                <p className="mx-auto mt-1 max-w-56 text-xs leading-relaxed text-[var(--color-muted-text)]">
-                  Prayer reminders and Quran updates will appear here.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {notifications.map((notification) => {
-                  const config = typeConfig[notification.type];
-                  const Icon = config.icon;
-                  const content = (
-                    <div
-                      className={cn(
-                        'group flex w-full gap-3 rounded-xl border p-3 text-left transition hover:bg-[var(--color-surface-2)]',
-                        notification.readAt
-                          ? 'border-transparent opacity-80'
-                          : 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-accent),transparent_92%)]'
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
-                          config.className
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="truncate text-sm font-semibold text-[var(--color-heading)]">
-                            {notification.title}
-                          </span>
-                          <span className="shrink-0 text-[10px] font-semibold text-[var(--color-muted-text)]">
-                            {formatRelativeTime(notification.createdAt)}
-                          </span>
-                        </span>
-                        <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--color-muted-text)]">
-                          {notification.message}
-                        </span>
-                        <span className="mt-2 flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
-                            {config.label}
-                          </span>
-                          {notification.priority === 'high' ? (
-                            <span className="rounded-full bg-[var(--color-danger)]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-danger)]">
-                              Important
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                    </div>
-                  );
-
-                  return notification.href ? (
-                    <Link
-                      key={notification.id}
-                      href={notification.href}
-                      onClick={() => void markRead(notification.id)}
-                      className="block no-underline"
-                    >
-                      {content}
-                    </Link>
-                  ) : (
                     <button
-                      key={notification.id}
                       type="button"
-                      onClick={() => void markRead(notification.id)}
-                      className="block w-full"
+                      onClick={() => setOpen(false)}
+                      aria-label="Close notifications"
+                      title="Close"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface),transparent_12%)] text-[var(--color-muted-text)] shadow-sm transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-heading)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
                     >
-                      {content}
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  </div>
+                </header>
 
-          <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-            <div className="flex items-center justify-between gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => void loadNotifications()}>
-                Refresh
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => void markAllRead()}>
-                <CheckCheck className="h-3.5 w-3.5" />
-                Mark all read
-              </Button>
-            </div>
-          </div>
-        </div>
-        {locationPickerOpen && typeof document !== 'undefined'
+                <div
+                  className="grid shrink-0 grid-cols-2 gap-1 border-b border-[var(--color-border)] bg-[var(--color-surface)] p-2"
+                  role="tablist"
+                  aria-label="Notification center views"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeView === 'inbox'}
+                    onClick={() => setActiveView('inbox')}
+                    className={cn(
+                      'inline-flex h-9 items-center justify-center gap-2 rounded-xl text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]',
+                      activeView === 'inbox'
+                        ? 'border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent-soft)] shadow-sm'
+                        : 'border border-transparent text-[var(--color-muted-text)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-heading)]'
+                    )}
+                  >
+                    <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                    Inbox
+                    {unreadCount > 0 ? (
+                      <span className="min-w-4 rounded-full bg-[var(--color-danger)] px-1 text-[9px] font-bold leading-4 text-white">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeView === 'preferences'}
+                    onClick={() => setActiveView('preferences')}
+                    className={cn(
+                      'inline-flex h-9 items-center justify-center gap-2 rounded-xl text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]',
+                      activeView === 'preferences'
+                        ? 'border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent-soft)] shadow-sm'
+                        : 'border border-transparent text-[var(--color-muted-text)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-heading)]'
+                    )}
+                  >
+                    <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Preferences
+                  </button>
+                </div>
+
+                {activeView === 'inbox' ? (
+                  <>
+                    <div
+                      role="tabpanel"
+                      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3"
+                    >
+                      <section className="rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%),var(--color-surface-elevated))] p-3 shadow-[var(--shadow-soft)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-heading)]">
+                              <Sparkles className="h-3.5 w-3.5 text-[var(--color-accent)]" aria-hidden="true" />
+                              What you&apos;ll receive
+                            </p>
+                            <p className="mt-1 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                              Helpful, non-promotional updates.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setActiveView('preferences')}
+                            className="shrink-0 text-[10px] font-bold text-[var(--color-accent-soft)] transition hover:text-[var(--color-accent)]"
+                          >
+                            Manage
+                          </button>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveView('preferences')}
+                            className="group min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-left transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
+                          >
+                            <Clock3 className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                            <span className="mt-1.5 block text-[10px] font-bold text-[var(--color-heading)]">
+                              Prayer
+                            </span>
+                            <span className="mt-0.5 block truncate text-[9px] text-[var(--color-muted-text)]">
+                              {settings.prayerEnabled
+                                ? settings.reminderMinutes > 0
+                                  ? `${settings.reminderMinutes}m before`
+                                  : 'At prayer time'
+                                : 'Turned off'}
+                            </span>
+                          </button>
+                          <div className="min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                            <BookOpen className="h-4 w-4 text-sky-400" aria-hidden="true" />
+                            <span className="mt-1.5 block text-[10px] font-bold text-[var(--color-heading)]">
+                              Learning
+                            </span>
+                            <span className="mt-0.5 block truncate text-[9px] text-[var(--color-muted-text)]">
+                              Quran + Hadith
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setActiveView('preferences')}
+                            className="group min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-left transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
+                          >
+                            <Smartphone className="h-4 w-4 text-violet-400" aria-hidden="true" />
+                            <span className="mt-1.5 block text-[10px] font-bold text-[var(--color-heading)]">
+                              Device alerts
+                            </span>
+                            <span className="mt-0.5 block truncate text-[9px] text-[var(--color-muted-text)]">
+                              {pushEnabled ? 'Enabled' : 'Optional'}
+                            </span>
+                          </button>
+                        </div>
+                      </section>
+
+                      <div className="mb-2 mt-3 flex items-end justify-between gap-3 px-1">
+                        <div>
+                          <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-heading)]">
+                            Recent activity
+                          </h3>
+                          <p className="mt-0.5 text-[10px] text-[var(--color-muted-text)]">
+                            Tap an item to open it and mark it as read.
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-[10px] font-semibold text-[var(--color-muted-text)]">
+                          {notifications.length} total
+                        </span>
+                      </div>
+
+                      {loading ? (
+                        <div className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] py-10 text-sm text-[var(--color-muted-text)]">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading notifications
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setActiveView('preferences')}
+                          className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 text-left transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
+                        >
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-accent-soft)]">
+                            <Bell className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold text-[var(--color-heading)]">
+                              You&apos;re all caught up
+                            </span>
+                            <span className="mt-0.5 block text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                              New reminders and account updates will appear here.
+                            </span>
+                          </span>
+                          <Settings2 className="h-4 w-4 shrink-0 text-[var(--color-muted-text)]" />
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          {notifications.map((notification) => {
+                            const config = typeConfig[notification.type];
+                            const Icon = config.icon;
+                            const content = (
+                              <div
+                                className={cn(
+                                  'group flex w-full gap-3 rounded-2xl border p-3 text-left transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]',
+                                  notification.readAt
+                                    ? 'border-[var(--color-border)] bg-[var(--color-surface-elevated)]'
+                                    : 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_94%)] shadow-[var(--shadow-soft)]'
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    'mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border',
+                                    config.className
+                                  )}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="flex items-start gap-2">
+                                    <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[var(--color-heading)]">
+                                      {notification.title}
+                                    </span>
+                                    <span className="flex shrink-0 items-center gap-1.5 pt-0.5 text-[10px] font-semibold text-[var(--color-muted-text)]">
+                                      {!notification.readAt ? (
+                                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" aria-label="Unread" />
+                                      ) : null}
+                                      {formatRelativeTime(notification.createdAt)}
+                                    </span>
+                                  </span>
+                                  <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--color-muted-text)]">
+                                    {notification.message}
+                                  </span>
+                                  <span className="mt-2 flex items-center gap-2">
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
+                                      {config.label}
+                                    </span>
+                                    {notification.priority === 'high' ? (
+                                      <span className="rounded-full bg-[var(--color-danger)]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-danger)]">
+                                        Important
+                                      </span>
+                                    ) : null}
+                                    {notification.href ? (
+                                      <ChevronRight className="ml-auto h-3.5 w-3.5 text-[var(--color-muted-text)] transition group-hover:translate-x-0.5 group-hover:text-[var(--color-accent)]" />
+                                    ) : null}
+                                  </span>
+                                </span>
+                              </div>
+                            );
+
+                            return notification.href ? (
+                              <Link
+                                key={notification.id}
+                                href={notification.href}
+                                onClick={() => void markRead(notification.id)}
+                                className="block no-underline"
+                              >
+                                {content}
+                              </Link>
+                            ) : (
+                              <button
+                                key={notification.id}
+                                type="button"
+                                onClick={() => void markRead(notification.id)}
+                                className="block w-full"
+                              >
+                                {content}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={loading}
+                          onClick={() => void loadNotifications()}
+                        >
+                          <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+                          Refresh
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={unreadCount === 0}
+                          onClick={() => void markAllRead()}
+                        >
+                          <CheckCheck className="h-3.5 w-3.5" />
+                          Mark all as read
+                        </Button>
+                      </div>
+                    </footer>
+                  </>
+                ) : (
+                  <div
+                    role="tabpanel"
+                    className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
+                  >
+                    <div className="px-1">
+                      <h3 className="text-sm font-semibold text-[var(--color-heading)]">
+                        Choose how reminders reach you
+                      </h3>
+                      <p className="mt-1 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                        Inbox updates work while you&apos;re signed in. Device alerts can also reach you when the site is closed.
+                      </p>
+                    </div>
+
+                    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)]">
+                      <div className="flex items-start gap-3">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-emerald-400/25 bg-emerald-500/10 text-emerald-400">
+                          <Clock3 className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-[var(--color-heading)]">
+                            Daily prayer reminders
+                          </p>
+                          <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                            Receive an alert before Fajr, Dhuhr, Asr, Maghrib and Isha.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={settings.prayerEnabled}
+                          aria-label="Daily prayer reminders"
+                          onClick={() =>
+                            updateSettings({
+                              ...settings,
+                              prayerEnabled: !settings.prayerEnabled,
+                            })
+                          }
+                          className={cn(
+                            'relative mt-1 h-6 w-11 shrink-0 rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]',
+                            settings.prayerEnabled
+                              ? 'border-[var(--color-accent)] bg-[var(--color-accent)]'
+                              : 'border-[var(--color-border)] bg-[var(--color-surface-3)]'
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-sm transition-transform',
+                              settings.prayerEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                            )}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 border-t border-[var(--color-border)] pt-3">
+                        <button
+                          type="button"
+                          onClick={openPrayerLocationPicker}
+                          className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-left transition hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]"
+                        >
+                          <MapPin className="h-4 w-4 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
+                              Prayer location
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs font-semibold text-[var(--color-heading)]">
+                              {prayerLocationLabel}
+                            </span>
+                          </span>
+                          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--color-muted-text)]" />
+                        </button>
+
+                        <label className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-2">
+                          <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
+                            Alert before
+                          </span>
+                          <select
+                            value={settings.reminderMinutes}
+                            onChange={(event) =>
+                              updateSettings({
+                                ...settings,
+                                reminderMinutes: Number(event.target.value),
+                              })
+                            }
+                            className="mt-0.5 h-5 bg-transparent text-xs font-semibold text-[var(--color-heading)] outline-none"
+                          >
+                            {[0, 5, 10, 15, 20, 30].map((minute) => (
+                              <option key={minute} value={minute}>
+                                {minute === 0 ? 'At time' : `${minute} min`}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)]">
+                      <div className="flex items-start gap-3">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-violet-400">
+                          <Smartphone className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-[var(--color-heading)]">
+                              Device alerts
+                            </p>
+                            <span
+                              className={cn(
+                                'rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em]',
+                                pushEnabled
+                                  ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-400'
+                                  : 'border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-muted-text)]'
+                              )}
+                            >
+                              {pushEnabled ? 'On' : 'Off'}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                            Allow important reminders to appear on this device, even when Read al Quran is closed.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[var(--color-border)] pt-3">
+                        {['Prayer', 'Quran', 'Hadith', 'Saved ayahs', 'Account'].map((label) => (
+                          <span
+                            key={label}
+                            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[9px] font-semibold text-[var(--color-muted-text)]"
+                          >
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+
+                      {pushEnabled || isPushSuccessMessage ? (
+                        <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300">
+                          <CheckCheck className="h-4 w-4 shrink-0" />
+                          Enabled on this device
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={pushBusy || !pushSupported || !webPushConfigured}
+                          onClick={() => void enableWebsitePush()}
+                          className="mt-3 w-full"
+                        >
+                          {pushBusy ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <BellRing className="h-3.5 w-3.5" />
+                          )}
+                          Enable device alerts
+                        </Button>
+                      )}
+
+                      {!pushSupported ? (
+                        <p className="mt-2 text-[10px] leading-relaxed text-[var(--color-danger)]">
+                          This browser does not support web push notifications.
+                        </p>
+                      ) : !webPushConfigured ? (
+                        <p className="mt-2 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                          Device alerts are not configured on the server yet. Inbox updates will still work.
+                        </p>
+                      ) : pushMessage === PUSH_PERMISSION_DENIED_MESSAGE ? (
+                        <PushPermissionResetHelp />
+                      ) : pushMessage && !isPushSuccessMessage ? (
+                        <p className="mt-2 text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                          {pushMessage}
+                        </p>
+                      ) : null}
+                    </section>
+
+                    <div className="flex gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3">
+                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+                      <p className="text-[10px] leading-relaxed text-[var(--color-muted-text)]">
+                        You stay in control. Device permission can be changed anytime from your browser settings.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>,
+            document.body
+          )
+        : null}
+
+      {open && locationPickerOpen && typeof document !== 'undefined'
           ? createPortal(
           <div
             role="dialog"
@@ -1404,8 +1711,6 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
               document.body
             )
           : null}
-        </>
-      ) : null}
     </div>
   );
 }
