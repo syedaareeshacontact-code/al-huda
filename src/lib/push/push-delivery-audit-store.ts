@@ -188,6 +188,15 @@ async function ensurePushDeliveryAuditModel() {
   return PushDeliveryAudit;
 }
 
+export async function deletePushDeliveryAuditsForUser(userId: string) {
+  const PushDeliveryAudit = await ensurePushDeliveryAuditModel();
+  const result = await PushDeliveryAudit.deleteMany({
+    ownerType: 'user',
+    ownerId: userId,
+  }).exec();
+  return result.deletedCount;
+}
+
 function normalizeRequiredText(value: unknown, maxLength: number, field: string) {
   const normalized = String(value ?? '').trim().slice(0, maxLength);
   if (!normalized) {

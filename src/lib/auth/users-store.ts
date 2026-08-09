@@ -4,6 +4,9 @@ import mongoose, { Schema, type Model } from 'mongoose';
 
 import { hashPassword } from '@/lib/auth/password';
 import { connectToMongoDatabase } from '@/lib/db/mongodb';
+import { deleteSiteDevicesForUser } from '@/lib/engagement/site-device-store';
+import { deleteFeedbackForUser } from '@/lib/feedback-store';
+import { deletePushDeliveryAuditsForUser } from '@/lib/push/push-delivery-audit-store';
 import { buildBookmarkId } from '@/lib/quran-utils';
 import {
   normalizePushContentPreference,
@@ -2147,4 +2150,32 @@ export async function listUsersForAdmin(): Promise<AdminUserSummary[]> {
     .filter((entry): entry is StoredUser => entry !== null);
 
   return getLoggedInUsers(normalizedUsers).map((user) => toAdminSummary(user));
+}
+
+export async function deleteUserForAdmin(userId: string) {
+  const normalizedUserId = String(userId).trim();
+  if (!normalizedUserId) {
+    return false;
+  }
+
+  const User = await ensureUsersModel();
+  const user = await User.findOne({ id: normalizedUserId }, { _id: 0, id: 1 })
+    .lean()
+    .exec();
+
+  if (!user) {
+    return false;
+  }
+
+  // User-owned data outside the users document must be cleared before the
+  // account is removed. The users document itself contains Quran state,
+  // settings, in-app notifications, and push subscriptions.
+  await Promise.all([
+    deleteFeedbackForUser(normalizedUserId),
+    deleteSiteDevicesForUser(normalizedUserId),
+    deletePushDeliveryAuditsForUser(normalizedUserId),
+  ]);
+
+  const result = await User.deleteOne({ id: normalizedUserId }).exec();
+  return result.deletedCount > 0;
 }

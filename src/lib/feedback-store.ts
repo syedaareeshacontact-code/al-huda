@@ -122,3 +122,9 @@ export async function deleteFeedbackForAdmin(id: string) {
   const result = await Feedback.deleteOne({ id }).exec();
   return result.deletedCount > 0;
 }
+
+export async function deleteFeedbackForUser(userId: string) {
+  const Feedback = await ensureFeedbackModel();
+  const result = await Feedback.deleteMany({ userId }).exec();
+  return result.deletedCount;
+}

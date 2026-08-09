@@ -182,3 +182,9 @@ export async function listSiteDeviceVisitsForAdmin(
     lastVisitAt: entry.lastVisitAt ? String(entry.lastVisitAt) : null,
   }));
 }
+
+export async function deleteSiteDevicesForUser(userId: string) {
+  const SiteDevice = await ensureSiteDeviceModel();
+  const result = await SiteDevice.deleteMany({ userId }).exec();
+  return result.deletedCount;
+}
