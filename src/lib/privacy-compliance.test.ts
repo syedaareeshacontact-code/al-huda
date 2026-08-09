@@ -11,10 +11,14 @@ function read(relativePath: string) {
 describe('privacy and advertising compliance', () => {
   it('publishes the AdSense tag and account identifier together', () => {
     const layout = read('src/app/layout.tsx');
+    const loader = read('src/components/ads/adsense-loader.tsx');
+    const configuration = read('src/lib/adsense.ts');
 
     expect(layout).toContain('google-adsense-account');
-    expect(layout).toContain('pagead2.googlesyndication.com/pagead/js/adsbygoogle.js');
-    expect(layout).toContain('ca-pub-2876888675525619');
+    expect(layout).toContain('<AdSenseLoader />');
+    expect(loader).toContain('shouldLoadAdSense(pathname)');
+    expect(loader).toContain('pagead2.googlesyndication.com/pagead/js/adsbygoogle.js');
+    expect(configuration).toContain('ca-pub-2876888675525619');
   });
 
   it('discloses advertising identifiers and provides opt-out resources', () => {

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import dynamic from 'next/dynamic';
-import Script from 'next/script';
 import {
 	Manrope,
 	Cormorant_Garamond,
@@ -19,6 +18,8 @@ import FloatingMiniPlayer from '@/components/ui/floating-mini-player';
 import { SuspenseBoundary } from '@/components/ui/suspense-boundary';
 import DeferredAnalytics from '@/components/providers/deferred-analytics';
 import AnalyticsConsent from '@/components/providers/analytics-consent';
+import AdSenseLoader from '@/components/ads/adsense-loader';
+import { ADSENSE_CLIENT_ID } from '@/lib/adsense';
 import { buildOrganizationJsonLd, buildWebsiteJsonLd } from '@/lib/seo';
 
 // Dynamically import components that don't need to be critical for initial render
@@ -39,7 +40,6 @@ const siteDescription =
 	'Read al Quran is a Quran-first web app for recitation, Urdu translation, bookmarks, audio playback, and progress tracking.';
 const ogImage = '/og?kind=surah-index';
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
-const adsenseClientId = 'ca-pub-2876888675525619';
 
 // Optimize font loading with preload strategy
 const bodyFont = Manrope({
@@ -102,7 +102,7 @@ export const metadata: Metadata = {
 		google: googleSiteVerification || undefined,
 	},
 	other: {
-		'google-adsense-account': adsenseClientId,
+		'google-adsense-account': ADSENSE_CLIENT_ID,
 	},
 	openGraph: {
 		title: 'Read al Quran',
@@ -177,13 +177,6 @@ export default function RootLayout({
 			data-arabic-font="uthmaniHafs"
 			suppressHydrationWarning
 		>
-			<Script
-				id="google-adsense"
-				strategy="afterInteractive"
-				async
-				crossOrigin="anonymous"
-				src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-			/>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 				{/* Resolve optional APIs cheaply; only the visible Quran font is preconnected. */}
@@ -195,6 +188,7 @@ export default function RootLayout({
 			<body
 				className={`${bodyFont.variable} ${displayFont.variable} ${arabicQuran.variable} ${urduNastaliq.variable} font-body`}
 			>
+				<AdSenseLoader />
 				{/* Structured data - critical for SEO */}
 				<script
 					type="application/ld+json"
