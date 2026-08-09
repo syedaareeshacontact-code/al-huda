@@ -139,6 +139,9 @@ docker compose up
 - [`PROJECT.md`](PROJECT.md): the authoritative architecture, routes, data
   sources, persistence, deployment, generated assets, and maintenance context
   for developers and AI tools.
+- [`Push-Notification-info.md`](Push-Notification-info.md): complete Web Push,
+  notification-bell, prayer reminder, scheduler, dashboard, tracking, and
+  troubleshooting documentation.
 
-Keep these two documents current instead of creating separate one-off status,
-SEO, performance, or implementation-summary Markdown files.
+Keep these documents current instead of creating separate one-off status, SEO,
+performance, or implementation-summary Markdown files.

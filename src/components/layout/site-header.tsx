@@ -533,7 +533,8 @@ export default function SiteHeader() {
                 aria-label="Donate to Read al Quran"
                 aria-current={isActive('/donate', true) ? 'page' : undefined}
                 className={cn(
-                  'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold transition sm:px-3',
+                  'h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold transition sm:px-3',
+                  sessionUser ? 'hidden lg:inline-flex' : 'inline-flex',
                   isActive('/donate', true)
                     ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]'
                     : 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] text-[var(--color-accent-soft)] hover:bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] hover:text-[var(--color-accent-foreground)]'
