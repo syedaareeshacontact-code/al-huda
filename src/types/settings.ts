@@ -6,6 +6,13 @@ export type ArabicFont = 'uthmaniHafs' | 'amiriQuran' | 'notoNaskh' | 'scheheraz
 
 export type AudioPreference = 'ar' | 'tr';
 
+export interface PrayerReminderSettings {
+  enabled: boolean;
+  city: string;
+  country: string;
+  reminderMinutes: number;
+}
+
 export interface AppSettings {
   readingMode: ReadingMode;
   arabicFont: ArabicFont;

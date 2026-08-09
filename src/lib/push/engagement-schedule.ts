@@ -117,10 +117,10 @@ export function getEngagementDecision(
   const timeZone = normalizeReminderTimeZone(input.timeZone);
   const localNow = getLocalDateTimeParts(now, timeZone);
 
-  const isDeliveryTime =
-    audience === 'guest'
-      ? localNow.hour >= ENGAGEMENT_LOCAL_HOUR
-      : localNow.hour === ENGAGEMENT_LOCAL_HOUR;
+  // A scheduler can run a few minutes after 9 AM. Signed-in users need the
+  // same catch-up window as guests; the per-day engagement timestamp prevents
+  // a second delivery later that day.
+  const isDeliveryTime = localNow.hour >= ENGAGEMENT_LOCAL_HOUR;
   if (!isDeliveryTime) {
     return null;
   }

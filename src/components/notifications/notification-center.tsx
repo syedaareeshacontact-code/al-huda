@@ -54,6 +54,15 @@ interface NotificationCreateResponse {
   };
 }
 
+interface PrayerReminderSettingsResponse {
+  settings?: {
+    enabled?: boolean;
+    city?: string;
+    country?: string;
+    reminderMinutes?: number;
+  };
+}
+
 interface PrayerTimingsPayload {
   code?: number;
   data?: {
@@ -90,7 +99,7 @@ const PUSH_SUCCESS_VISIBLE_MS = 5_000;
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 
 const DEFAULT_SETTINGS: NotificationSettings = {
-  prayerEnabled: true,
+  prayerEnabled: false,
   prayerCity: 'Karachi',
   prayerCountry: 'Pakistan',
   reminderMinutes: 10,
@@ -157,7 +166,7 @@ function readSettings(): NotificationSettings {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SETTINGS_KEY) ?? '{}') as Partial<NotificationSettings>;
     return {
-      prayerEnabled: parsed.prayerEnabled !== false,
+      prayerEnabled: parsed.prayerEnabled === true,
       prayerCity: String(parsed.prayerCity ?? DEFAULT_SETTINGS.prayerCity).trim() || DEFAULT_SETTINGS.prayerCity,
       prayerCountry:
         String(parsed.prayerCountry ?? DEFAULT_SETTINGS.prayerCountry).trim() ||
@@ -345,6 +354,7 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   const [pushMessage, setPushMessage] = useState('');
   const panelRef = useRef<HTMLDivElement | null>(null);
   const pushSuccessTimeoutRef = useRef<number | null>(null);
+  const prayerSettingsSaveRef = useRef(Promise.resolve());
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.readAt).length,
@@ -593,6 +603,47 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
     setSettings(readSettings());
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+    void fetch('/api/auth/prayer-reminders', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        return (await response.json()) as PrayerReminderSettingsResponse;
+      })
+      .then((payload) => {
+        if (cancelled || !payload?.settings) {
+          return;
+        }
+
+        const next: NotificationSettings = {
+          prayerEnabled: payload.settings.enabled === true,
+          prayerCity:
+            String(payload.settings.city ?? DEFAULT_SETTINGS.prayerCity).trim() ||
+            DEFAULT_SETTINGS.prayerCity,
+          prayerCountry:
+            String(payload.settings.country ?? DEFAULT_SETTINGS.prayerCountry).trim() ||
+            DEFAULT_SETTINGS.prayerCountry,
+          reminderMinutes: Math.max(
+            0,
+            Math.min(60, Math.floor(Number(payload.settings.reminderMinutes ?? 10)))
+          ),
+        };
+        setSettings(next);
+        writeSettings(next);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
   useEffect(() => () => clearPushSuccessTimer(), [clearPushSuccessTimer]);
 
   useEffect(() => {
@@ -602,6 +653,21 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   useEffect(() => {
     void loadNotifications();
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const refresh = window.setInterval(() => void loadNotifications(), 60_000);
+    return () => window.clearInterval(refresh);
+  }, [isAuthenticated, loadNotifications]);
+
+  useEffect(() => {
+    if (open) {
+      void loadNotifications();
+    }
+  }, [loadNotifications, open]);
 
   useEffect(() => {
     setOpen(false);
@@ -646,7 +712,11 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   }, [locationPickerOpen, open]);
 
   useEffect(() => {
-    if (!isAuthenticated || !settings.prayerEnabled) {
+    if (
+      process.env.NODE_ENV === 'production' ||
+      !isAuthenticated ||
+      !settings.prayerEnabled
+    ) {
       return;
     }
 
@@ -779,6 +849,25 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
   const updateSettings = (next: NotificationSettings) => {
     setSettings(next);
     writeSettings(next);
+
+    if (!isAuthenticated) {
+      return;
+    }
+
+    prayerSettingsSaveRef.current = prayerSettingsSaveRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        await fetch('/api/auth/prayer-reminders', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            enabled: next.prayerEnabled,
+            city: next.prayerCity,
+            country: next.prayerCountry,
+            reminderMinutes: next.reminderMinutes,
+          }),
+        });
+      });
   };
 
   const openPrayerLocationPicker = () => {

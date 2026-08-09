@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import {
+  claimUserPrayerReminder,
+  createUserNotification,
+  listPrayerReminderPushTargets,
   listQuranReminderPushSubscriptions,
+  type PrayerReminderPushTarget,
   type PushSubscriptionForDelivery,
 } from '@/lib/auth/users-store';
 import {
@@ -22,6 +26,11 @@ import {
   sendPushNotificationToSubscriptions,
   type PushDeliveryResult,
 } from '@/lib/push/send-push-notification';
+import {
+  formatAladhanDate,
+  getDateKeyInTimeZone,
+  getPrayerReminderDecision,
+} from '@/lib/push/prayer-reminder-schedule';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -44,6 +53,34 @@ interface CampaignBucket {
 
 const CAMPAIGN_DELIVERY_CONCURRENCY = 4;
 const GUEST_CLAIM_CONCURRENCY = 24;
+const PRAYER_DELIVERY_CONCURRENCY = 8;
+
+interface PrayerTimingsResponse {
+  code?: number;
+  data?: {
+    timings?: Record<string, string>;
+    date?: { gregorian?: { date?: string } };
+    meta?: { timezone?: string };
+  };
+}
+
+interface PrayerTimings {
+  dateKey: string;
+  timeZone: string;
+  timings: Record<string, string>;
+}
+
+interface PrayerDeliverySummary {
+  checked: number;
+  due: number;
+  bellCreated: number;
+  sent: number;
+  failed: number;
+  disabled: number;
+  retried: number;
+  persistenceFailed: number;
+  unavailable: boolean;
+}
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -198,6 +235,177 @@ async function claimDueGuestTargets(
   return claimedTargets.filter((target): target is DueTarget => Boolean(target));
 }
 
+async function fetchPrayerTimings(
+  city: string,
+  country: string,
+  dateKey: string,
+  fallbackTimeZone: string
+): Promise<PrayerTimings | null> {
+  const aladhanDate = formatAladhanDate(dateKey);
+  const response = await fetch(
+    `https://api.aladhan.com/v1/timingsByCity/${aladhanDate}?city=${encodeURIComponent(
+      city
+    )}&country=${encodeURIComponent(country)}&method=1&school=1`,
+    { next: { revalidate: 0 } }
+  );
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as PrayerTimingsResponse;
+  if (
+    payload.data?.date?.gregorian?.date !== aladhanDate ||
+    !payload.data.timings
+  ) {
+    return null;
+  }
+
+  return {
+    dateKey,
+    timeZone: payload.data.meta?.timezone || fallbackTimeZone,
+    timings: payload.data.timings,
+  };
+}
+
+async function getPrayerTimingsForTarget(
+  target: PrayerReminderPushTarget,
+  now: Date,
+  cache: Map<string, Promise<PrayerTimings | null>>
+) {
+  const fallbackTimeZone = target.subscriptions[0]?.timeZone || 'UTC';
+  const load = (dateKey: string, timeZone: string) => {
+    const cacheKey = `${target.settings.country}:${target.settings.city}:${dateKey}`;
+    let request = cache.get(cacheKey);
+    if (!request) {
+      request = fetchPrayerTimings(
+        target.settings.city,
+        target.settings.country,
+        dateKey,
+        timeZone
+      );
+      cache.set(cacheKey, request);
+    }
+    return request;
+  };
+
+  let timings = await load(getDateKeyInTimeZone(now, fallbackTimeZone), fallbackTimeZone);
+  if (!timings) {
+    return null;
+  }
+
+  const targetDateKey = getDateKeyInTimeZone(now, timings.timeZone);
+  if (timings.dateKey !== targetDateKey) {
+    timings = await load(targetDateKey, timings.timeZone);
+  }
+
+  return timings;
+}
+
+async function deliverPrayerReminders(
+  targets: PrayerReminderPushTarget[],
+  now: Date
+): Promise<PrayerDeliverySummary> {
+  const summary: PrayerDeliverySummary = {
+    checked: targets.length,
+    due: 0,
+    bellCreated: 0,
+    sent: 0,
+    failed: 0,
+    disabled: 0,
+    retried: 0,
+    persistenceFailed: 0,
+    unavailable: false,
+  };
+  const timingCache = new Map<string, Promise<PrayerTimings | null>>();
+  let nextIndex = 0;
+  const workerCount = Math.min(PRAYER_DELIVERY_CONCURRENCY, targets.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < targets.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        const target = targets[index];
+
+        try {
+          const timings = await getPrayerTimingsForTarget(target, now, timingCache);
+          if (!timings) {
+            continue;
+          }
+
+          const decision = getPrayerReminderDecision({
+            timings: timings.timings,
+            timeZone: timings.timeZone,
+            city: target.settings.city,
+            country: target.settings.country,
+            reminderMinutes: target.settings.reminderMinutes,
+          }, now);
+          if (!decision) {
+            continue;
+          }
+
+          summary.due += 1;
+          const claimed = await claimUserPrayerReminder(
+            target.userId,
+            decision.reminderKey
+          );
+          if (!claimed) {
+            continue;
+          }
+
+          const notification = await createUserNotification(target.userId, {
+            type: 'prayer',
+            priority: 'high',
+            title: decision.title,
+            message: decision.message,
+            href: '/prayer-times',
+            metadata: {
+              prayer: decision.prayer,
+              city: target.settings.city,
+              country: target.settings.country,
+              reminderMinutes: target.settings.reminderMinutes,
+              reminderKey: decision.reminderKey,
+            },
+          });
+          if (notification) {
+            summary.bellCreated += 1;
+          }
+
+          const delivery = await sendPushNotificationToSubscriptions(
+            target.subscriptions,
+            {
+              title: decision.title,
+              body: decision.message,
+              url: '/prayer-times',
+              tag: `prayer-${decision.reminderKey}`,
+              renotify: true,
+              ttlSeconds: 1_800,
+              urgency: 'high',
+              data: {
+                kind: 'prayer',
+                prayer: decision.prayer,
+                reminderKey: decision.reminderKey,
+                reminderMinutes: target.settings.reminderMinutes,
+              },
+            },
+            { deliverySource: 'user-notification' }
+          );
+          summary.sent += delivery.sent;
+          summary.failed += delivery.failed;
+          summary.disabled += delivery.disabled;
+          summary.retried += delivery.retried;
+          summary.persistenceFailed += delivery.persistenceFailed;
+          summary.unavailable ||= delivery.unavailable;
+        } catch {
+          summary.failed += 1;
+        }
+      }
+    })
+  );
+
+  return summary;
+}
+
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -205,9 +413,10 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const nowIso = now.toISOString();
-  const [userSubscriptions, guestSubscriptions] = await Promise.all([
+  const [userSubscriptions, guestSubscriptions, prayerTargets] = await Promise.all([
     listQuranReminderPushSubscriptions(),
     listEnabledGuestPushSubscriptions(),
+    listPrayerReminderPushTargets(),
   ]);
   const dueTargets: DueTarget[] = [];
 
@@ -222,7 +431,11 @@ export async function GET(request: Request) {
 
   const buckets = await buildCampaignBuckets(dueTargets);
   const delivery = await deliverCampaignBuckets(buckets);
-  if (delivery.unavailable && dueTargets.length > 0) {
+  const prayer = await deliverPrayerReminders(prayerTargets, now);
+  const totalDue = dueTargets.length + prayer.due;
+  const totalSent = delivery.sent + prayer.sent;
+  const totalFailed = delivery.failed + prayer.failed;
+  if ((delivery.unavailable || prayer.unavailable) && totalDue > 0) {
     return NextResponse.json({ message: 'Web push is not configured.' }, { status: 503 });
   }
 
@@ -230,13 +443,12 @@ export async function GET(request: Request) {
     dueTargets.filter((target) => target.audience === audience).length;
   const countKind = (kind: EngagementDecision['kind']) =>
     dueTargets.filter((target) => target.decision.kind === kind).length;
-  const everyDueDeliveryFailed =
-    dueTargets.length > 0 && delivery.sent === 0 && delivery.failed > 0;
+  const everyDueDeliveryFailed = totalDue > 0 && totalSent === 0 && totalFailed > 0;
 
   return NextResponse.json(
     {
       ok: !everyDueDeliveryFailed,
-      checked: userSubscriptions.length + guestSubscriptions.length,
+      checked: userSubscriptions.length + guestSubscriptions.length + prayer.checked,
       checkedUsers: userSubscriptions.length,
       checkedGuests: guestSubscriptions.length,
       due: dueTargets.length,
@@ -248,8 +460,9 @@ export async function GET(request: Request) {
         islamic: countKind('islamic'),
       },
       campaigns: buckets.length,
-      schedule: 'guest-daily-local-9am-catch-up',
+      schedule: 'daily-local-9am-catch-up-and-prayer-reminders',
       ...delivery,
+      prayer,
       at: nowIso,
     },
     { status: everyDueDeliveryFailed ? 503 : 200 }

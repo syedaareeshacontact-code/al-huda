@@ -21,7 +21,7 @@ describe('getEngagementDecision', () => {
     ).toBeNull();
   });
 
-  it('catches up guests after 9 AM without extending the user delivery window', () => {
+  it('catches up both guests and signed-in users after 9 AM', () => {
     const now = new Date('2026-08-03T05:30:00.000Z');
     const subscription = {
       timeZone: 'Asia/Karachi',
@@ -34,7 +34,9 @@ describe('getEngagementDecision', () => {
       cadence: 'daily',
       localDateKey: '2026-08-03',
     });
-    expect(getEngagementDecision(subscription, 'user', now)).toBeNull();
+    expect(getEngagementDecision(subscription, 'user', now)).toMatchObject({
+      localDateKey: '2026-08-03',
+    });
     expect(
       getEngagementDecision(
         subscription,

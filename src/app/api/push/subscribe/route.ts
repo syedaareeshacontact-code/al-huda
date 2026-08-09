@@ -12,6 +12,7 @@ import {
   hasKnownPushDeviceDetails,
   samePushDeviceDetails,
 } from '@/lib/push/device-details';
+import { deliverInitialUserNotifications } from '@/lib/push/user-onboarding';
 import { isWebPushConfigured } from '@/lib/push/web-push';
 
 const subscriptionSchema = z.object({
@@ -86,6 +87,8 @@ export async function POST(request: Request) {
   if (!subscription) {
     return NextResponse.json({ message: 'Unable to save push subscription.' }, { status: 400 });
   }
+
+  await deliverInitialUserNotifications(user.id).catch(() => null);
 
   return NextResponse.json({ subscription });
 }

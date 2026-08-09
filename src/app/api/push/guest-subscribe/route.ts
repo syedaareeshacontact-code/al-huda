@@ -17,6 +17,7 @@ import {
   removeGuestPushSubscription,
   upsertGuestPushSubscription,
 } from '@/lib/push/guest-push-store';
+import { deliverInitialUserNotifications } from '@/lib/push/user-onboarding';
 import { isWebPushConfigured } from '@/lib/push/web-push';
 
 const subscriptionSchema = z.object({
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
       reason: 'signed-in-owner-migration',
       preserveHistory: true,
     });
+    await deliverInitialUserNotifications(user.id).catch(() => null);
 
     return NextResponse.json({ ok: true, owner: 'user' });
   }

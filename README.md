@@ -78,19 +78,21 @@ overrides.
 ## Scheduled push reminders
 
 The production reminder endpoint is
-`GET /api/cron/quran-reminders`. It must be triggered externally at least every
-15 minutes so the server can evaluate each subscription in its own time zone
-and send only the notification that is due. Enabled guest devices are eligible
-daily from local 9:00 AM onward. If an exact 9:00 AM run is missed, the next
-authorized run later that local day catches it up; same-day delivery tracking
-prevents duplicates. Signed-in readers retain their activity-based cadence.
+`GET /api/cron/quran-reminders`. Trigger it externally every 5 minutes (or
+faster) so the server can evaluate each subscription in its own time zone and
+send only the notification that is due. Enabled guest and signed-in devices are
+eligible from local 9:00 AM onward; if an exact 9:00 AM run is missed, the next
+authorized run later that local day catches it up. The same endpoint also
+delivers enabled prayer reminders to the device and the signed-in user's bell.
+Each prayer offset has its own delivery key, so changing a reminder from 30 to
+20 minutes can still produce the later 20-minute reminder without duplicates.
 
 On the Vercel Hobby plan, do not add this schedule to `vercel.json`: the plan
 only permits one Vercel cron run per day. Configure a cron-job.org task with:
 
 - URL: `https://www.readalquran.online/api/cron/quran-reminders`
 - Method: `GET`
-- Schedule: every 15 minutes, continuously
+- Schedule: every 5 minutes, continuously
 - Header: `Authorization: Bearer <the production CRON_SECRET value>`
 
 Store `CRON_SECRET` only in Vercel and cron-job.org. Never put it in the URL,

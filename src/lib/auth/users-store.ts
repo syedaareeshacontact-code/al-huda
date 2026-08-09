@@ -16,7 +16,12 @@ import {
 } from '@/lib/push/engagement-types';
 import { shouldCountSiteVisit } from '@/lib/push/site-visit-tracking';
 import type { NotificationPriority, NotificationType, UserNotification } from '@/types/notifications';
-import type { AppSettings, ThemeMode, UserSettings } from '@/types/settings';
+import type {
+  AppSettings,
+  PrayerReminderSettings,
+  ThemeMode,
+  UserSettings,
+} from '@/types/settings';
 
 export interface StoredAyahBookmark {
   id: string;
@@ -132,6 +137,9 @@ export interface StoredUser {
   bookmarkedAyahs: StoredAyahBookmark[];
   lastRead: StoredLastReadEntry | null;
   settings: UserSettings;
+  prayerReminderSettings: PrayerReminderSettings;
+  prayerReminderClaims: string[];
+  onboardingPushSentAt: string | null;
   notifications: UserNotification[];
   pushSubscriptions: StoredPushSubscription[];
 }
@@ -157,6 +165,13 @@ export interface AdminUserSummary {
   unreadNotifications: number;
 }
 
+export interface PrayerReminderPushTarget {
+  userId: string;
+  userName: string;
+  settings: PrayerReminderSettings;
+  subscriptions: PushSubscriptionForDelivery[];
+}
+
 const MIN_SURAH_ID = 1;
 const MAX_SURAH_ID = 114;
 const MAX_AYAH_NUMBER = 286;
@@ -174,6 +189,15 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   autoPlayAudio: false,
   themeMode: 'dark',
 };
+
+export const DEFAULT_PRAYER_REMINDER_SETTINGS: PrayerReminderSettings = {
+  enabled: false,
+  city: 'Karachi',
+  country: 'Pakistan',
+  reminderMinutes: 10,
+};
+
+const PRAYER_REMINDER_CLAIM_LIMIT = 360;
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -260,6 +284,45 @@ export function normalizeUserSettings(input: unknown): UserSettings {
     autoPlayAudio: Boolean(candidate.autoPlayAudio),
     themeMode: normalizeThemeMode(candidate.themeMode),
   };
+}
+
+export function normalizePrayerReminderSettings(input: unknown): PrayerReminderSettings {
+  const candidate =
+    input && typeof input === 'object'
+      ? (input as Partial<PrayerReminderSettings>)
+      : {};
+  const city = String(candidate.city ?? DEFAULT_PRAYER_REMINDER_SETTINGS.city)
+    .trim()
+    .slice(0, 80);
+  const country = String(
+    candidate.country ?? DEFAULT_PRAYER_REMINDER_SETTINGS.country
+  )
+    .trim()
+    .slice(0, 80);
+  const reminderMinutes = Math.floor(Number(candidate.reminderMinutes));
+
+  return {
+    enabled: Boolean(candidate.enabled),
+    city: city || DEFAULT_PRAYER_REMINDER_SETTINGS.city,
+    country: country || DEFAULT_PRAYER_REMINDER_SETTINGS.country,
+    reminderMinutes: Number.isFinite(reminderMinutes)
+      ? Math.max(0, Math.min(60, reminderMinutes))
+      : DEFAULT_PRAYER_REMINDER_SETTINGS.reminderMinutes,
+  };
+}
+
+function normalizePrayerReminderClaims(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((entry) => String(entry ?? '').trim().slice(0, 180))
+        .filter(Boolean)
+    )
+  ).slice(-PRAYER_REMINDER_CLAIM_LIMIT);
 }
 
 function normalizeSurahId(value: unknown) {
@@ -653,6 +716,7 @@ function buildInitialNotifications(name: string): UserNotification[] {
       title: `Welcome, ${name}`,
       message: 'Your Quran progress, bookmarks, reminders, and reading preferences are now saved with your account.',
       href: '/surah',
+      metadata: { onboarding: true },
     }),
     createSystemNotification({
       type: 'prayer',
@@ -660,7 +724,7 @@ function buildInitialNotifications(name: string): UserNotification[] {
       title: 'Prayer reminders are ready',
       message: 'Open the notification bell to enable sound and configure daily Salah reminders.',
       href: '/prayer-times',
-      metadata: { setup: true },
+      metadata: { onboarding: true, setup: true },
     }),
   ];
 }
@@ -707,6 +771,17 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
     ),
     lastRead: normalizeLastRead(candidate.lastRead),
     settings: normalizeUserSettings(candidate.settings),
+    prayerReminderSettings: normalizePrayerReminderSettings(
+      candidate.prayerReminderSettings
+    ),
+    prayerReminderClaims: normalizePrayerReminderClaims(
+      candidate.prayerReminderClaims
+    ),
+    onboardingPushSentAt:
+      candidate.onboardingPushSentAt === null ||
+      candidate.onboardingPushSentAt === undefined
+        ? null
+        : String(candidate.onboardingPushSentAt),
     notifications: normalizeUserNotifications(candidate.notifications),
     pushSubscriptions: normalizePushSubscriptions(candidate.pushSubscriptions),
   };
@@ -782,6 +857,18 @@ const settingsSchema = new Schema<UserSettings>(
     audioPreference: { type: String, enum: ['ar', 'tr'], default: 'ar' },
     autoPlayAudio: { type: Boolean, default: false },
     themeMode: { type: String, enum: ['light', 'dark', 'system'], default: 'dark' },
+  },
+  {
+    _id: false,
+  }
+);
+
+const prayerReminderSettingsSchema = new Schema<PrayerReminderSettings>(
+  {
+    enabled: { type: Boolean, default: false },
+    city: { type: String, trim: true, maxlength: 80, default: 'Karachi' },
+    country: { type: String, trim: true, maxlength: 80, default: 'Pakistan' },
+    reminderMinutes: { type: Number, min: 0, max: 60, default: 10 },
   },
   {
     _id: false,
@@ -880,6 +967,12 @@ const userSchema = new Schema<StoredUser>(
     bookmarkedAyahs: { type: [bookmarkedAyahSchema], default: [] },
     lastRead: { type: lastReadSchema, default: null },
     settings: { type: settingsSchema, default: () => DEFAULT_USER_SETTINGS },
+    prayerReminderSettings: {
+      type: prayerReminderSettingsSchema,
+      default: () => DEFAULT_PRAYER_REMINDER_SETTINGS,
+    },
+    prayerReminderClaims: { type: [String], default: [] },
+    onboardingPushSentAt: { type: String, default: null },
     notifications: { type: [notificationSchema], default: [] },
     pushSubscriptions: { type: [pushSubscriptionSchema], default: [] },
   },
@@ -970,6 +1063,9 @@ export async function createUser(input: {
     bookmarkedAyahs: [],
     lastRead: null,
     settings: DEFAULT_USER_SETTINGS,
+    prayerReminderSettings: DEFAULT_PRAYER_REMINDER_SETTINGS,
+    prayerReminderClaims: [],
+    onboardingPushSentAt: null,
     notifications: buildInitialNotifications(input.name.trim()),
     pushSubscriptions: [],
   };
@@ -1088,6 +1184,28 @@ export async function replaceUserSettings(
     .exec();
 
   return normalizeStoredUser(raw);
+}
+
+export async function replaceUserPrayerReminderSettings(
+  userId: string,
+  input: PrayerReminderSettings
+): Promise<PrayerReminderSettings | null> {
+  const settings = normalizePrayerReminderSettings(input);
+  const User = await ensureUsersModel();
+  const raw = await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $set: {
+        prayerReminderSettings: settings,
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    { new: true }
+  )
+    .lean()
+    .exec();
+
+  return normalizeStoredUser(raw)?.prayerReminderSettings ?? null;
 }
 
 export function isAdminEmail(email: string) {
@@ -1256,6 +1374,43 @@ export async function createUserNotification(
     .exec();
 
   return notification;
+}
+
+export async function claimInitialUserNotificationsForPush(
+  userId: string
+): Promise<UserNotification[]> {
+  // Older accounts may not have their initial bell records yet. Seed those
+  // before claiming the one-time push delivery.
+  await listUserNotifications(userId);
+  const User = await ensureUsersModel();
+  const raw = await User.findOneAndUpdate(
+    {
+      id: userId,
+      $or: [
+        { onboardingPushSentAt: null },
+        { onboardingPushSentAt: { $exists: false } },
+      ],
+    },
+    {
+      $set: {
+        onboardingPushSentAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    { new: true }
+  )
+    .lean()
+    .exec();
+
+  const notifications = normalizeStoredUser(raw)?.notifications ?? [];
+  return notifications.filter((notification) => {
+    const metadata = notification.metadata ?? {};
+    return (
+      metadata.onboarding === true ||
+      metadata.setup === true ||
+      (notification.type === 'system' && notification.title.startsWith('Welcome,'))
+    );
+  });
 }
 
 export async function markUserNotificationRead(
@@ -1520,6 +1675,89 @@ export async function listQuranReminderPushSubscriptions(): Promise<PushSubscrip
   }
 
   return subscriptions;
+}
+
+export async function listPrayerReminderPushTargets(): Promise<
+  PrayerReminderPushTarget[]
+> {
+  const User = await ensureUsersModel();
+  const rawUsers = await User.find(
+    {
+      'prayerReminderSettings.enabled': true,
+      pushSubscriptions: { $elemMatch: { enabled: true } },
+    },
+    {
+      _id: 0,
+      id: 1,
+      name: 1,
+      prayerReminderSettings: 1,
+      pushSubscriptions: 1,
+    }
+  )
+    .lean()
+    .exec();
+
+  const targets: PrayerReminderPushTarget[] = [];
+  for (const rawUser of rawUsers) {
+    const user = normalizeStoredUser({
+      ...rawUser,
+      email: 'placeholder@example.com',
+      passwordHash: 'placeholder',
+      passwordSalt: 'placeholder',
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!user?.prayerReminderSettings.enabled) {
+      continue;
+    }
+
+    const subscriptions = user.pushSubscriptions
+      .filter((subscription) => subscription.enabled)
+      .map((subscription) => ({
+        ...subscription,
+        userId: user.id,
+        userName: user.name,
+      }));
+
+    if (subscriptions.length > 0) {
+      targets.push({
+        userId: user.id,
+        userName: user.name,
+        settings: user.prayerReminderSettings,
+        subscriptions,
+      });
+    }
+  }
+
+  return targets;
+}
+
+export async function claimUserPrayerReminder(userId: string, reminderKey: string) {
+  const claim = reminderKey.trim().slice(0, 180);
+  if (!claim) {
+    return false;
+  }
+
+  const User = await ensureUsersModel();
+  const result = await User.updateOne(
+    {
+      id: userId,
+      prayerReminderClaims: { $ne: claim },
+    },
+    {
+      $push: {
+        prayerReminderClaims: {
+          $each: [claim],
+          $slice: -PRAYER_REMINDER_CLAIM_LIMIT,
+        },
+      },
+      $set: {
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  ).exec();
+
+  return result.modifiedCount > 0;
 }
 
 export async function listEnabledPushSubscriptions(): Promise<PushSubscriptionForDelivery[]> {
