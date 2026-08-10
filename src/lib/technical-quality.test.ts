@@ -58,6 +58,8 @@ describe('technical quality regressions', () => {
     expect(siteHeader).toContain(
       '<NotificationCenter isAuthenticated={Boolean(sessionUser)} />'
     );
+    expect(siteHeader).toContain("'hidden lg:inline-flex'");
+    expect(siteHeader).toContain('Donate to Read al Quran');
     expect(hadithNudge).not.toContain("'use client'");
     expect(hadithNudge).not.toContain('className="fixed');
     expect(home).not.toContain('<HomeFeatureTour');
