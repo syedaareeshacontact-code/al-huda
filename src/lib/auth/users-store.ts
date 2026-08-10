@@ -280,7 +280,10 @@ export function normalizeUserSettings(input: unknown): UserSettings {
         ? candidate.arabicFont
         : 'uthmaniHafs',
     arabicFontScale: clampArabicFontScale(candidate.arabicFontScale),
-    audioPreference: candidate.audioPreference === 'tr' ? 'tr' : 'ar',
+    audioPreference:
+      candidate.audioPreference === 'tr' || candidate.audioPreference === 'hi'
+        ? candidate.audioPreference
+        : 'ar',
     autoPlayAudio: Boolean(candidate.autoPlayAudio),
     themeMode: normalizeThemeMode(candidate.themeMode),
   };
@@ -854,7 +857,7 @@ const settingsSchema = new Schema<UserSettings>(
       default: 'uthmaniHafs',
     },
     arabicFontScale: { type: Number, min: 0.9, max: 1.9, default: 1.1 },
-    audioPreference: { type: String, enum: ['ar', 'tr'], default: 'ar' },
+    audioPreference: { type: String, enum: ['ar', 'tr', 'hi'], default: 'ar' },
     autoPlayAudio: { type: Boolean, default: false },
     themeMode: { type: String, enum: ['light', 'dark', 'system'], default: 'dark' },
   },

@@ -9,6 +9,7 @@ import { buildUrduAyahAudioUrl } from '@/lib/quran-routing';
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
 const URDU_TRANSLATION_ID = 234; // Fatah Muhammad Jalandhari (Urdu)
+const HINDI_TRANSLATION_ID = 122; // Maulana Azizul Haque al-Umari (Hindi)
 // Quran.com's default page size is 10; 300 covers every ayah in a chapter.
 const CHAPTER_VERSES_PER_PAGE = 300;
 const QURAN_COM_TAFSIR_IDS = [160, 159, 818, 157] as const;
@@ -37,7 +38,7 @@ export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta
       signal: AbortSignal.timeout(10_000),
     }),
     fetch(
-      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
+      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID},${HINDI_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
       {
         ...PERMANENT_QURAN_FETCH,
         signal: AbortSignal.timeout(10_000),
@@ -88,15 +89,18 @@ export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta
   
   const english: string[] = [];
   const urdu: string[] = [];
+  const hindi: string[] = [];
   const arabic: string[] = [];
 
   verses.forEach((v) => {
     const translations = v.translations || [];
     const englishTrans = translations.find((t) => t.resource_id === ENGLISH_TRANSLATION_ID);
     const urduTrans = translations.find((t) => t.resource_id === URDU_TRANSLATION_ID);
+    const hindiTrans = translations.find((t) => t.resource_id === HINDI_TRANSLATION_ID);
 
     english.push(englishTrans?.text?.replace(/<[^>]*>/g, '') || '');
     urdu.push(urduTrans?.text?.replace(/<[^>]*>/g, '') || '');
+    hindi.push(hindiTrans?.text?.replace(/<[^>]*>/g, '') || '');
   });
 
   arabic.push(...textVerses.map((item) => String(item.text_uthmani ?? '')));
@@ -110,6 +114,7 @@ export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta
     surahNo: surahId,
     english,
     urdu,
+    hindi,
     arabic1: arabic,
     audio: {},
   };

@@ -8,7 +8,7 @@ const settingsSchema = z.object({
   readingMode: z.enum(['ayah', 'continuous']),
   arabicFont: z.enum(['uthmaniHafs', 'amiriQuran', 'notoNaskh', 'scheherazade']),
   arabicFontScale: z.number().min(0.9).max(1.9),
-  audioPreference: z.enum(['ar', 'tr']),
+  audioPreference: z.enum(['ar', 'tr', 'hi']),
   autoPlayAudio: z.boolean(),
   themeMode: z.enum(['light', 'dark', 'system']),
 });

@@ -44,6 +44,7 @@ export interface SurahMeta {
   surahNo: number;
   english?: string[];
   urdu?: string[];
+  hindi?: string[];
   arabic1?: string[];
   audio?: Record<string, SurahAudioOption>;
   verses?: Array<{
@@ -51,6 +52,7 @@ export interface SurahMeta {
     text_uthmani?: string;
     english?: string;
     urdu?: string;
+    hindi?: string;
   }>;
 }
 

@@ -19,18 +19,16 @@ import { useAppSettings } from '@/components/providers/app-settings-provider';
 import type { SurahAudioOption } from '@/types/quran';
 import { clampRange, formatAudioTime } from '@/lib/quran-utils';
 import { getSurahById } from '@/lib/quran-index';
-import { buildSurahPath } from '@/lib/quran-routing';
+import {
+  buildHindiTranslationAudioUrl,
+  buildSurahPath,
+  buildUrduTranslationAudioUrl,
+} from '@/lib/quran-routing';
 
 const TOTAL_SURAHS = 114;
 
 interface QuranAudioBottomBarProps {
   initialSurah?: number;
-}
-
-function getTranslationAudioUrl(surahNumber: number) {
-  return `https://ia801503.us.archive.org/28/items/quran_urdu_audio_only/${String(
-    surahNumber
-  ).padStart(3, '0')}.ogg`;
 }
 
 export default function QuranAudioBottomBar({
@@ -73,10 +71,14 @@ export default function QuranAudioBottomBar({
       setLoadingSource(true);
       setSourceError(null);
 
-      if (settings.audioPreference === 'tr') {
+      if (settings.audioPreference === 'tr' || settings.audioPreference === 'hi') {
         setReciters([]);
         setSelectedReciter(0);
-        setAudioSrc(getTranslationAudioUrl(activeSurah));
+        setAudioSrc(
+          settings.audioPreference === 'tr'
+            ? buildUrduTranslationAudioUrl(activeSurah)
+            : buildHindiTranslationAudioUrl(activeSurah)
+        );
         setLoadingSource(false);
         return;
       }
@@ -354,7 +356,11 @@ export default function QuranAudioBottomBar({
               </select>
             ) : (
               <p className="text-xs text-[var(--color-muted-text)]">
-                {settings.audioPreference === 'tr' ? 'Urdu translation audio' : 'Arabic recitation'}
+                {settings.audioPreference === 'tr'
+                  ? 'Urdu translation audio'
+                  : settings.audioPreference === 'hi'
+                    ? 'Hindi translation audio'
+                    : 'Arabic recitation'}
               </p>
             )}
           </div>

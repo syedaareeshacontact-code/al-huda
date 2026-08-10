@@ -54,6 +54,7 @@ import {
   getQuranRecitationTokens,
 } from '@/lib/arabic-utils';
 import {
+  buildHindiTranslationAudioUrl,
   buildSurahPath,
   buildUrduAyahAudioUrl,
   parseSurahIdFromParam,
@@ -118,6 +119,13 @@ const TRANSLATION_OPTIONS: Array<{
     nativeLabel: 'اردو ترجمہ',
     code: 'UR',
     description: 'Arabic recitation with Urdu translation',
+  },
+  {
+    value: 'hi',
+    language: 'Hindi',
+    nativeLabel: 'हिन्दी अनुवाद',
+    code: 'HI',
+    description: 'Arabic text with Hindi translation and voice',
   },
 ];
 
@@ -615,13 +623,17 @@ export default function QuranReaderPage({
     }
 
     const translationByPreference =
-      settings.audioPreference === 'tr' ? surahMeta?.urdu : surahMeta?.english;
+      settings.audioPreference === 'tr'
+        ? surahMeta?.urdu
+        : settings.audioPreference === 'hi'
+          ? surahMeta?.hindi
+          : surahMeta?.english;
 
     return surahDetail.ayahs.map((ayah, index) => ({
       ayah,
       translation: translationByPreference?.[index] ?? surahMeta?.english?.[index],
     }));
-  }, [settings.audioPreference, surahDetail, surahMeta?.english, surahMeta?.urdu]);
+  }, [settings.audioPreference, surahDetail, surahMeta?.english, surahMeta?.hindi, surahMeta?.urdu]);
 
   const weightedAyahProgressEnds = useMemo(() => {
     const weights = ayahs.map(({ translation }) =>
@@ -951,6 +963,14 @@ export default function QuranReaderPage({
         setSelectedReciter(0);
         setUrduAyahNumber(nextAyahNumber);
         setAudioSrc(buildUrduAyahAudioUrl(surahId, nextAyahNumber));
+        setLoadingAudioSource(false);
+        return;
+      }
+
+      if (settings.audioPreference === 'hi') {
+        setAudioReciters([]);
+        setSelectedReciter(0);
+        setAudioSrc(buildHindiTranslationAudioUrl(surahId));
         setLoadingAudioSource(false);
         return;
       }
@@ -1415,7 +1435,8 @@ export default function QuranReaderPage({
   const isContinuousReading = settings.readingMode === 'continuous';
   const isArabicRecitationPlaying =
     isPlaying && settings.audioPreference === 'ar';
-  const isUrduVoicePlaying = isPlaying && settings.audioPreference === 'tr';
+  const isTranslationVoicePlaying =
+    isPlaying && settings.audioPreference !== 'ar';
   const readingModeAyahs = visibleAyahs;
   const readingModeTotalAyahs = highlightQuery
     ? filteredAyahs.length
@@ -1431,10 +1452,10 @@ export default function QuranReaderPage({
     readingModeAyahs.length + nextReadingBatchSize,
     readingModeTotalAyahs
   );
-  const translationLanguage = settings.audioPreference === 'tr' ? 'Urdu' : 'English';
   const selectedTranslation =
     TRANSLATION_OPTIONS.find((option) => option.value === settings.audioPreference) ??
     TRANSLATION_OPTIONS[0];
+  const translationLanguage = selectedTranslation.language;
 
   const closeTranslationPicker = useCallback(() => {
     setIsTranslationPickerOpen(false);
@@ -1470,10 +1491,10 @@ export default function QuranReaderPage({
   }, [closeTranslationPicker, isTranslationPickerOpen]);
 
   useEffect(() => {
-    if (isContinuousReading && isUrduVoicePlaying) {
+    if (isContinuousReading && isTranslationVoicePlaying) {
       setShowContinuousTranslations(true);
     }
-  }, [isContinuousReading, isUrduVoicePlaying]);
+  }, [isContinuousReading, isTranslationVoicePlaying]);
 
   useEffect(() => {
     if (
@@ -1518,7 +1539,9 @@ export default function QuranReaderPage({
   const activeReciterName =
     settings.audioPreference === 'tr'
       ? 'Urdu Translation · Shamshad Ali Khan'
-      : audioReciters[selectedReciter]?.reciter ?? 'Arabic Recitation';
+      : settings.audioPreference === 'hi'
+        ? 'Hindi Translation Audio'
+        : audioReciters[selectedReciter]?.reciter ?? 'Arabic Recitation';
   const currentSurahPath = useMemo(() => {
     const targetSurah = surahs.find((entry) => entry.id === surahId);
     return targetSurah
@@ -2042,15 +2065,15 @@ export default function QuranReaderPage({
                           }
 
                           const isUrduTranslation = settings.audioPreference === 'tr';
-                          const isUrduAudioActive =
-                            isUrduVoicePlaying &&
+                          const isTranslationAudioActive =
+                            isTranslationVoicePlaying &&
                             activeAudioAyahNumber === ayah.numberInSurah;
                           return (
                             <article
                               key={`translation-${ayah.number}`}
-                              aria-current={isUrduAudioActive ? 'true' : undefined}
+                              aria-current={isTranslationAudioActive ? 'true' : undefined}
                               className={`continuous-translation-ayah relative px-4 py-4 sm:px-5 ${
-                                isUrduAudioActive ? 'is-active' : ''
+                                isTranslationAudioActive ? 'is-active' : ''
                               }`}
                             >
                               <div className={`mb-2 flex items-center gap-2 ${isUrduTranslation ? 'justify-end' : ''}`}>
@@ -2060,7 +2083,7 @@ export default function QuranReaderPage({
                                 <span className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-[var(--color-muted-text)]">
                                   Ayah {ayah.numberInSurah}
                                 </span>
-                                {isUrduAudioActive ? (
+                                {isTranslationAudioActive ? (
                                   <span className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
                                     <AudioLines className="size-3.5" aria-hidden="true" />
                                     Now playing
@@ -2068,7 +2091,7 @@ export default function QuranReaderPage({
                                 ) : null}
                               </div>
                               <p
-                                lang={isUrduTranslation ? 'ur' : 'en'}
+                                lang={isUrduTranslation ? 'ur' : settings.audioPreference === 'hi' ? 'hi' : 'en'}
                                 dir={isUrduTranslation ? 'rtl' : 'ltr'}
                                 className={`text-sm leading-7 text-[color-mix(in_oklab,var(--color-text),var(--color-muted-text)_16%)] ${
                                   isUrduTranslation
@@ -2322,7 +2345,7 @@ export default function QuranReaderPage({
                             }`}
                           >
                             <Languages className="size-3.5" aria-hidden="true" />
-                            {isUrduTranslation ? 'Urdu translation' : 'English translation'}
+                            {translationLanguage} translation
                           </div>
                           <p
                             className={`text-[0.95rem] leading-7 text-[color-mix(in_oklab,var(--color-text),var(--color-muted-text)_20%)] ${
@@ -2331,6 +2354,7 @@ export default function QuranReaderPage({
                                 : 'max-w-[68ch]'
                             }`}
                             dir={isUrduTranslation ? 'rtl' : 'ltr'}
+                            lang={isUrduTranslation ? 'ur' : settings.audioPreference === 'hi' ? 'hi' : 'en'}
                           >
                             <HighlightText text={translation} query={highlightQuery} />
                           </p>

@@ -63,9 +63,9 @@ interface SurahListContext {
   lastRead: LastReadEntry | null;
   setLastRead: (entry: LastReadEntry) => boolean;
 
-  language: 'ar' | 'tr';
-  addLanguage: (len: 'ar' | 'tr') => void;
-  handleLanguageChange: (lang: 'ar' | 'tr') => void;
+  language: 'ar' | 'tr' | 'hi';
+  addLanguage: (len: 'ar' | 'tr' | 'hi') => void;
+  handleLanguageChange: (lang: 'ar' | 'tr' | 'hi') => void;
   handleSetPlaying: (playing?: boolean) => void;
   isPlaying: boolean;
 }
@@ -532,14 +532,14 @@ const SurhasListProvider = ({ children }: PropsWithChildren) => {
   }, [lastRead]);
 
   const addLanguage = useCallback(
-    (language: 'ar' | 'tr') => {
+    (language: 'ar' | 'tr' | 'hi') => {
       setAudioPreference(language);
     },
     [setAudioPreference]
   );
 
   const handleLanguageChange = useCallback(
-    (language: 'ar' | 'tr') => {
+    (language: 'ar' | 'tr' | 'hi') => {
       setAudioPreference(language);
     },
     [setAudioPreference]

@@ -15,6 +15,10 @@ import { useAppSettings } from '@/components/providers/app-settings-provider';
 import { useSurahContext } from '@/hooks/useSurahContext';
 import { fetchSurahMeta } from '@/lib/quran-api';
 import { clampRange, isValidSurahId } from '@/lib/quran-utils';
+import {
+  buildHindiTranslationAudioUrl,
+  buildUrduTranslationAudioUrl,
+} from '@/lib/quran-routing';
 import type { QuranPlayerContextValue, QuranPlayerPrefs, LoadSurahOptions } from '@/types/player';
 import type { SurahAudioOption } from '@/types/quran';
 
@@ -28,12 +32,6 @@ const DEFAULT_PREFS: QuranPlayerPrefs = {
 const TOTAL_SURAHS = 114;
 
 const QuranPlayerContext = createContext<QuranPlayerContextValue | null>(null);
-
-function getTranslationAudioUrl(surahNumber: number) {
-  return `https://ia801503.us.archive.org/28/items/quran_urdu_audio_only/${String(
-    surahNumber
-  ).padStart(3, '0')}.ogg`;
-}
 
 export function QuranPlayerProvider({ children }: PropsWithChildren) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -50,7 +48,7 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
   const [activeSurahId, setActiveSurahId] = useState<number>(() =>
     isValidSurahId(pageNo) ? pageNo : 1
   );
-  const [sourceType, setSourceType] = useState<'ar' | 'tr'>(settings.audioPreference);
+  const [sourceType, setSourceType] = useState<'ar' | 'tr' | 'hi'>(settings.audioPreference);
   const [sourceUrl, setSourceUrl] = useState<string>('');
   const [reciterName, setReciterName] = useState<string>('');
   const [reciters, setReciters] = useState<SurahAudioOption[]>([]);
@@ -250,12 +248,18 @@ export function QuranPlayerProvider({ children }: PropsWithChildren) {
       setSourceError(null);
       setSourceType(settings.audioPreference);
 
-      if (settings.audioPreference === 'tr') {
+      if (settings.audioPreference === 'tr' || settings.audioPreference === 'hi') {
         const countFromList = surahs.find((item) => item.id === activeSurahId)?.totalAyah ?? 0;
         ayahCountRef.current = countFromList;
         setReciters([]);
-        setReciterName('Urdu Translation');
-        setSourceUrl(getTranslationAudioUrl(activeSurahId));
+        setReciterName(
+          settings.audioPreference === 'tr' ? 'Urdu Translation' : 'Hindi Translation'
+        );
+        setSourceUrl(
+          settings.audioPreference === 'tr'
+            ? buildUrduTranslationAudioUrl(activeSurahId)
+            : buildHindiTranslationAudioUrl(activeSurahId)
+        );
         setIsLoadingSource(false);
         return;
       }

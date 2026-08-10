@@ -15,7 +15,7 @@ export interface LoadSurahOptions {
 
 export interface QuranPlayerContextValue {
   activeSurahId: number;
-  sourceType: 'ar' | 'tr';
+  sourceType: 'ar' | 'tr' | 'hi';
   surahTitle: string;
   reciterName: string;
   reciters: SurahAudioOption[];

@@ -74,3 +74,8 @@ export function buildUrduAyahAudioUrl(surahId: number, ayahNumber: number): stri
   const ayahPart = String(ayahNumber).padStart(3, '0');
   return `https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/${surahPart}${ayahPart}.mp3`;
 }
+
+export function buildHindiTranslationAudioUrl(surahId: number): string {
+  const surahPart = String(surahId).padStart(3, '0');
+  return `https://archive.org/download/holy-Quran-translatd-hindi--langauge--without-arabic--114-part/${surahPart}_Hindi_Audio_Quran_Translation_Mp3_Quran_VideoQuran.Net.mp3`;
+}

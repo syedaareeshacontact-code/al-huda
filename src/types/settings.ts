@@ -4,7 +4,7 @@ export type ReadingMode = 'ayah' | 'continuous';
 
 export type ArabicFont = 'uthmaniHafs' | 'amiriQuran' | 'notoNaskh' | 'scheherazade';
 
-export type AudioPreference = 'ar' | 'tr';
+export type AudioPreference = 'ar' | 'tr' | 'hi';
 
 export interface PrayerReminderSettings {
   enabled: boolean;

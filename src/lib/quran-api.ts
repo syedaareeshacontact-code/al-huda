@@ -15,6 +15,7 @@ const surahWordAudioInFlight = new Map<number, Promise<SurahWordAudioPayload>>()
 const QURAN_COM_API = 'https://api.quran.com/api/v4';
 const ENGLISH_TRANSLATION_ID = 20; // Sahih International
 const URDU_TRANSLATION_ID = 234; // Fatah Muhammad Jalandhari (Urdu)
+const HINDI_TRANSLATION_ID = 122; // Maulana Azizul Haque al-Umari (Hindi)
 // The longest Surah has 286 ayahs. Quran.com's verse endpoint defaults to 10,
 // so request enough rows to keep Arabic and every translation in sync.
 const CHAPTER_VERSES_PER_PAGE = 300;
@@ -84,7 +85,7 @@ export async function fetchSurahMeta(surahId: number, signal?: AbortSignal): Pro
       cache: 'force-cache',
     }),
     fetch(
-      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
+      `${QURAN_COM_API}/verses/by_chapter/${surahId}?language=en&translations=${ENGLISH_TRANSLATION_ID},${URDU_TRANSLATION_ID},${HINDI_TRANSLATION_ID}&per_page=${CHAPTER_VERSES_PER_PAGE}`,
       {
         signal,
         cache: 'force-cache',
@@ -122,14 +123,17 @@ export async function fetchSurahMeta(surahId: number, signal?: AbortSignal): Pro
       
       const english: string[] = [];
       const urdu: string[] = [];
+      const hindi: string[] = [];
 
       verses.forEach((v) => {
         const translations = v.translations || [];
         const englishTrans = translations.find((t) => t.resource_id === ENGLISH_TRANSLATION_ID);
         const urduTrans = translations.find((t) => t.resource_id === URDU_TRANSLATION_ID);
+        const hindiTrans = translations.find((t) => t.resource_id === HINDI_TRANSLATION_ID);
 
         english.push(englishTrans?.text?.replace(/<[^>]*>/g, '') || '');
         urdu.push(urduTrans?.text?.replace(/<[^>]*>/g, '') || '');
+        hindi.push(hindiTrans?.text?.replace(/<[^>]*>/g, '') || '');
       });
 
       const audioOptions = await fetchRecitationOptions(surahId, signal);
@@ -148,6 +152,7 @@ export async function fetchSurahMeta(surahId: number, signal?: AbortSignal): Pro
         surahNo: surahId,
         english,
         urdu,
+        hindi,
         arabic1: [],
         audio,
       };

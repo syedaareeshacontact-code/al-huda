@@ -71,7 +71,10 @@ function normalizeUserSettings(input: Partial<UserSettings>): UserSettings {
         ? input.arabicFont
         : 'uthmaniHafs',
     arabicFontScale: clampScale(Number(input.arabicFontScale ?? DEFAULT_SETTINGS.arabicFontScale)),
-    audioPreference: input.audioPreference === 'tr' ? 'tr' : 'ar',
+    audioPreference:
+      input.audioPreference === 'tr' || input.audioPreference === 'hi'
+        ? input.audioPreference
+        : 'ar',
     autoPlayAudio: Boolean(input.autoPlayAudio),
     themeMode:
       input.themeMode === 'light' || input.themeMode === 'system' ? input.themeMode : 'dark',
