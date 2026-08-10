@@ -369,7 +369,6 @@ export default function QuranReaderPage({
     hasInitialSurahContent ? initialSurahMeta : null
   );
   const [searchInput, setSearchInput] = useState('');
-  const [showContinuousTranslations, setShowContinuousTranslations] = useState(true);
   const [visibleAyahCount, setVisibleAyahCount] = useState(INITIAL_VISIBLE_AYAHS);
   const [pendingAyahScroll, setPendingAyahScroll] = useState<{
     ayahNumber: number;
@@ -1435,8 +1434,6 @@ export default function QuranReaderPage({
   const isContinuousReading = settings.readingMode === 'continuous';
   const isArabicRecitationPlaying =
     isPlaying && settings.audioPreference === 'ar';
-  const isTranslationVoicePlaying =
-    isPlaying && settings.audioPreference !== 'ar';
   const readingModeAyahs = visibleAyahs;
   const readingModeTotalAyahs = highlightQuery
     ? filteredAyahs.length
@@ -1489,12 +1486,6 @@ export default function QuranReaderPage({
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [closeTranslationPicker, isTranslationPickerOpen]);
-
-  useEffect(() => {
-    if (isContinuousReading && isTranslationVoicePlaying) {
-      setShowContinuousTranslations(true);
-    }
-  }, [isContinuousReading, isTranslationVoicePlaying]);
 
   useEffect(() => {
     if (
@@ -1759,7 +1750,8 @@ export default function QuranReaderPage({
                 </div>
               ) : null}
 
-              <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_18%)] p-4">
+              {!isContinuousReading ? (
+                <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_18%)] p-4">
                 <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div>
                     <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
@@ -1839,7 +1831,8 @@ export default function QuranReaderPage({
                   </div>
                 </div>
 
-              </div>
+                </div>
+              ) : null}
             </CardHeader>
           </Card>
 
@@ -1930,17 +1923,6 @@ export default function QuranReaderPage({
                       </CardDescription>
                     </div>
 
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={showContinuousTranslations ? 'default' : 'outline'}
-                      onClick={() => setShowContinuousTranslations((current) => !current)}
-                      aria-expanded={showContinuousTranslations}
-                      className="min-h-10 shrink-0 rounded-xl px-3"
-                    >
-                      <Languages className="size-4" aria-hidden="true" />
-                      {showContinuousTranslations ? 'Hide translation' : 'Show translation'}
-                    </Button>
                   </div>
                 </CardHeader>
 
@@ -2040,73 +2022,6 @@ export default function QuranReaderPage({
                       </Button>
                     </div>
                   )}
-
-                  {showContinuousTranslations && readingModeAyahs.some(({ translation }) => translation) ? (
-                    <section
-                      id="continuous-translation-companion"
-                      className="mt-5 overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--color-border),var(--color-accent)_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_22%)]"
-                      aria-labelledby="continuous-translation-title"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[color-mix(in_oklab,var(--color-border),transparent_12%)] bg-[color-mix(in_oklab,var(--color-surface),white_9%)] px-4 py-3 sm:px-5">
-                        <div className="flex items-center gap-2">
-                          <Languages className="size-4 text-[var(--color-accent)]" aria-hidden="true" />
-                          <h3 id="continuous-translation-title" className="text-sm font-bold text-[var(--color-heading)]">
-                            {translationLanguage} translation companion
-                          </h3>
-                        </div>
-                        <span className="text-xs text-[var(--color-muted-text)]">
-                          Follow each ayah at your own pace
-                        </span>
-                      </div>
-                      <div className="grid gap-px bg-[color-mix(in_oklab,var(--color-border),transparent_22%)] sm:grid-cols-2">
-                        {readingModeAyahs.map(({ ayah, translation }) => {
-                          if (!translation) {
-                            return null;
-                          }
-
-                          const isUrduTranslation = settings.audioPreference === 'tr';
-                          const isTranslationAudioActive =
-                            isTranslationVoicePlaying &&
-                            activeAudioAyahNumber === ayah.numberInSurah;
-                          return (
-                            <article
-                              key={`translation-${ayah.number}`}
-                              aria-current={isTranslationAudioActive ? 'true' : undefined}
-                              className={`continuous-translation-ayah relative px-4 py-4 sm:px-5 ${
-                                isTranslationAudioActive ? 'is-active' : ''
-                              }`}
-                            >
-                              <div className={`mb-2 flex items-center gap-2 ${isUrduTranslation ? 'justify-end' : ''}`}>
-                                <span className="inline-flex size-6 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_86%)] text-[0.68rem] font-bold tabular-nums text-[var(--color-accent-soft)]">
-                                  {ayah.numberInSurah}
-                                </span>
-                                <span className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-[var(--color-muted-text)]">
-                                  Ayah {ayah.numberInSurah}
-                                </span>
-                                {isTranslationAudioActive ? (
-                                  <span className="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
-                                    <AudioLines className="size-3.5" aria-hidden="true" />
-                                    Now playing
-                                  </span>
-                                ) : null}
-                              </div>
-                              <p
-                                lang={isUrduTranslation ? 'ur' : settings.audioPreference === 'hi' ? 'hi' : 'en'}
-                                dir={isUrduTranslation ? 'rtl' : 'ltr'}
-                                className={`text-sm leading-7 text-[color-mix(in_oklab,var(--color-text),var(--color-muted-text)_16%)] ${
-                                  isUrduTranslation
-                                    ? 'urdu-font text-right text-[1.04rem] leading-loose'
-                                    : 'max-w-[66ch]'
-                                }`}
-                              >
-                                <HighlightText text={translation} query={highlightQuery} />
-                              </p>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  ) : null}
 
                   {hasMoreReadingAyahs && readingModeAyahs.length > 0 ? (
                     <div

@@ -493,7 +493,7 @@ export default function SiteHeader() {
                   className="rounded-full object-cover"
                 />
               </span>
-              <div className="hidden min-w-0 leading-none sm:block">
+              <div className="min-w-0 leading-none">
                 <span className="block truncate font-display text-base font-semibold tracking-wide text-[var(--color-heading)] sm:text-lg">
                   Read al Quran
                 </span>
