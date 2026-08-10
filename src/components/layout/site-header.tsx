@@ -12,7 +12,6 @@ import {
   Menu,
   Moon,
   ShieldCheck,
-  Star,
   Sun,
   X,
 } from 'lucide-react';
@@ -478,11 +477,23 @@ export default function SiteHeader() {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent),transparent)] opacity-45" />
 
           <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
-            <Link href="/" prefetch={false} className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline sm:gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(140deg,var(--color-accent-soft),var(--color-accent))] text-[var(--color-accent-foreground)] shadow-[var(--shadow-soft)]">
-                <Star className="h-4 w-4" />
+            <Link
+              href="/"
+              prefetch={false}
+              aria-label="Read al Quran home"
+              className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline sm:gap-3"
+            >
+              <span className="relative inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[var(--color-surface-elevated)] p-0.5 shadow-[0_8px_20px_rgba(0,0,0,0.2)] ring-1 ring-[color-mix(in_oklab,var(--color-accent),transparent_78%)]">
+                <Image
+                  src="/logos/logo1.png"
+                  alt=""
+                  fill
+                  sizes="40px"
+                  priority
+                  className="rounded-full object-cover"
+                />
               </span>
-              <div className="min-w-0 leading-none">
+              <div className="hidden min-w-0 leading-none sm:block">
                 <span className="block truncate font-display text-base font-semibold tracking-wide text-[var(--color-heading)] sm:text-lg">
                   Read al Quran
                 </span>
@@ -614,8 +625,14 @@ export default function SiteHeader() {
           <aside className="absolute inset-y-0 right-0 flex w-full max-w-[min(100%,22rem)] flex-col border-l border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_50%)] bg-[var(--color-bg)] shadow-[0_0_60px_rgba(0,0,0,0.4)] animate-slide-in-right">
             <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3.5">
               <Link href="/" prefetch={false} onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 no-underline">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(140deg,var(--color-accent-soft),var(--color-accent))] text-[var(--color-accent-foreground)]">
-                  <Star className="h-3.5 w-3.5" />
+                <span className="relative inline-flex h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[var(--color-surface-elevated)] p-0.5 ring-1 ring-[color-mix(in_oklab,var(--color-accent),transparent_78%)]">
+                  <Image
+                    src="/logos/logo1.png"
+                    alt=""
+                    fill
+                    sizes="36px"
+                    className="rounded-full object-cover"
+                  />
                 </span>
                 <span className="font-display text-base font-semibold text-[var(--color-heading)]">Read al Quran</span>
               </Link>
