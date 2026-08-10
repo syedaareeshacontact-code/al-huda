@@ -212,4 +212,4 @@ Keep documentation small and durable:
   values in documentation, examples, source code, or commits.
 - Before changing behavior, inspect the relevant code and tests. After changing
   behavior, run checks proportional to the risk and update these documents only
-  when their source-of-truth information changed.
+  when their source-of-truth information  changed changed.
