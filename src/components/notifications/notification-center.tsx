@@ -990,10 +990,6 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
 
   const isPushSuccessMessage = pushMessage === PUSH_ENABLE_SUCCESS_MESSAGE;
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return (
     <div ref={panelRef} className="relative">
       <button

@@ -38,6 +38,7 @@ describe('technical quality regressions', () => {
     const notificationCenter = readSource(
       'src/components/notifications/notification-center.tsx'
     );
+    const siteHeader = readSource('src/components/layout/site-header.tsx');
     const hadithNudge = readSource('src/components/hadith/HadithQuranNudge.tsx');
     const home = readSource('src/components/home/index.tsx');
     const surahIndex = readSource('src/components/quran/SurahIndexClient.tsx');
@@ -53,6 +54,10 @@ describe('technical quality regressions', () => {
     );
     expect(notificationCenter.match(/Notification\.requestPermission/g)).toHaveLength(1);
     expect(notificationCenter).toContain("'/api/push/guest-subscribe'");
+    expect(notificationCenter).not.toContain("if (!isAuthenticated) {\n    return null;");
+    expect(siteHeader).toContain(
+      '<NotificationCenter isAuthenticated={Boolean(sessionUser)} />'
+    );
     expect(hadithNudge).not.toContain("'use client'");
     expect(hadithNudge).not.toContain('className="fixed');
     expect(home).not.toContain('<HomeFeatureTour');

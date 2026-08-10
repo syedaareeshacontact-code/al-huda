@@ -577,7 +577,7 @@ export default function SiteHeader() {
                 )}
               </div>
 
-              {sessionUser ? <NotificationCenter isAuthenticated /> : null}
+              <NotificationCenter isAuthenticated={Boolean(sessionUser)} />
               <ThemeBtn />
 
               <button
