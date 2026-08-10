@@ -35,18 +35,24 @@ describe('technical quality regressions', () => {
     const guestEnrollment = readSource(
       'src/components/notifications/guest-push-enrollment.tsx'
     );
+    const notificationCenter = readSource(
+      'src/components/notifications/notification-center.tsx'
+    );
     const hadithNudge = readSource('src/components/hadith/HadithQuranNudge.tsx');
     const home = readSource('src/components/home/index.tsx');
     const surahIndex = readSource('src/components/quran/SurahIndexClient.tsx');
 
-    const permissionRequest = 'const permission = await Notification.requestPermission()';
-    expect(guestEnrollment).toContain('const enableNotifications = async () =>');
-    expect(guestEnrollment).toContain(permissionRequest);
-    expect(guestEnrollment.indexOf(permissionRequest)).toBeGreaterThan(
-      guestEnrollment.indexOf('const enableNotifications = async () =>')
+    const permissionRequest = 'await Notification.requestPermission()';
+    expect(guestEnrollment).not.toContain('PUSH_PROMPT_DELAY_MS');
+    expect(guestEnrollment).not.toContain('setPromptVisible(true)');
+    expect(guestEnrollment).not.toContain('Notification.requestPermission');
+    expect(notificationCenter).toContain('const enableWebsitePush = async () =>');
+    expect(notificationCenter).toContain(permissionRequest);
+    expect(notificationCenter.indexOf(permissionRequest)).toBeGreaterThan(
+      notificationCenter.indexOf('const enableWebsitePush = async () =>')
     );
-    expect(guestEnrollment.match(/Notification\.requestPermission/g)).toHaveLength(1);
-    expect(guestEnrollment).not.toContain("addEventListener('pointerdown'");
+    expect(notificationCenter.match(/Notification\.requestPermission/g)).toHaveLength(1);
+    expect(notificationCenter).toContain("'/api/push/guest-subscribe'");
     expect(hadithNudge).not.toContain("'use client'");
     expect(hadithNudge).not.toContain('className="fixed');
     expect(home).not.toContain('<HomeFeatureTour');

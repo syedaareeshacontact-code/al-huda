@@ -28,6 +28,7 @@ import { createPortal } from 'react-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { getSiteDeviceId } from '@/lib/engagement/client-device-id';
 import type { NotificationType, UserNotification } from '@/types/notifications';
 import {
   getCitiesForCountry,
@@ -87,6 +88,10 @@ interface WebPushPublicKeyResponse {
   publicKey?: string;
 }
 
+interface GuestPushSubscriptionResponse {
+  owner?: 'guest' | 'user';
+}
+
 interface NotificationSettings {
   prayerEnabled: boolean;
   prayerCity: string;
@@ -98,6 +103,7 @@ type NotificationPanelView = 'inbox' | 'preferences';
 
 const SETTINGS_KEY = 'alhuda-notification-settings';
 const PRAYER_SENT_KEY = 'alhuda-prayer-notifications-sent';
+const PUSH_OWNER_KEY = 'alhuda:push-subscription-owner';
 const PUSH_ENDPOINT_KEY = 'alhuda:push-subscription-endpoint';
 const PUSH_PERMISSION_DENIED_MESSAGE = 'Notification permission was not allowed.';
 const PUSH_ENABLE_SUCCESS_MESSAGE = 'Notifications are on. Thanks.';
@@ -443,17 +449,25 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         return;
       }
 
-      await fetch('/api/push/subscribe', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentBrowser: true,
-          ...(subscriptionEndpoint ? { endpoint: subscriptionEndpoint } : {}),
-        }),
-      }).catch(() => undefined);
+      await fetch(
+        isAuthenticated ? '/api/push/subscribe' : '/api/push/guest-subscribe',
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(!isAuthenticated ? { deviceId: getSiteDeviceId() } : {}),
+            currentBrowser: true,
+            ...(subscriptionEndpoint ? { endpoint: subscriptionEndpoint } : {}),
+          }),
+        }
+      ).catch(() => undefined);
 
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(PUSH_ENDPOINT_KEY);
+        const storedOwner = window.localStorage.getItem(PUSH_OWNER_KEY);
+        if (isAuthenticated || storedOwner === 'guest') {
+          window.localStorage.removeItem(PUSH_OWNER_KEY);
+        }
       }
     },
     [isAuthenticated]
@@ -578,17 +592,21 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
           applicationServerKey: urlBase64ToUint8Array(webPushPublicKey),
         }));
 
-      const response = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...subscription.toJSON(),
-          timeZone: getBrowserTimeZone(),
-          contentPreference: getPushContentPreferenceFromPath(pathname),
-          quranReminderEnabled: true,
-          intervalMinutes: 2,
-        }),
-      });
+      const response = await fetch(
+        isAuthenticated ? '/api/push/subscribe' : '/api/push/guest-subscribe',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(!isAuthenticated ? { deviceId: getSiteDeviceId() } : {}),
+            ...subscription.toJSON(),
+            timeZone: getBrowserTimeZone(),
+            contentPreference: getPushContentPreferenceFromPath(pathname),
+            quranReminderEnabled: true,
+            intervalMinutes: 2,
+          }),
+        }
+      );
 
       if (!response.ok) {
         clearPushSuccessTimer();
@@ -596,7 +614,14 @@ export default function NotificationCenter({ isAuthenticated }: NotificationCent
         return;
       }
 
+      const guestPayload = isAuthenticated
+        ? null
+        : ((await response.json().catch(() => null)) as GuestPushSubscriptionResponse | null);
       window.localStorage.setItem(PUSH_ENDPOINT_KEY, subscription.endpoint);
+      window.localStorage.setItem(
+        PUSH_OWNER_KEY,
+        isAuthenticated ? 'user' : guestPayload?.owner ?? 'guest'
+      );
       setPushEnabled(true);
       showPushEnabledThanks();
     } catch {
