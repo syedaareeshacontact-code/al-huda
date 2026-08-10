@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   AudioLines,
   BookCheck,
@@ -45,6 +46,7 @@ import type {
   SurahDetail,
   SurahMeta,
 } from '@/types/quran';
+import type { AudioPreference } from '@/types/settings';
 import { useAppSettings } from '@/components/providers/app-settings-provider';
 import { clampRange, isValidSurahId } from '@/lib/quran-utils';
 import {
@@ -95,6 +97,29 @@ const AYAH_RENDER_BATCH = 40;
 const AUDIO_USAGE_TRACK_INTERVAL_MS = 5 * 60 * 1000;
 const AUDIO_USAGE_MIN_REPORT_SECONDS = 30;
 const AUDIO_USAGE_MAX_REPORT_SECONDS = 5 * 60;
+
+const TRANSLATION_OPTIONS: Array<{
+  value: AudioPreference;
+  language: string;
+  nativeLabel: string;
+  code: string;
+  description: string;
+}> = [
+  {
+    value: 'ar',
+    language: 'English',
+    nativeLabel: 'English translation',
+    code: 'EN',
+    description: 'Arabic recitation with English translation',
+  },
+  {
+    value: 'tr',
+    language: 'Urdu',
+    nativeLabel: 'اردو ترجمہ',
+    code: 'UR',
+    description: 'Arabic recitation with Urdu translation',
+  },
+];
 
 function getVisibleCountForAyah(ayahNumber: number) {
   return Math.max(
@@ -323,6 +348,7 @@ export default function QuranReaderPage({
     settings,
     setReadingMode,
     setAudioPreference,
+    isAuthenticated,
   } = useAppSettings();
 
   const hasInitialSurahContent = initialSurahId === surahId && Boolean(initialSurahDetail && initialSurahMeta);
@@ -367,6 +393,7 @@ export default function QuranReaderPage({
 
   const [audioSrc, setAudioSrc] = useState('');
   const [audioRequested, setAudioRequested] = useState(false);
+  const [isTranslationPickerOpen, setIsTranslationPickerOpen] = useState(false);
   const [audioReciters, setAudioReciters] = useState<SurahAudioOption[]>([]);
   const [selectedReciter, setSelectedReciter] = useState(0);
   const [loadingAudioSource, setLoadingAudioSource] = useState(false);
@@ -1405,6 +1432,42 @@ export default function QuranReaderPage({
     readingModeTotalAyahs
   );
   const translationLanguage = settings.audioPreference === 'tr' ? 'Urdu' : 'English';
+  const selectedTranslation =
+    TRANSLATION_OPTIONS.find((option) => option.value === settings.audioPreference) ??
+    TRANSLATION_OPTIONS[0];
+
+  const closeTranslationPicker = useCallback(() => {
+    setIsTranslationPickerOpen(false);
+  }, []);
+
+  const selectTranslation = useCallback(
+    (value: AudioPreference) => {
+      setAudioPreference(value);
+      closeTranslationPicker();
+    },
+    [closeTranslationPicker, setAudioPreference]
+  );
+
+  useEffect(() => {
+    if (!isTranslationPickerOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeTranslationPicker();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [closeTranslationPicker, isTranslationPickerOpen]);
 
   useEffect(() => {
     if (isContinuousReading && isUrduVoicePlaying) {
@@ -1720,23 +1783,36 @@ export default function QuranReaderPage({
                       </Button>
                     ) : null}
                   </div>
-                  <div className="inline-flex w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 md:w-auto">
-                    <Button
-                      size="sm"
-                      variant={settings.audioPreference === 'ar' ? 'default' : 'outline'}
-                      onClick={() => setAudioPreference('ar')}
-                      className="flex-1 border-0 shadow-none md:flex-none"
+                  <div className="w-full md:w-[15.5rem]">
+                    <p className="mb-1.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[var(--color-muted-text)]">
+                      Translation language
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsTranslationPickerOpen(true)}
+                      aria-haspopup="dialog"
+                      aria-expanded={isTranslationPickerOpen}
+                      aria-controls="translation-language-picker"
+                      aria-label="Choose translation language"
+                      className="group flex min-h-12 w-full items-center gap-3 rounded-2xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_58%)] bg-[color-mix(in_oklab,var(--color-surface),white_8%)] px-3 py-2 text-left shadow-sm transition hover:border-[var(--color-accent-soft)] hover:bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_92%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
                     >
-                      Arabic + English
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={settings.audioPreference === 'tr' ? 'default' : 'outline'}
-                      onClick={() => setAudioPreference('tr')}
-                      className="flex-1 border-0 shadow-none md:flex-none"
-                    >
-                      Arabic + Urdu
-                    </Button>
+                      <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-[color-mix(in_oklab,var(--color-accent),transparent_62%)] bg-[color-mix(in_oklab,var(--color-accent),transparent_88%)] text-[0.62rem] font-extrabold tracking-[0.08em] text-[var(--color-accent-soft)]">
+                        {selectedTranslation.code}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-[var(--color-heading)]">
+                          {selectedTranslation.language}
+                        </span>
+                        <span className="block truncate text-[0.68rem] text-[var(--color-muted-text)]">
+                          {selectedTranslation.nativeLabel}
+                        </span>
+                      </span>
+                      <ChevronDown
+                        className={`size-4 shrink-0 text-[var(--color-muted-text)] transition-transform ${
+                          isTranslationPickerOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
 
@@ -2499,6 +2575,117 @@ export default function QuranReaderPage({
           </aside>
         </div>
       ) : null}
+
+      {isTranslationPickerOpen && typeof document !== 'undefined'
+        ? createPortal(
+            <div className="fixed inset-0 z-[170]" role="presentation">
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+                onClick={closeTranslationPicker}
+                aria-label="Close translation language picker"
+              />
+              <aside
+                id="translation-language-picker"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="translation-language-picker-title"
+                className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[min(82dvh,34rem)] w-full max-w-xl flex-col overflow-hidden rounded-t-[1.75rem] border border-b-0 border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] bg-[var(--color-surface)] shadow-[0_-24px_72px_rgba(0,0,0,0.5)] animate-fade-up sm:bottom-5 sm:w-[30rem] sm:rounded-3xl sm:border"
+              >
+                <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-[var(--color-border)] sm:hidden" />
+                <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--color-border)] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--color-accent),var(--color-surface)_90%),var(--color-surface))] px-4 pb-4 pt-4 sm:px-5 sm:pt-5">
+                  <div className="min-w-0">
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">
+                      Reader language
+                    </p>
+                    <h2
+                      id="translation-language-picker-title"
+                      className="mt-1 font-display text-2xl leading-tight text-[var(--color-heading)]"
+                    >
+                      Choose translation
+                    </h2>
+                    <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted-text)]">
+                      Arabic text stays the same. Choose the translation you want beside it.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={closeTranslationPicker}
+                    aria-label="Close translation language picker"
+                    className="size-10 shrink-0 rounded-xl bg-[color-mix(in_oklab,var(--color-surface),transparent_8%)]"
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </Button>
+                </header>
+
+                <div className="space-y-2 overflow-y-auto overscroll-contain p-4 sm:p-5">
+                  {TRANSLATION_OPTIONS.map((option) => {
+                    const isSelected = option.value === settings.audioPreference;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => selectTranslation(option.value)}
+                        aria-pressed={isSelected}
+                        className={`group flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] ${
+                          isSelected
+                            ? 'border-[var(--color-accent)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_88%)] shadow-[var(--shadow-soft)]'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface-elevated)] hover:border-[var(--color-accent-soft)] hover:bg-[var(--color-surface-2)]'
+                        }`}
+                      >
+                        <span
+                          className={`grid size-11 shrink-0 place-items-center rounded-xl border text-xs font-extrabold tracking-[0.1em] ${
+                            isSelected
+                              ? 'border-[color-mix(in_oklab,var(--color-accent),transparent_50%)] bg-[var(--color-accent)] text-[var(--color-accent-foreground)]'
+                              : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent-soft)]'
+                          }`}
+                        >
+                          {option.code}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-[var(--color-heading)]">
+                              {option.language}
+                            </span>
+                            {isSelected ? (
+                              <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
+                                Selected
+                              </span>
+                            ) : null}
+                          </span>
+                          <span
+                            dir={option.value === 'tr' ? 'rtl' : 'ltr'}
+                            className="mt-0.5 block text-xs font-medium text-[var(--color-heading)]"
+                          >
+                            {option.nativeLabel}
+                          </span>
+                          <span className="mt-1 block text-[0.7rem] leading-relaxed text-[var(--color-muted-text)]">
+                            {option.description}
+                          </span>
+                        </span>
+                        {isSelected ? (
+                          <CheckCircle2 className="size-5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+                        ) : (
+                          <ChevronDown className="size-4 shrink-0 -rotate-90 text-[var(--color-muted-text)] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-center text-[0.68rem] leading-relaxed text-[var(--color-muted-text)] sm:px-5">
+                  {isAuthenticated
+                    ? 'Your selection is saved for future Quran reading.'
+                    : 'Your selection applies to this reading session.'}
+                </footer>
+              </aside>
+            </div>,
+            document.body
+          )
+        : null}
 
     </div>
   );

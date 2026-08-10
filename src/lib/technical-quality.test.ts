@@ -66,6 +66,18 @@ describe('technical quality regressions', () => {
     expect(surahIndex).not.toContain('<SurahFeatureTour');
   });
 
+  it('uses a dedicated translation selector instead of duplicate reader tabs', () => {
+    const reader = readSource('src/components/sidebar/index.tsx');
+
+    expect(reader).toContain('Translation language');
+    expect(reader).toContain('aria-label="Choose translation language"');
+    expect(reader).toContain('id="translation-language-picker"');
+    expect(reader).toContain('Choose translation');
+    expect(reader).toContain('onClick={() => selectTranslation(option.value)}');
+    expect(reader).not.toContain('Arabic + English');
+    expect(reader).not.toContain('Arabic + Urdu');
+  });
+
   it('keeps the shared missing-content state useful for visitors and crawlers', () => {
     const state = readSource('src/components/errors/public-content-state.tsx');
 
