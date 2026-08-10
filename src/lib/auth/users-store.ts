@@ -124,6 +124,10 @@ export interface StoredUser {
   imageUrl: string | null;
   passwordHash: string;
   passwordSalt: string;
+  emailVerifiedAt: string | null;
+  failedLoginAttempts: number;
+  lockedUntil: string | null;
+  sessionVersion: number;
   createdAt: string;
   updatedAt: string;
   loginCount: number;
@@ -756,6 +760,26 @@ function normalizeStoredUser(raw: unknown): StoredUser | null {
     imageUrl: normalizeImageUrl(candidate.imageUrl),
     passwordHash,
     passwordSalt,
+    // Accounts created before email verification was introduced are treated as
+    // verified so that a deployment cannot lock existing users out.
+    emailVerifiedAt:
+      candidate.emailVerifiedAt === undefined
+        ? createdAt
+        : candidate.emailVerifiedAt === null
+          ? null
+          : String(candidate.emailVerifiedAt),
+    failedLoginAttempts: Math.max(
+      0,
+      Math.floor(Number(candidate.failedLoginAttempts ?? 0) || 0)
+    ),
+    lockedUntil:
+      candidate.lockedUntil === null || candidate.lockedUntil === undefined
+        ? null
+        : String(candidate.lockedUntil),
+    sessionVersion: Math.max(
+      0,
+      Math.floor(Number(candidate.sessionVersion ?? 0) || 0)
+    ),
     createdAt,
     updatedAt: String(candidate.updatedAt ?? createdAt),
     loginCount: Number(candidate.loginCount ?? 0) || 0,
@@ -957,6 +981,10 @@ const userSchema = new Schema<StoredUser>(
     imageUrl: { type: String, default: null },
     passwordHash: { type: String, required: true },
     passwordSalt: { type: String, required: true },
+    emailVerifiedAt: { type: String, default: null },
+    failedLoginAttempts: { type: Number, min: 0, default: 0 },
+    lockedUntil: { type: String, default: null },
+    sessionVersion: { type: Number, min: 0, default: 0 },
     createdAt: { type: String, required: true },
     updatedAt: { type: String, required: true },
     loginCount: { type: Number, default: 0 },
@@ -1039,12 +1067,15 @@ export async function createUser(input: {
   imageUrl?: string | null;
   passwordHash: string;
   passwordSalt: string;
+  emailVerifiedAt?: string | null;
+  recordInitialLogin?: boolean;
   trafficSource?: UserTrafficSource | null;
 }): Promise<StoredUser> {
   const User = await ensureUsersModel();
   const normalizedEmail = normalizeEmail(input.email);
   const nowIso = new Date().toISOString();
   const trafficSource = normalizeUserTrafficSource(input.trafficSource);
+  const recordInitialLogin = input.recordInitialLogin !== false;
 
   const user: StoredUser = {
     id: randomUUID(),
@@ -1053,10 +1084,15 @@ export async function createUser(input: {
     imageUrl: normalizeImageUrl(input.imageUrl),
     passwordHash: input.passwordHash,
     passwordSalt: input.passwordSalt,
+    emailVerifiedAt:
+      input.emailVerifiedAt === undefined ? nowIso : input.emailVerifiedAt,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+    sessionVersion: 0,
     createdAt: nowIso,
     updatedAt: nowIso,
-    loginCount: 1,
-    lastLoginAt: nowIso,
+    loginCount: recordInitialLogin ? 1 : 0,
+    lastLoginAt: recordInitialLogin ? nowIso : null,
     acquisitionSource: trafficSource,
     lastLoginSource: trafficSource,
     trafficSources: trafficSource ? [trafficSource] : [],
@@ -1099,6 +1135,7 @@ export async function findOrCreateGoogleUser(input: {
       imageUrl: input.imageUrl,
       name: input.name,
       trafficSource: input.trafficSource,
+      emailVerified: true,
     });
     return updatedUser ?? existingUser;
   }
@@ -1111,20 +1148,31 @@ export async function findOrCreateGoogleUser(input: {
     imageUrl: input.imageUrl,
     passwordHash: digest.hash,
     passwordSalt: digest.salt,
+    emailVerifiedAt: new Date().toISOString(),
     trafficSource: input.trafficSource,
   });
 }
 
 export async function markUserLogin(
   userId: string,
-  profile?: { name?: string; imageUrl?: string | null; trafficSource?: UserTrafficSource | null }
+  profile?: {
+    name?: string;
+    imageUrl?: string | null;
+    trafficSource?: UserTrafficSource | null;
+    emailVerified?: boolean;
+  }
 ): Promise<StoredUser | null> {
   const User = await ensureUsersModel();
   const nowIso = new Date().toISOString();
   const $set: Record<string, unknown> = {
     lastLoginAt: nowIso,
     updatedAt: nowIso,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
   };
+  if (profile?.emailVerified) {
+    $set.emailVerifiedAt = nowIso;
+  }
   const imageUrl = normalizeImageUrl(profile?.imageUrl);
   if (imageUrl) {
     $set.imageUrl = imageUrl;
@@ -1157,6 +1205,104 @@ export async function markUserLogin(
     {
       new: true,
     }
+  )
+    .lean()
+    .exec();
+
+  return normalizeStoredUser(raw);
+}
+
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCK_DURATION_MS = 15 * 60 * 1000;
+
+export function getLoginLockSeconds(user: StoredUser, now = Date.now()) {
+  if (!user.lockedUntil) {
+    return 0;
+  }
+
+  const remainingMs = new Date(user.lockedUntil).getTime() - now;
+  return Number.isFinite(remainingMs) && remainingMs > 0
+    ? Math.max(1, Math.ceil(remainingMs / 1000))
+    : 0;
+}
+
+export async function recordFailedLoginAttempt(
+  user: StoredUser
+): Promise<{ locked: boolean; retryAfterSeconds: number }> {
+  const User = await ensureUsersModel();
+  const now = Date.now();
+  const previousLockExpired =
+    Boolean(user.lockedUntil) && new Date(user.lockedUntil as string).getTime() <= now;
+  const nextAttempts = (previousLockExpired ? 0 : user.failedLoginAttempts) + 1;
+  const shouldLock = nextAttempts >= MAX_FAILED_LOGIN_ATTEMPTS;
+  const lockedUntil = shouldLock
+    ? new Date(now + LOGIN_LOCK_DURATION_MS).toISOString()
+    : null;
+
+  await User.updateOne(
+    { id: user.id },
+    {
+      $set: {
+        failedLoginAttempts: shouldLock ? 0 : nextAttempts,
+        lockedUntil,
+        updatedAt: new Date(now).toISOString(),
+      },
+    }
+  ).exec();
+
+  return {
+    locked: shouldLock,
+    retryAfterSeconds: shouldLock
+      ? Math.ceil(LOGIN_LOCK_DURATION_MS / 1000)
+      : 0,
+  };
+}
+
+export async function markUserEmailVerified(
+  userId: string
+): Promise<StoredUser | null> {
+  const User = await ensureUsersModel();
+  const nowIso = new Date().toISOString();
+  const raw = await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $set: {
+        emailVerifiedAt: nowIso,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        updatedAt: nowIso,
+      },
+    },
+    { new: true }
+  )
+    .lean()
+    .exec();
+
+  return normalizeStoredUser(raw);
+}
+
+export async function updateUserPassword(
+  userId: string,
+  digest: { hash: string; salt: string }
+): Promise<StoredUser | null> {
+  const User = await ensureUsersModel();
+  const nowIso = new Date().toISOString();
+  const raw = await User.findOneAndUpdate(
+    { id: userId },
+    {
+      $set: {
+        passwordHash: digest.hash,
+        passwordSalt: digest.salt,
+        emailVerifiedAt: nowIso,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        updatedAt: nowIso,
+      },
+      $inc: {
+        sessionVersion: 1,
+      },
+    },
+    { new: true }
   )
     .lean()
     .exec();

@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import type { NextResponse } from 'next/server';
 
@@ -11,6 +11,7 @@ export interface SessionUser {
   name: string;
   email: string;
   imageUrl?: string | null;
+  sessionVersion?: number;
 }
 
 interface SessionPayload extends SessionUser {
@@ -18,7 +19,16 @@ interface SessionPayload extends SessionUser {
 }
 
 function getAuthSecret() {
-  return process.env.AUTH_SECRET || 'development-auth-secret-change-me';
+  const secret = process.env.AUTH_SECRET?.trim();
+  if (secret) {
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET is required in production.');
+  }
+
+  return 'development-auth-secret-change-me';
 }
 
 function base64UrlEncode(value: string) {
@@ -36,6 +46,7 @@ function signPayload(payload: string) {
 export function createSessionToken(user: SessionUser) {
   const payload: SessionPayload = {
     ...user,
+    sessionVersion: Math.max(0, Math.floor(user.sessionVersion ?? 0)),
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
 
@@ -51,8 +62,12 @@ export function verifySessionToken(token: string): SessionPayload | null {
     return null;
   }
 
-  const expectedSignature = signPayload(encodedPayload);
-  if (expectedSignature !== signature) {
+  const expectedSignature = Buffer.from(signPayload(encodedPayload));
+  const providedSignature = Buffer.from(signature);
+  if (
+    expectedSignature.length !== providedSignature.length ||
+    !timingSafeEqual(expectedSignature, providedSignature)
+  ) {
     return null;
   }
 

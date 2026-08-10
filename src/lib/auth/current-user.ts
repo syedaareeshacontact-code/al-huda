@@ -24,7 +24,16 @@ export async function getCurrentUser(options?: { includeDashboardSession?: boole
     return null;
   }
 
-  return findUserById(session.id);
+  const user = await findUserById(session.id);
+  if (!user) {
+    return null;
+  }
+
+  if ((session.sessionVersion ?? 0) !== user.sessionVersion) {
+    return null;
+  }
+
+  return user;
 }
 
 export async function getCurrentAdminUser(options?: { includeDashboardSession?: boolean }) {
