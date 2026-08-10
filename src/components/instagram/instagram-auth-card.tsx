@@ -12,9 +12,11 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import InstagramGoogleSignin from '@/components/instagram/instagram-google-signin';
+import InstagramEmailAuth from '@/components/instagram/instagram-email-auth';
 import { trackClientEvent } from '@/lib/analytics/client-events';
 import {
   getClientSession,
+  invalidateClientSession,
   type ClientSessionUser,
 } from '@/lib/client-session';
 import {
@@ -55,6 +57,14 @@ export default function InstagramAuthCard({
   const trackGoogleSigninStart = useCallback(() => {
     trackClientEvent('google_signin_click', analyticsParams);
   }, [analyticsParams]);
+
+  const handleEmailAuthenticated = useCallback((authenticatedUser: ClientSessionUser) => {
+    invalidateClientSession();
+    setUser(authenticatedUser);
+    setStatus('signed-in');
+    setShowSigninNotice(false);
+    window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
+  }, []);
 
   useEffect(() => {
     if (viewTrackedRef.current) return;
@@ -226,6 +236,10 @@ export default function InstagramAuthCard({
           />
         )}
       </div>
+
+      {status !== 'loading' ? (
+        <InstagramEmailAuth onAuthenticated={handleEmailAuthenticated} />
+      ) : null}
 
       <div className="mt-4 text-center">
         <p className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ig-heading)]">
