@@ -5,6 +5,7 @@ import { MapPin, Navigation, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Mosque } from '@/lib/overpass-api';
 import { getGoogleMapsDirectionsUrl, getGoogleMapsLink } from '@/lib/overpass-api';
+import MosqueMap from '@/components/mosque-finder/mosque-map';
 
 interface MosqueFinderClientProps {
   defaultLat?: number;
@@ -199,19 +200,12 @@ export default function MosqueFinderClient({
       </div>
 
       {mosques.length > 0 && (
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-          <iframe
-            title={`Mosque map${cityName ? ` — ${cityName}` : ''}`}
-            width="100%"
-            height="350"
-            style={{ border: 0, borderRadius: '0.75rem' }}
-            loading="lazy"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${(userLat ?? defaultLat ?? 31.52) - 0.05}%2C${(userLon ?? defaultLon ?? 74.36) - 0.05}%2C${(userLat ?? defaultLat ?? 31.52) + 0.05}%2C${(userLon ?? defaultLon ?? 74.36) + 0.05}&layer=mapnik&marker=${userLat ?? defaultLat}%2C${userLon ?? defaultLon}`}
-          />
-          <p className="mt-2 text-center text-xs text-[var(--color-muted-text)]">
-            Map data © <a href="https://www.openstreetmap.org/copyright" className="underline" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors
-          </p>
-        </div>
+        <MosqueMap
+          latitude={userLat ?? defaultLat ?? 31.52}
+          longitude={userLon ?? defaultLon ?? 74.36}
+          cityName={cityName}
+          mosques={mosques}
+        />
       )}
     </div>
   );
