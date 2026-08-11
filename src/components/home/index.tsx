@@ -206,7 +206,7 @@ export default function HomeRoot({ children }: { children?: ReactNode }) {
             id="home-tour-primary-cta"
             href={lastReadPath}
             prefetch={false}
-            className="group relative flex min-h-40 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(135deg,#8c6a08,var(--color-accent-soft))] p-5 text-[var(--color-accent-foreground)] shadow-[0_22px_45px_-25px_color-mix(in_oklab,var(--color-accent),black_25%)] sm:min-h-48 sm:p-7"
+            className="metallic-shine group relative flex min-h-40 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(135deg,#8c6a08,var(--color-accent-soft))] p-5 text-[var(--color-accent-foreground)] shadow-[0_22px_45px_-25px_color-mix(in_oklab,var(--color-accent),black_25%)] sm:min-h-48 sm:p-7"
           >
             <div className="flex min-w-0 flex-1 flex-col justify-between">
               <div>
