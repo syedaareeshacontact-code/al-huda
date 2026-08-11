@@ -411,6 +411,7 @@ export default function QuranReaderPage({
   const [ayahTimings, setAyahTimings] = useState<AyahTimingRange[]>([]);
   const [wordTimings, setWordTimings] = useState<WordTimingRange[]>([]);
   const [activeAudioAyahNumber, setActiveAudioAyahNumber] = useState<number | null>(null);
+  const [viewportAyahNumber, setViewportAyahNumber] = useState<number | null>(null);
   const [wordAudioByKey, setWordAudioByKey] = useState<WordAudioLookup>({});
   const [activeWordAudioKey, setActiveWordAudioKey] = useState<string | null>(null);
   const [urduAyahNumber, setUrduAyahNumber] = useState<number | null>(null);
@@ -1939,13 +1940,23 @@ export default function QuranReaderPage({
                           const isArabicAudioActive =
                             isArabicRecitationPlaying &&
                             activeAudioAyahNumber === ayah.numberInSurah;
+                          const isViewportFocusedAyah =
+                            viewportAyahNumber === ayah.numberInSurah && !isArabicAudioActive;
 
                           return (
                             <span
                               key={ayah.number}
                               id={`ayah-${ayah.numberInSurah}`}
-                              className={`ayah-phrase ${isArabicAudioActive ? 'is-active' : ''}`.trim()}
+                              className={`ayah-phrase ${isArabicAudioActive ? 'is-active' : ''} ${
+                                isViewportFocusedAyah ? 'is-viewport-active' : ''
+                              } ${
+                                index === 0 && isViewportFocusedAyah && !highlightQuery
+                                  ? 'reader-first-ayah-reveal'
+                                  : ''
+                              }`.trim()}
                               data-active={isArabicAudioActive ? 'true' : undefined}
+                              data-viewport-active={isViewportFocusedAyah ? 'true' : undefined}
+                              aria-current={isViewportFocusedAyah ? 'location' : undefined}
                             >
                               <HighlightText
                                 text={formatQuranArabicForDisplay(ayah.text)}
@@ -2077,12 +2088,16 @@ export default function QuranReaderPage({
                 const isLastRead = currentLastRead?.ayahNumber === ayah.numberInSurah;
                 const isAudioActiveAyah =
                   isPlaying && activeAudioAyahNumber === ayah.numberInSurah;
+                const isViewportFocusedAyah =
+                  viewportAyahNumber === ayah.numberInSurah && !isAudioActiveAyah;
                 const isUrduTranslation = settings.audioPreference === 'tr';
                 const ayahHighlightClass = isAudioActiveAyah
                   ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_28%)] shadow-[var(--shadow-glow)]'
-                  : isLastRead
-                    ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] shadow-[var(--shadow-soft)]'
-                    : '';
+                  : isViewportFocusedAyah
+                    ? 'reader-ayah-focus border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_72%)]'
+                    : isLastRead
+                      ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_52%)] shadow-[var(--shadow-soft)]'
+                      : '';
                 const bookmarkActionKey = `bookmark-${ayah.numberInSurah}`;
                 const lastReadActionKey = `last-read-${ayah.numberInSurah}`;
                 const handleBookmarkClick = () => {
@@ -2129,21 +2144,28 @@ export default function QuranReaderPage({
                   <Card
                     id={`ayah-${ayah.numberInSurah}`}
                     key={ayah.number}
+                    aria-current={isViewportFocusedAyah ? 'location' : undefined}
                     className={`ayah-card-optimized group relative overflow-hidden rounded-2xl border-[color-mix(in_oklab,var(--color-border),var(--color-accent)_12%)] bg-[var(--color-surface)] shadow-[0_18px_45px_-36px_rgb(0_0_0_/_0.55)] transition-[border-color,box-shadow,transform] duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_55%)] ${ayahHighlightClass}`}
                   >
                     <span
-                      className={`absolute inset-y-0 left-0 w-1 transition-colors ${
+                      className={`absolute inset-y-0 left-0 z-20 w-1 transition-colors ${
                         isAudioActiveAyah || isLastRead
                           ? 'bg-[var(--color-accent)]'
+                          : isViewportFocusedAyah
+                            ? 'bg-[color-mix(in_oklab,var(--color-accent),transparent_62%)]'
                           : 'bg-transparent group-hover:bg-[color-mix(in_oklab,var(--color-accent),transparent_55%)]'
                       }`}
                       aria-hidden="true"
                     />
 
-                    <CardContent className="p-0">
+                    <CardContent className="relative z-10 p-0">
                       <div className="flex min-h-14 items-center justify-between gap-3 border-b border-[color-mix(in_oklab,var(--color-border),transparent_18%)] bg-[color-mix(in_oklab,var(--color-surface-2),transparent_38%)] px-4 py-2.5 sm:px-5">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_84%)] text-sm font-bold tabular-nums text-[var(--color-accent-soft)] shadow-sm">
+                          <span
+                            className={`flex size-9 shrink-0 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_84%)] text-sm font-bold tabular-nums text-[var(--color-accent-soft)] shadow-sm ${
+                              isViewportFocusedAyah ? 'reader-ayah-number-focus' : ''
+                            }`}
+                          >
                             {ayah.numberInSurah}
                           </span>
                           <div className="min-w-0">
@@ -2171,11 +2193,15 @@ export default function QuranReaderPage({
                             title={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
                             aria-label={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
                             onClick={handleBookmarkClick}
-                            className={`size-9 rounded-lg border shadow-none ${
+                            className={`relative isolate size-9 overflow-visible rounded-lg border shadow-none ${
                               bookmarked
                                 ? 'border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_35%)] bg-[color-mix(in_oklab,var(--color-accent),var(--color-surface)_78%)] text-[var(--color-accent-soft)]'
                                 : 'border-transparent text-[var(--color-muted-text)] hover:border-[var(--color-border)] hover:text-[var(--color-heading)]'
-                            } ${activeActionKey === bookmarkActionKey ? 'reader-action-feedback' : ''}`}
+                            } ${
+                              activeActionKey === bookmarkActionKey
+                                ? 'reader-action-feedback reader-bookmark-feedback'
+                                : ''
+                            }`}
                           >
                             {bookmarked ? (
                               <BookmarkCheck className="size-4" />
@@ -2230,7 +2256,11 @@ export default function QuranReaderPage({
                         <p
                           dir="rtl"
                           lang="ar"
-                          className="arabic-font quran-script arabic-reading w-full text-[var(--color-heading)]"
+                          className={`arabic-font quran-script arabic-reading w-full text-[var(--color-heading)] ${
+                            ayah.numberInSurah === 1 && isViewportFocusedAyah && !highlightQuery
+                              ? 'reader-first-ayah-reveal'
+                              : ''
+                          }`}
                         >
                           <AudioSyncedArabicText
                             text={ayah.text}
@@ -2322,10 +2352,12 @@ export default function QuranReaderPage({
 
       <SmartAyahScrollNav
         ayahNumbers={filteredAyahNumbers}
+        totalAyahs={readingModeTotalAyahs}
         activeAudioAyahNumber={activeAudioAyahNumber}
         lastReadAyahNumber={currentLastRead?.ayahNumber ?? null}
         isPlaying={isPlaying}
         hasAudioPlayer={Boolean(audioSrc && !isPlayerHidden)}
+        onViewportAyahChange={setViewportAyahNumber}
         onLastReadShortcut={() => {
           if (!currentLastRead) {
             return;

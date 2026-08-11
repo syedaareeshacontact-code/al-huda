@@ -8,11 +8,13 @@ import { cn } from '@/lib/utils';
 
 interface SmartAyahScrollNavProps {
   ayahNumbers?: number[];
+  totalAyahs?: number;
   activeAudioAyahNumber?: number | null;
   lastReadAyahNumber?: number | null;
   isPlaying?: boolean;
   hasAudioPlayer?: boolean;
   onLastReadShortcut?: () => void;
+  onViewportAyahChange?: (ayahNumber: number | null) => void;
 }
 
 function getViewportCenterAyah(ayahNumbers: number[]) {
@@ -52,15 +54,18 @@ function isAyahInViewport(ayahNumber: number) {
 
 export default function SmartAyahScrollNav({
   ayahNumbers = [],
+  totalAyahs,
   activeAudioAyahNumber = null,
   lastReadAyahNumber = null,
   isPlaying = false,
   hasAudioPlayer = false,
   onLastReadShortcut,
+  onViewportAyahChange,
 }: SmartAyahScrollNavProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [userScrolledAway, setUserScrolledAway] = useState(false);
   const [lastReadScrolledAway, setLastReadScrolledAway] = useState(false);
+  const [viewportAyahNumber, setViewportAyahNumber] = useState<number | null>(null);
   const audioAnchorRef = useRef<number | null>(null);
   const programmaticScrollRef = useRef(false);
   const scrollResetTimerRef = useRef<number | null>(null);
@@ -68,11 +73,14 @@ export default function SmartAyahScrollNav({
   const isVisibleRef = useRef(false);
   const userScrolledAwayRef = useRef(false);
   const lastReadScrolledAwayRef = useRef(false);
+  const viewportAyahNumberRef = useRef<number | null>(null);
+  const onViewportAyahChangeRef = useRef(onViewportAyahChange);
 
   const sortedAyahNumbers = useMemo(
     () => [...ayahNumbers].sort((left, right) => left - right),
     [ayahNumbers]
   );
+  onViewportAyahChangeRef.current = onViewportAyahChange;
 
   const hasAyahNav = sortedAyahNumbers.length > 0;
 
@@ -109,6 +117,13 @@ export default function SmartAyahScrollNav({
   useEffect(() => {
     const updateFromScroll = () => {
       frameRef.current = null;
+      const nextViewportAyah = getViewportCenterAyah(sortedAyahNumbers);
+      if (nextViewportAyah !== viewportAyahNumberRef.current) {
+        viewportAyahNumberRef.current = nextViewportAyah;
+        setViewportAyahNumber(nextViewportAyah);
+        onViewportAyahChangeRef.current?.(nextViewportAyah);
+      }
+
       const nextVisible = window.scrollY > 200;
       if (nextVisible !== isVisibleRef.current) {
         isVisibleRef.current = nextVisible;
@@ -158,7 +173,7 @@ export default function SmartAyahScrollNav({
       }
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isPlaying, lastReadAyahNumber]);
+  }, [isPlaying, lastReadAyahNumber, sortedAyahNumbers]);
 
   useEffect(() => {
     return () => {
@@ -238,6 +253,13 @@ export default function SmartAyahScrollNav({
   const showBackToAudio =
     isPlaying && userScrolledAway && audioAnchorRef.current !== null;
   const showBackToLastRead = Boolean(lastReadAyahNumber && lastReadScrolledAway);
+  const progressTotal = Math.max(totalAyahs ?? sortedAyahNumbers.length, 1);
+  const viewportAyahPosition = viewportAyahNumber
+    ? sortedAyahNumbers.indexOf(viewportAyahNumber) + 1
+    : 0;
+  const viewportProgress = viewportAyahPosition
+    ? Math.min(100, Math.max(0, (viewportAyahPosition / progressTotal) * 100))
+    : 0;
 
   return (
     <div
@@ -285,6 +307,33 @@ export default function SmartAyahScrollNav({
       >
         <ArrowUp className="size-5" />
       </Button>
+
+      {viewportAyahNumber ? (
+        <div
+          className="hidden w-16 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_45%)] bg-[color-mix(in_oklab,var(--color-surface-2),var(--color-accent)_8%)] px-2 py-1.5 text-center shadow-lg md:block"
+          aria-label={`Viewport ayah ${viewportAyahNumber}, position ${viewportAyahPosition} of ${progressTotal}`}
+        >
+          <p className="text-[0.62rem] font-bold leading-none text-[var(--color-heading)]">
+            Ayah {viewportAyahNumber}
+          </p>
+          <p className="mt-1 text-[0.58rem] font-semibold leading-none tabular-nums text-[var(--color-muted-text)]">
+            {viewportAyahPosition} / {progressTotal}
+          </p>
+          <div
+            className="mt-1.5 h-1 overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--color-border),transparent_25%)]"
+            role="progressbar"
+            aria-label="Ayah reading progress"
+            aria-valuemin={0}
+            aria-valuemax={progressTotal}
+            aria-valuenow={viewportAyahPosition}
+          >
+            <div
+              className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-200"
+              style={{ width: `${viewportProgress}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <Button
         variant="outline"

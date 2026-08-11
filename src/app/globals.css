@@ -927,6 +927,59 @@ body.feature-tour-active {
   }
 }
 
+@keyframes reader-noor-sweep {
+  0% {
+    opacity: 0;
+    transform: translate3d(-180%, 0, 0) skewX(-18deg);
+  }
+  24% {
+    opacity: 0.34;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(520%, 0, 0) skewX(-18deg);
+  }
+}
+
+@keyframes reader-ayah-number-halo {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent), transparent 56%);
+    transform: scale(0.96);
+  }
+  58% {
+    box-shadow: 0 0 0 7px color-mix(in oklab, var(--color-accent), transparent 89%);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent), transparent 96%);
+    transform: scale(1);
+  }
+}
+
+@keyframes reader-bookmark-ring {
+  0% {
+    opacity: 0.72;
+    transform: scale(0.72);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.58);
+  }
+}
+
+@keyframes reader-first-ayah-reveal {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
 @keyframes reader-toast-life {
   0% {
     opacity: 0;
@@ -969,6 +1022,71 @@ body.feature-tour-active {
 
 .reader-action-feedback {
   animation: reader-action-feedback 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.reader-ayah-focus {
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-accent), transparent 90%),
+    0 20px 42px -38px color-mix(in oklab, var(--color-accent), transparent 62%);
+}
+
+.reader-ayah-focus::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    460px 210px at 88% 42%,
+    color-mix(in oklab, var(--color-accent-soft), transparent 96%),
+    transparent 72%
+  );
+}
+
+.reader-ayah-focus::after {
+  content: '';
+  position: absolute;
+  inset-block: -26%;
+  left: -30%;
+  z-index: 1;
+  width: 24%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--color-accent-soft), transparent 95%),
+    rgb(255 255 255 / 0.045),
+    transparent
+  );
+  filter: blur(0.5px);
+  animation: reader-noor-sweep 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.reader-ayah-number-focus {
+  animation: reader-ayah-number-halo 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.reader-bookmark-feedback::after {
+  content: '';
+  position: absolute;
+  inset: -0.2rem;
+  z-index: 2;
+  border: 1px solid color-mix(in oklab, var(--color-accent-soft), transparent 22%);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: reader-bookmark-ring 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.reader-first-ayah-reveal {
+  animation: reader-first-ayah-reveal 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.arabic-mushaf .ayah-phrase.is-viewport-active:not(.is-active) {
+  border-radius: 0.65rem;
+  background: color-mix(in oklab, var(--color-accent), var(--color-surface) 93%);
+  box-shadow: inset 0 -1px 0 color-mix(in oklab, var(--color-accent-soft), transparent 48%);
+  padding-inline: 0.2em;
 }
 
 .animate-reader-toast {
