@@ -78,7 +78,7 @@ export default async function SurahDownloadPage({ params }: SurahDownloadPagePro
   const schemas = buildSurahDownloadSchemas(surah, options, downloadPath);
 
   return (
-    <div className="pb-16 pt-8" data-slot="page-shell">
+    <div className="pb-12 pt-5 sm:pb-16 sm:pt-8" data-slot="page-shell">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.webPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />

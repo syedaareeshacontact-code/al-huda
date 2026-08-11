@@ -1,3 +1,4 @@
+// Use case: Provides the 114-surah Quran index and basic metadata for navigation, pages, and SEO.
 import surahIndexRaw from '../data/surah-index.json';
 import {
   buildSurahPath,

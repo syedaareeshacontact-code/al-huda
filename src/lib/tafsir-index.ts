@@ -1,3 +1,4 @@
+// Use case: Maps available Tafsir ayahs so the app can show Tafsir links only where content exists.
 import tafsirAvailabilityRaw from '@/data/tafsir-availability.json';
 import { getAllSurahs } from '@/lib/quran-index';
 
