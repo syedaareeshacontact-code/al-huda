@@ -5,6 +5,7 @@ import BreadcrumbNav from '@/components/hadith/BreadcrumbNav';
 import ChapterFilterBar from '@/components/hadith/ChapterFilterBar';
 import HadithCard from '@/components/hadith/HadithCard';
 import HadithPagination from '@/components/hadith/HadithPagination';
+import PublicContentState from '@/components/errors/public-content-state';
 import { Badge } from '@/components/ui/badge';
 import {
   getCollectionBySlugOrThrow,
@@ -114,7 +115,15 @@ export default async function BookPage({
     if (error instanceof HadithApiError && error.status === 404) {
       notFound();
     }
-    throw error;
+
+    return (
+      <PublicContentState
+        title="Hadith list is temporarily unavailable"
+        description="The Hadith data provider could not load this page. Please retry shortly; the incomplete page is excluded from indexing."
+        primaryHref={buildHadithBookPath(collection)}
+        primaryLabel="Try this Hadith list again"
+      />
+    );
   }
 
   if (!bookData) notFound();

@@ -1,0 +1,90 @@
+{
+  "source": "HadithAPI",
+  "sourceBaseUrl": "https://hadithapi.com/api",
+  "downloadedAt": "2026-08-12T09:18:31.336Z",
+  "perPage": 200,
+  "booksFile": "books.json",
+  "books": [
+    {
+      "slug": "abu-dawood",
+      "bookName": "Sunan Abu Dawood",
+      "requestedCount": 5274,
+      "downloadedCount": 5274,
+      "chapterCount": 43,
+      "hadithFile": "hadiths/abu-dawood.json",
+      "chapterFile": "chapters/abu-dawood.json"
+    },
+    {
+      "slug": "al-silsila-sahiha",
+      "bookName": "Al-Silsila Sahiha",
+      "requestedCount": 0,
+      "downloadedCount": 0,
+      "chapterCount": 28,
+      "hadithFile": "hadiths/al-silsila-sahiha.json",
+      "chapterFile": "chapters/al-silsila-sahiha.json"
+    },
+    {
+      "slug": "al-tirmidhi",
+      "bookName": "Jami' Al-Tirmidhi",
+      "requestedCount": 3956,
+      "downloadedCount": 3956,
+      "chapterCount": 50,
+      "hadithFile": "hadiths/al-tirmidhi.json",
+      "chapterFile": "chapters/al-tirmidhi.json"
+    },
+    {
+      "slug": "ibn-e-majah",
+      "bookName": "Sunan Ibn-e-Majah",
+      "requestedCount": 4341,
+      "downloadedCount": 4341,
+      "chapterCount": 39,
+      "hadithFile": "hadiths/ibn-e-majah.json",
+      "chapterFile": "chapters/ibn-e-majah.json"
+    },
+    {
+      "slug": "mishkat",
+      "bookName": "Mishkat Al-Masabih",
+      "requestedCount": 6293,
+      "downloadedCount": 6293,
+      "chapterCount": 29,
+      "hadithFile": "hadiths/mishkat.json",
+      "chapterFile": "chapters/mishkat.json"
+    },
+    {
+      "slug": "musnad-ahmad",
+      "bookName": "Musnad Ahmad",
+      "requestedCount": 0,
+      "downloadedCount": 0,
+      "chapterCount": 14,
+      "hadithFile": "hadiths/musnad-ahmad.json",
+      "chapterFile": "chapters/musnad-ahmad.json"
+    },
+    {
+      "slug": "sahih-bukhari",
+      "bookName": "Sahih Bukhari",
+      "requestedCount": 7276,
+      "downloadedCount": 7276,
+      "chapterCount": 99,
+      "hadithFile": "hadiths/sahih-bukhari.json",
+      "chapterFile": "chapters/sahih-bukhari.json"
+    },
+    {
+      "slug": "sahih-muslim",
+      "bookName": "Sahih Muslim",
+      "requestedCount": 7564,
+      "downloadedCount": 7564,
+      "chapterCount": 56,
+      "hadithFile": "hadiths/sahih-muslim.json",
+      "chapterFile": "chapters/sahih-muslim.json"
+    },
+    {
+      "slug": "sunan-nasai",
+      "bookName": "Sunan An-Nasa`i",
+      "requestedCount": 5761,
+      "downloadedCount": 5761,
+      "chapterCount": 52,
+      "hadithFile": "hadiths/sunan-nasai.json",
+      "chapterFile": "chapters/sunan-nasai.json"
+    }
+  ]
+}

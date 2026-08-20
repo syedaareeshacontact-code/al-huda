@@ -1,0 +1,27 @@
+{
+  "status": 200,
+  "message": "No hadith records were advertised by HadithAPI when this archive was created.",
+  "book": {
+    "id": 9,
+    "bookName": "Musnad Ahmad",
+    "writerName": "Imam Ahmad ibn Hanbal",
+    "aboutWriter": null,
+    "writerDeath": "241",
+    "bookSlug": "musnad-ahmad",
+    "hadiths_count": 0,
+    "chapters_count": 14
+  },
+  "hadiths": {
+    "current_page": 1,
+    "data": [],
+    "first_page_url": null,
+    "last_page": 1,
+    "last_page_url": null,
+    "next_page_url": null,
+    "prev_page_url": null,
+    "per_page": 0,
+    "total": 0,
+    "from": 0,
+    "to": 0
+  }
+}

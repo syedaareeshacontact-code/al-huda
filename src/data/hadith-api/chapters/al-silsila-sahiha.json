@@ -1,0 +1,230 @@
+{
+  "status": 200,
+  "message": "Chapters has been found.",
+  "chapters": [
+    {
+      "id": 448,
+      "chapterNumber": 1,
+      "chapterEnglish": "Morality, goodness and merciful reward",
+      "chapterUrdu": "اخلاق، نیکی اور صلہ رحمی",
+      "chapterArabic": "الأخلاق والخير والثواب الرحيم",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 449,
+      "chapterNumber": 2,
+      "chapterEnglish": "Literature and statement seeking permission",
+      "chapterUrdu": "ادب اور اجازت طلب کرنے کا بیان",
+      "chapterArabic": "الأدب والبيان يطلب الإذن",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 450,
+      "chapterNumber": 3,
+      "chapterEnglish": "Statement of Adhan and Prayer",
+      "chapterUrdu": "اذان اور نماز کا بیان",
+      "chapterArabic": "بيان الأذان والصلاة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 451,
+      "chapterNumber": 4,
+      "chapterEnglish": "Statement of Sacrifice, Slaughter, Aqeeqah, Eating, Drinking and Gentleness with Animals",
+      "chapterUrdu": "قربانی، ذبحہ، عقیقہ، کھانے، پینے اور حیوانوں کے ساتھ نرمی کرنے کا بیان",
+      "chapterArabic": "بيان النحر والذبح والعقيقة والأكل والشرب والرفق بالحيوان",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 452,
+      "chapterNumber": 5,
+      "chapterEnglish": "Statement of faith, monotheism, religion and destiny",
+      "chapterUrdu": "ایمان، توحید، دین اورتقدیر کا بیان",
+      "chapterArabic": "بيان العقيدة والتوحيد والدين والقدر",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 453,
+      "chapterNumber": 6,
+      "chapterEnglish": "Swearing, vows and statement of infidels",
+      "chapterUrdu": "قسم، نذراور کفاروں کا بیان",
+      "chapterArabic": "القسم والنذور وأقوال الكفار",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 454,
+      "chapterNumber": 7,
+      "chapterEnglish": "Statement of trade, labor and asceticism",
+      "chapterUrdu": "تجارت، مزدوری اور زہد کا بیان",
+      "chapterArabic": "بيان التجارة والعمل والزهد",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 455,
+      "chapterNumber": 8,
+      "chapterEnglish": "Statement of repentance, admonition and recitation",
+      "chapterUrdu": "توبہ، نصیحت اور رقائق کا بیان",
+      "chapterArabic": "بيان التوبة والوعظ والتلاوة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 456,
+      "chapterNumber": 9,
+      "chapterEnglish": "Statement of Heaven and Hell",
+      "chapterUrdu": "جنت اور جہنم کا بیان",
+      "chapterArabic": "بيان الجنة والنار",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 457,
+      "chapterNumber": 10,
+      "chapterEnglish": "Statement of Hajj and Umrah",
+      "chapterUrdu": "حج اور عمرے کا بیان",
+      "chapterArabic": "بيان الحج والعمرة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 458,
+      "chapterNumber": 11,
+      "chapterEnglish": "Statement of limits, matters and rules",
+      "chapterUrdu": "حدود، معاملات اور احکام کا بیان",
+      "chapterArabic": "بيان الحدود والمسائل والقواعد",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 459,
+      "chapterNumber": 12,
+      "chapterEnglish": "Statement of Khilafah, Allegiance, Obedience and Emirate",
+      "chapterUrdu": "خلافت، بیعت، اطاعت اور امارت کا بیان",
+      "chapterArabic": "بيان الخلافة والولاء والطاعة والإمارة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 460,
+      "chapterNumber": 13,
+      "chapterEnglish": "Statement of Zakat, Generosity, Charity and Gift",
+      "chapterUrdu": "زکاۃ، سخاوت، صدقہ اور ہبہ کا بیان",
+      "chapterArabic": "بيان الزكاة والكرم والصدقة والهبة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 461,
+      "chapterNumber": 14,
+      "chapterEnglish": "Marriage, justice between wives, training of children, justice between them and their good names",
+      "chapterUrdu": "شادی ،بیویوں کے درمیان عدل ،اولاد کی تربیت ، ان کے درمیان عدل اور ان کے اچھے نام رکھنے کابیان",
+      "chapterArabic": "الزواج ، العدل بين الزوجات ، تربية الأولاد ، العدل بينهم وبين أسمائهم الحسنة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 462,
+      "chapterNumber": 15,
+      "chapterEnglish": "Statement of travel, jihad and leniency towards animals",
+      "chapterUrdu": "سفر، جہاد اور جانوروں سے نرمی کا بیان",
+      "chapterArabic": "بيان السفر والجهاد والتسامح مع الحيوانات",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 463,
+      "chapterNumber": 16,
+      "chapterEnglish": "The biography of the Prophet and the attributes of the Prophet (peace be upon him)",
+      "chapterUrdu": "سیرت نبوی اور آپ صلی اللہ علیہ وسلم کی صفات",
+      "chapterArabic": "سيرة الرسول صلى الله عليه وسلم وصفات الرسول صلى الله عليه وسلم",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 464,
+      "chapterNumber": 17,
+      "chapterEnglish": "Statement of fasting and tahajjud",
+      "chapterUrdu": "روزے اور تہجد کا بیان",
+      "chapterArabic": "بيان الصيام والتهجد",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 465,
+      "chapterNumber": 18,
+      "chapterEnglish": "The statement of medicine and visiting the sick",
+      "chapterUrdu": "طب اور عیادت کا بیان",
+      "chapterArabic": "بيان الطب وزيارة المريض",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 466,
+      "chapterNumber": 19,
+      "chapterEnglish": "Statement of purity and ablution",
+      "chapterUrdu": "طہارت اور وضو کا بیان",
+      "chapterArabic": "بيان الطهارة والوضوء",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 467,
+      "chapterNumber": 20,
+      "chapterEnglish": "Statement of knowledge, Sunnah and Hadith of the Prophet",
+      "chapterUrdu": "علم، سنت اور حدیث نبوی کا بیان",
+      "chapterArabic": "بيان العلم والسنة والأحاديث النبوية",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 468,
+      "chapterNumber": 21,
+      "chapterEnglish": "Days of tribulation, signs of resurrection and resurrection",
+      "chapterUrdu": "ایام فتن، علامات قیامت اور دوبارہ زندہ کیےجانے کا بیان",
+      "chapterArabic": "أيام الضيق وعلامات القيامة والقيامة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 469,
+      "chapterNumber": 22,
+      "chapterEnglish": "Statement of virtues of Qur'an, supplications, invocations and incantations",
+      "chapterUrdu": "فضائل قرآن ،دعاؤں ،اذکار اور دَم کا بیان",
+      "chapterArabic": "فَضَائِلُ الْقُرْآنِ وَالْأَدْعِيَةُ وَالْأَذْكَارُ وَالرُّقٰى",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 470,
+      "chapterNumber": 23,
+      "chapterEnglish": "Description of clothing, adornment, games and pictures",
+      "chapterUrdu": "لباس، زیب و زینت اختیار کرنے، کھیل اور تصویروں کا بیان",
+      "chapterArabic": "وصف الملابس والزينة والألعاب والصور",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 471,
+      "chapterNumber": 24,
+      "chapterEnglish": "Description of the early days, prophets and strange creatures",
+      "chapterUrdu": "ابتدائی ایام ،انبیاء اور عجیب مخلوقات کا بیان",
+      "chapterArabic": "وصف الأيام الأولى والأنبياء والمخلوقات الغريبة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 472,
+      "chapterNumber": 25,
+      "chapterEnglish": "Statement of Illness, Funerals and Graves",
+      "chapterUrdu": "بیماری، جنازے اور قبروں کا بیان",
+      "chapterArabic": "بيان المرض والجنازات والقبور",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 473,
+      "chapterNumber": 26,
+      "chapterEnglish": "Statement of strengths and weaknesses",
+      "chapterUrdu": "خوبیوں اور خامیوں کا بیان",
+      "chapterArabic": "بيان نقاط القوة والضعف",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 474,
+      "chapterNumber": 27,
+      "chapterEnglish": "Tips and soothing words",
+      "chapterUrdu": "نصیحتیں اور دلوں کو نرم کرنےوالی باتیں",
+      "chapterArabic": "نصائح وكلمات مهدئة",
+      "bookSlug": "al-silsila-sahiha"
+    },
+    {
+      "id": 475,
+      "chapterNumber": 28,
+      "chapterEnglish": "Miscellaneous",
+      "chapterUrdu": "متفرقات",
+      "chapterArabic": "متنوع",
+      "bookSlug": "al-silsila-sahiha"
+    }
+  ]
+}

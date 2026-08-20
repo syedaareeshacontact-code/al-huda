@@ -1,0 +1,27 @@
+{
+  "status": 200,
+  "message": "No hadith records were advertised by HadithAPI when this archive was created.",
+  "book": {
+    "id": 10,
+    "bookName": "Al-Silsila Sahiha",
+    "writerName": "Allama Muhammad Nasir Uddin Al-Bani",
+    "aboutWriter": "Al-Albani was an Albanian Islamic scholar, reformer and revivalist. Among the most prominent figures of Salafism, Al-Albani is widely regarded as one of the most significant Islamic scholars of the 20th century, and is frequently ranked as the greatest hadith scholar of all time.",
+    "writerDeath": "October 2, 1999",
+    "bookSlug": "al-silsila-sahiha",
+    "hadiths_count": 0,
+    "chapters_count": 28
+  },
+  "hadiths": {
+    "current_page": 1,
+    "data": [],
+    "first_page_url": null,
+    "last_page": 1,
+    "last_page_url": null,
+    "next_page_url": null,
+    "prev_page_url": null,
+    "per_page": 0,
+    "total": 0,
+    "from": 0,
+    "to": 0
+  }
+}
