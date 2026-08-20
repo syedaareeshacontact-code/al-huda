@@ -48,6 +48,9 @@ const nextConfig = {
     },
   },
   serverExternalPackages: ['pdfkit'],
+  outputFileTracingIncludes: {
+    '/*': ['./src/data/hadith-api/**/*'],
+  },
   async redirects() {
     return [
       {

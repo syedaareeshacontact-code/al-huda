@@ -1,4 +1,5 @@
 import { HadithApiError, hadithFetch } from './api-client';
+import { getStaticHadithByNumber, getStaticHadiths } from './static-data';
 import type { HadithApiHadithsResponse, HadithItem } from './types/hadith.types';
 
 interface GetHadithsParams {
@@ -19,10 +20,17 @@ export async function getHadiths({
     endpoint += `&chapter=${chapterId}`;
   }
 
-  return hadithFetch<HadithApiHadithsResponse>(endpoint, {
-    revalidate: 3600,
-    tags: [`hadith-list-${bookSlug}-${chapterId ?? 'all'}-${page}`],
-  });
+  try {
+    return await hadithFetch<HadithApiHadithsResponse>(endpoint, {
+      revalidate: 3600,
+      tags: [`hadith-list-${bookSlug}-${chapterId ?? 'all'}-${page}`],
+    });
+  } catch (error) {
+    console.warn(`[hadith] Falling back to the bundled archive for ${bookSlug}:`, error);
+    const fallback = getStaticHadiths(bookSlug, chapterId, page, perPage);
+    if (fallback) return fallback;
+    throw error;
+  }
 }
 
 export async function getHadithByNumber(
@@ -37,13 +45,15 @@ export async function getHadithByNumber(
         tags: [`hadith-${bookSlug}-${hadithNumber}`],
       }
     );
-    return data.hadiths.data[0] ?? null;
+    const hadith = data.hadiths.data[0];
+    if (hadith) return hadith;
   } catch (error) {
-    if (error instanceof HadithApiError && error.status === 404) {
-      return null;
+    if (!(error instanceof HadithApiError && error.status === 404)) {
+      console.warn(`[hadith] Falling back to the bundled archive for ${bookSlug}/${hadithNumber}:`, error);
     }
-    throw error;
   }
+
+  return getStaticHadithByNumber(bookSlug, hadithNumber);
 }
 
 export function getHadithNumberQuery(query: string): string | null {

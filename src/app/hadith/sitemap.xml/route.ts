@@ -1,6 +1,7 @@
 import { getSiteOrigin } from '@/lib/seo';
 import { SITEMAP_CACHE_CONTROL } from '@/lib/sitemap-config';
 import { getAllCollections } from '@/lib/hadith/collections.service';
+import { getStaticHadithNumbers } from '@/lib/hadith/static-data';
 
 export const dynamic = 'force-static';
 export const revalidate = 86400;
@@ -13,7 +14,12 @@ export async function GET() {
     `<sitemap><loc>${origin}/sitemaps/hadith-collections.xml</loc></sitemap>`,
     ...collections.flatMap((collection) =>
       Array.from(
-        { length: Math.ceil(collection.hadiths_count / SITEMAP_CHUNK_SIZE) },
+        {
+          length: Math.ceil(
+            Math.max(getStaticHadithNumbers(collection.bookSlug).length, collection.hadiths_count) /
+              SITEMAP_CHUNK_SIZE
+          ),
+        },
         (_, index) =>
           `<sitemap><loc>${origin}/sitemaps/hadith-detail-${collection.bookSlug}-${index + 1}.xml</loc></sitemap>`
       )

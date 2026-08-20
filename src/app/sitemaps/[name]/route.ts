@@ -2,6 +2,7 @@ import { getAllSurahs } from '@/lib/quran-index';
 import { buildAyahPath, buildSurahPath, buildTafsirPath, buildTafsirSurahPath } from '@/lib/quran-routing';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import { getAllCollections, getChaptersByCollection } from '@/lib/hadith/collections.service';
+import { getStaticHadithNumbers } from '@/lib/hadith/static-data';
 import {
   buildHadithBookPath,
   buildHadithCollectionPath,
@@ -53,7 +54,12 @@ async function buildSitemapNames() {
   const collections = await getAllCollections();
   const detailNames = collections.flatMap((collection) =>
     Array.from(
-      { length: Math.ceil(collection.hadiths_count / SITEMAP_CHUNK_SIZE) },
+      {
+        length: Math.ceil(
+          Math.max(getStaticHadithNumbers(collection.bookSlug).length, collection.hadiths_count) /
+            SITEMAP_CHUNK_SIZE
+        ),
+      },
       (_, index) => `hadith-detail-${collection.bookSlug}-${index + 1}`
     )
   );
@@ -150,15 +156,30 @@ export async function GET(
       return new Response('Not found.', { status: 404 });
     }
 
-    const start = chunkIndex * SITEMAP_CHUNK_SIZE + 1;
-    const end = Math.min(collection.hadiths_count, (chunkIndex + 1) * SITEMAP_CHUNK_SIZE);
-    if (start > end) {
+    const staticNumbers = getStaticHadithNumbers(collection.bookSlug);
+    const numbers = staticNumbers.length
+      ? staticNumbers.slice(
+          chunkIndex * SITEMAP_CHUNK_SIZE,
+          (chunkIndex + 1) * SITEMAP_CHUNK_SIZE
+        )
+      : Array.from(
+          {
+            length: Math.max(
+              0,
+              Math.min(collection.hadiths_count, (chunkIndex + 1) * SITEMAP_CHUNK_SIZE) -
+                chunkIndex * SITEMAP_CHUNK_SIZE
+            ),
+          },
+          (_, index) => String(chunkIndex * SITEMAP_CHUNK_SIZE + index + 1)
+        );
+
+    if (numbers.length === 0) {
       return new Response('Not found.', { status: 404 });
     }
 
-    const urls = Array.from({ length: end - start + 1 }, (_, index) => {
-      return `${origin}${buildHadithDetailPath(collection.bookSlug, start + index)}`;
-    });
+    const urls = numbers.map((number) =>
+      `${origin}${buildHadithDetailPath(collection.bookSlug, number)}`
+    );
 
     return new Response(renderUrlSet(urls), {
       headers: SITEMAP_HEADERS,

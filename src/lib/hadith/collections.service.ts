@@ -1,4 +1,5 @@
 import { hadithFetch } from './api-client';
+import { getStaticChapters, getStaticCollections } from './static-data';
 import type {
   HadithApiBookResponse,
   HadithApiChapterResponse,
@@ -7,19 +8,25 @@ import type {
 } from './types/hadith.types';
 
 export async function getAllCollectionsOrThrow(): Promise<HadithBook[]> {
-  const data = await hadithFetch<HadithApiBookResponse>('/books', {
-    revalidate: 86400,
-    tags: ['hadith-collections'],
-  });
-  if (!Array.isArray(data.books)) {
-    return [];
+  try {
+    const data = await hadithFetch<HadithApiBookResponse>('/books', {
+      revalidate: 86400,
+      tags: ['hadith-collections'],
+    });
+    if (Array.isArray(data.books)) {
+      const collections = data.books
+        .map((book) => ({
+          ...book,
+          hadiths_count: Number(book.hadiths_count) || 0,
+        }))
+        .filter((book) => book.hadiths_count > 0);
+      if (collections.length > 0) return collections;
+    }
+  } catch (error) {
+    console.warn('[hadith] Falling back to the bundled archive for collections:', error);
   }
-  return data.books
-    .map((book) => ({
-      ...book,
-      hadiths_count: Number(book.hadiths_count) || 0,
-    }))
-    .filter((book) => book.hadiths_count > 0);
+
+  return getStaticCollections();
 }
 
 export async function getAllCollections(): Promise<HadithBook[]> {
@@ -44,11 +51,17 @@ export async function getCollectionBySlugOrThrow(slug: string): Promise<HadithBo
 export async function getChaptersByCollectionOrThrow(
   bookSlug: string
 ): Promise<HadithChapter[]> {
-  const data = await hadithFetch<HadithApiChapterResponse>(`/${bookSlug}/chapters`, {
-    revalidate: 86400,
-    tags: [`hadith-chapters-${bookSlug}`],
-  });
-  return Array.isArray(data.chapters) ? data.chapters : [];
+  try {
+    const data = await hadithFetch<HadithApiChapterResponse>(`/${bookSlug}/chapters`, {
+      revalidate: 86400,
+      tags: [`hadith-chapters-${bookSlug}`],
+    });
+    if (Array.isArray(data.chapters) && data.chapters.length > 0) return data.chapters;
+  } catch (error) {
+    console.warn(`[hadith] Falling back to the bundled archive for chapters (${bookSlug}):`, error);
+  }
+
+  return getStaticChapters(bookSlug);
 }
 
 export async function getChaptersByCollection(bookSlug: string): Promise<HadithChapter[]> {
