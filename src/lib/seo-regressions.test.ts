@@ -29,6 +29,17 @@ describe('SEO regressions', () => {
     expect(tafsirPage).not.toContain('permanentRedirect(buildTafsirPopupPath');
   });
 
+  it('does not expose protected download API URLs as crawlable links', () => {
+    const downloadLink = read('src/components/quran/auth-download-link.tsx');
+    const downloadSchema = read('src/lib/seo-schema.ts');
+
+    expect(downloadLink).toContain('<button');
+    expect(downloadLink).not.toContain('<a');
+    expect(downloadLink).not.toContain('href={href}');
+    expect(downloadLink).toContain('decodeProtectedDownloadHref');
+    expect(downloadSchema).not.toContain('toAbsoluteUrl(option.href)');
+  });
+
   it('publishes chunked full-detail sitemaps without fake freshness signals', () => {
     const sitemap = read('src/app/sitemaps/[name]/route.ts');
     expect(sitemap).toContain('SITEMAP_CHUNK_SIZE = 5_000');

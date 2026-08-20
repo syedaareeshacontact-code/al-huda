@@ -26,6 +26,7 @@ import {
 import { getFeaturedTafsirAyahStaticParams } from '@/lib/quran-static-params';
 import { formatQuranArabicForDisplay } from '@/lib/arabic-utils';
 import { buildPageMetadata } from '@/lib/seo';
+import { encodeProtectedDownloadHref } from '@/lib/protected-download-token';
 import { buildTafsirPageSchemas } from '@/lib/seo-schema';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
 import { hasTafsirForAyah } from '@/lib/tafsir-index';
@@ -282,10 +283,8 @@ export default async function TafsirDetailPage({
                   <source src={audioUrls.arabic} />
                 </audio>
                 <AuthDownloadLink
-                  href={buildAyahAudioDownloadUrl(
-                    surah.id,
-                    ayahNumber,
-                    'arabic'
+                  downloadToken={encodeProtectedDownloadHref(
+                    buildAyahAudioDownloadUrl(surah.id, ayahNumber, 'arabic')
                   )}
                   fileName={`surah-${surah.id}-ayah-${ayahNumber}-arabic-audio`}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
@@ -319,10 +318,8 @@ export default async function TafsirDetailPage({
                   <source src={audioUrls.urdu} />
                 </audio>
                 <AuthDownloadLink
-                  href={buildAyahAudioDownloadUrl(
-                    surah.id,
-                    ayahNumber,
-                    'urdu'
+                  downloadToken={encodeProtectedDownloadHref(
+                    buildAyahAudioDownloadUrl(surah.id, ayahNumber, 'urdu')
                   )}
                   fileName={`surah-${surah.id}-ayah-${ayahNumber}-urdu-audio`}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"

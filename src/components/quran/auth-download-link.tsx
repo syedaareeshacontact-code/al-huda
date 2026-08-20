@@ -8,9 +8,10 @@ import {
   queuePendingProtectedDownload,
   startProtectedDownload,
 } from '@/lib/protected-download-client';
+import { decodeProtectedDownloadHref } from '@/lib/protected-download-token';
 
 interface AuthDownloadLinkProps {
-  href: string;
+  downloadToken: string;
   fileName: string;
   className: string;
   children?: ReactNode;
@@ -19,15 +20,20 @@ interface AuthDownloadLinkProps {
 const OPEN_AUTH_MODAL_EVENT = 'alhuda:open-auth-modal';
 
 export default function AuthDownloadLink({
-  href,
+  downloadToken,
   fileName,
   className,
   children,
 }: AuthDownloadLinkProps) {
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
-  const handleClick = async (event: MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
+
+    const href = decodeProtectedDownloadHref(downloadToken);
+    if (!href) {
+      return;
+    }
 
     if (isCheckingAccess) {
       return;
@@ -60,14 +66,12 @@ export default function AuthDownloadLink({
   };
 
   return (
-    <a
-      href={href}
-      download={fileName}
+    <button
+      type="button"
       onClick={handleClick}
       className={className}
       aria-busy={isCheckingAccess}
       aria-disabled={isCheckingAccess}
-      rel="nofollow"
     >
       {children ?? (
         <>
@@ -75,6 +79,6 @@ export default function AuthDownloadLink({
           Download
         </>
       )}
-    </a>
+    </button>
   );
 }

@@ -249,13 +249,6 @@ export function buildSurahDownloadSchemas(
       '@type': 'ListItem',
       position: index + 1,
       name: option.label,
-      url: toAbsoluteUrl(option.href),
-      item: {
-        '@type': option.type === 'pdf' ? 'DigitalDocument' : 'AudioObject',
-        name: option.label,
-        encodingFormat: option.type === 'pdf' ? 'application/pdf' : 'audio/mpeg',
-        url: toAbsoluteUrl(option.href),
-      },
     })),
   };
 
