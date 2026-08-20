@@ -7,6 +7,7 @@ import type {
   HadithChapter,
   HadithItem,
 } from './types/hadith.types';
+import { getHadithNumbers, getPrimaryHadithNumber } from './hadith-number';
 
 type StaticBook = {
   id: number;
@@ -84,7 +85,7 @@ function normalizeHadith(
   book: HadithBook
 ): HadithItem | null {
   const hadithNumber = String(raw.hadithNumber ?? '').trim();
-  if (!/^\d+$/.test(hadithNumber)) return null;
+  if (getHadithNumbers(hadithNumber).length === 0) return null;
 
   const chapter = raw.chapter ?? {};
   const rawBook = raw.book ?? {};
@@ -125,9 +126,13 @@ function getStaticHadithItems(bookSlug: string): HadithItem[] {
 }
 
 export function getStaticHadithNumbers(bookSlug: string): string[] {
-  return [...new Set(getStaticHadithItems(bookSlug).map((hadith) => hadith.hadithNumber))].sort(
-    (a, b) => Number(a) - Number(b)
-  );
+  return [
+    ...new Set(
+      getStaticHadithItems(bookSlug)
+        .map((hadith) => getPrimaryHadithNumber(hadith.hadithNumber))
+        .filter((number): number is string => Boolean(number))
+    ),
+  ].sort((a, b) => Number(a) - Number(b));
 }
 
 export function getStaticHadithByNumber(
@@ -135,7 +140,9 @@ export function getStaticHadithByNumber(
   hadithNumber: string
 ): HadithItem | null {
   return (
-    getStaticHadithItems(bookSlug).find((hadith) => hadith.hadithNumber === hadithNumber) ?? null
+    getStaticHadithItems(bookSlug).find((hadith) =>
+      getHadithNumbers(hadith.hadithNumber).includes(hadithNumber)
+    ) ?? null
   );
 }
 
