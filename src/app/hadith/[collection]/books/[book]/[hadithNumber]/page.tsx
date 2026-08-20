@@ -9,6 +9,7 @@ import HadithGrade from '@/components/hadith/HadithGrade';
 import HadithNavigation from '@/components/hadith/HadithNavigation';
 import HadithQuranNudge from '@/components/hadith/HadithQuranNudge';
 import SuggestedHadiths from '@/components/hadith/SuggestedHadiths';
+import PublicContentState from '@/components/errors/public-content-state';
 import { HadithDetailSchema, HadithBreadcrumbsSchema } from '@/components/hadith/HadithSchema';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -88,7 +89,14 @@ export async function generateMetadata({
       index: false,
     });
   }
-  if (!hadith) return {};
+  if (!hadith) {
+    return buildPageMetadata({
+      title: 'Hadith Not Found',
+      description: 'The requested Hadith was not found in this collection.',
+      path: buildHadithDetailPath(collection, hadithNumber),
+      index: false,
+    });
+  }
 
   const description = getHadithMetaDescription(hadith);
   const path = buildHadithDetailPath(collection, hadithNumber);
@@ -124,10 +132,24 @@ export default async function HadithDetailPage({
 
   if (book !== collection || !/^\d+$/.test(hadithNumber)) notFound();
 
-  const [hadith, bookData] = await Promise.all([
-    getHadithByNumber(collection, hadithNumber),
-    getCollectionBySlugOrThrow(collection),
-  ]);
+  let hadith: Awaited<ReturnType<typeof getHadithByNumber>>;
+  let bookData: Awaited<ReturnType<typeof getCollectionBySlugOrThrow>>;
+
+  try {
+    [hadith, bookData] = await Promise.all([
+      getHadithByNumber(collection, hadithNumber),
+      getCollectionBySlugOrThrow(collection),
+    ]);
+  } catch {
+    return (
+      <PublicContentState
+        title="This Hadith is temporarily unavailable"
+        description="The Hadith data provider could not load this narration. Please retry shortly; the incomplete page is excluded from indexing."
+        primaryHref={buildHadithCollectionPath(collection)}
+        primaryLabel="Browse this collection"
+      />
+    );
+  }
 
   if (!hadith || !bookData) notFound();
 

@@ -1,5 +1,4 @@
 const BASE_URL = 'https://hadithapi.com/api';
-const API_KEY = '$2y$10$00FYDd23a9QxcLJi0QPgehmVhJ46aNE5t9T7NALuUteCExBUPfy';
 
 type FetchOptions = {
   cache?: RequestCache;
@@ -22,10 +21,15 @@ export async function hadithFetch<T>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T> {
+  const apiKey = process.env.HADITH_API_KEY?.trim();
+  if (!apiKey) {
+    throw new HadithApiError(503, 'HadithAPI is not configured.');
+  }
+
   const { cache = 'force-cache', revalidate, tags } = options;
 
   const separator = endpoint.includes('?') ? '&' : '?';
-  const url = `${BASE_URL}${endpoint}${separator}apiKey=${API_KEY}`;
+  const url = `${BASE_URL}${endpoint}${separator}apiKey=${encodeURIComponent(apiKey)}`;
 
   const nextOptions: RequestInit & { next?: { revalidate?: number | false; tags?: string[] } } = {
     cache,
