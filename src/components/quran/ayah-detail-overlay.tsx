@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 
 import AuthDownloadLink from '@/components/quran/auth-download-link';
-import { encodeProtectedDownloadHref } from '@/lib/protected-download-token';
 import {
   navigateToQuranPopup,
   QURAN_POPUP_NAVIGATION_EVENT,
@@ -422,8 +421,10 @@ export default function AyahDetailOverlay({
                             <source src={item.url} />
                           </audio>
                           <AuthDownloadLink
-                            downloadToken={encodeProtectedDownloadHref(
-                              buildAyahAudioDownloadUrl(surahId, selectedAyah, item.variant)
+                            href={buildAyahAudioDownloadUrl(
+                              surahId,
+                              selectedAyah,
+                              item.variant
                             )}
                             fileName={`surah-${surahId}-ayah-${selectedAyah}-${item.language.toLowerCase()}-audio`}
                             className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"

@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 const SIX_MONTHS_SECONDS = 60 * 60 * 24 * 180;
 const APP_VERSION =
@@ -10,35 +8,6 @@ const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const isProductionDeployment =
   process.env.VERCEL_ENV === 'production' ||
   process.env.DEPLOYMENT_ENV === 'production';
-
-function slugifyAscii(input) {
-  return input
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
-
-const surahIndex = JSON.parse(
-  readFileSync(new URL('./src/data/surah-index.json', import.meta.url), 'utf8')
-);
-const legacyQuranRedirects = surahIndex.flatMap((surah) => {
-  const canonicalSlug = `${surah.id}-${slugifyAscii(surah.surahName)}`;
-
-  return [
-    {
-      source: `/quran/${surah.id}`,
-      destination: `/surah/${canonicalSlug}`,
-      permanent: true,
-    },
-    {
-      source: `/quran/${surah.id}/ayah/:ayah`,
-      destination: `/surah/${canonicalSlug}/ayah/:ayah`,
-      permanent: true,
-    },
-  ];
-});
 
 if (
   isProductionDeployment &&
@@ -89,7 +58,16 @@ const nextConfig = {
         destination: '/surah',
         permanent: true,
       },
-      ...legacyQuranRedirects,
+      {
+        source: '/quran/:id',
+        destination: '/surah/:id',
+        permanent: true,
+      },
+      {
+        source: '/quran/:id/ayah/:ayah',
+        destination: '/surah/:id/ayah/:ayah',
+        permanent: true,
+      },
       {
         source: '/hadith/tirmidhi',
         destination: '/hadith/al-tirmidhi',

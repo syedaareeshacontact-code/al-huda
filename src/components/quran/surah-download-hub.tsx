@@ -14,7 +14,6 @@ import { getDownloadPageIntro } from '@/lib/surah-download-seo';
 import { buildSurahPath } from '@/lib/quran-routing';
 import { getSurahUrduTitle } from '@/lib/surah-seo-content';
 import AuthDownloadLink from '@/components/quran/auth-download-link';
-import { encodeProtectedDownloadHref } from '@/lib/protected-download-token';
 
 interface SurahDownloadHubProps {
   surah: SurahIndexEntry;
@@ -53,7 +52,7 @@ function DownloadOptionCard({ option }: { option: SurahDownloadOption }) {
           </div>
         </div>
         <AuthDownloadLink
-          downloadToken={encodeProtectedDownloadHref(option.href)}
+          href={option.href}
           fileName={option.fileName}
           className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--color-accent),var(--color-border)_40%)] bg-[linear-gradient(135deg,var(--color-accent-soft),var(--color-accent))] px-5 py-2.5 text-sm font-bold text-[var(--color-accent-foreground)] shadow-[0_4px_14px_-6px_color-mix(in_oklab,var(--color-accent),transparent_30%)] transition hover:brightness-110 sm:w-auto"
         >
@@ -103,7 +102,7 @@ export default async function SurahDownloadHub({
           {options.slice(0, 4).map((option) => (
             <AuthDownloadLink
               key={option.id}
-              downloadToken={encodeProtectedDownloadHref(option.href)}
+              href={option.href}
               fileName={option.fileName}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs font-semibold text-[var(--color-heading)] transition hover:border-[var(--color-accent-soft)]"
             >
