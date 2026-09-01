@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { BookOpen, Hash, Languages, Quote, UserRound } from 'lucide-react';
 
 import ArabicText from '@/components/hadith/ArabicText';
@@ -13,11 +13,7 @@ import { HadithDetailSchema, HadithBreadcrumbsSchema } from '@/components/hadith
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getCollectionBySlugOrThrow } from '@/lib/hadith/collections.service';
-import {
-  getHadithByNumber,
-  getPrimaryHadithNumber,
-  getSuggestedHadiths,
-} from '@/lib/hadith/hadith.service';
+import { getHadithByNumber, getSuggestedHadiths } from '@/lib/hadith/hadith.service';
 import {
   getHadithMetaDescription,
   getHadithMetaTitle,
@@ -95,15 +91,13 @@ export async function generateMetadata({
   if (!hadith) return {};
 
   const description = getHadithMetaDescription(hadith);
-  const primaryHadithNumber = getPrimaryHadithNumber(hadith.hadithNumber) ?? hadithNumber;
-  const path = buildHadithDetailPath(collection, primaryHadithNumber);
+  const path = buildHadithDetailPath(collection, hadithNumber);
   const title = getHadithMetaTitle(hadith);
 
   return buildPageMetadata({
     title,
     description,
     path,
-    index: primaryHadithNumber === hadithNumber,
     ogType: 'article',
     keywords: buildHadithDetailKeywords({
       bookName: hadith.book.bookName,
@@ -136,11 +130,6 @@ export default async function HadithDetailPage({
   ]);
 
   if (!hadith || !bookData) notFound();
-
-  const primaryHadithNumber = getPrimaryHadithNumber(hadith.hadithNumber);
-  if (primaryHadithNumber && primaryHadithNumber !== hadithNumber) {
-    permanentRedirect(buildHadithDetailPath(collection, primaryHadithNumber));
-  }
 
   const suggestedHadiths = await getSuggestedHadiths(
     collection,

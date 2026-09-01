@@ -1,9 +1,6 @@
 import { HadithApiError, hadithFetch } from './api-client';
-import { getPrimaryHadithNumber } from './hadith-number';
 import { getStaticHadithByNumber, getStaticHadiths } from './static-data';
 import type { HadithApiHadithsResponse, HadithItem } from './types/hadith.types';
-
-export { getPrimaryHadithNumber } from './hadith-number';
 
 interface GetHadithsParams {
   bookSlug: string;
