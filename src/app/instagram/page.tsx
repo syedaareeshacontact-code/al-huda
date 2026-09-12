@@ -1,37 +1,14 @@
 import type { Metadata, Viewport } from 'next';
+import { buildPageMetadata } from '@/lib/seo';
 
 import InstagramLanding from '@/components/instagram/instagram-landing';
 
-export const metadata: Metadata = {
-  title: { absolute: 'Join Read Al Quran | Start Your Quran Journey' },
-  description:
-    'Join Read Al Quran from Instagram to read, listen, and continue your personal Quran journey.',
-  alternates: {
-    canonical: '/instagram',
-  },
-  openGraph: {
-    title: 'Join Read Al Quran | Start Your Quran Journey',
-    description:
-      'Join Read Al Quran from Instagram to read, listen, and continue your personal Quran journey.',
-    url: '/instagram',
-    type: 'website',
-    images: [
-      {
-        url: '/og?kind=surah-index',
-        width: 1200,
-        height: 630,
-        alt: 'Read Al Quran',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Join Read Al Quran | Start Your Quran Journey',
-    description:
-      'Join Read Al Quran from Instagram and begin your Quran journey.',
-    images: ['/og?kind=surah-index'],
-  },
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Continue to Read al Quran',
+  description: 'Open the Quran reader and continue your reading journey.',
+  path: '/instagram',
+  index: false,
+});
 
 export const viewport: Viewport = {
   colorScheme: 'dark light',

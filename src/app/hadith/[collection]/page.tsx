@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -14,7 +15,6 @@ import {
   buildHadithCollectionPath,
   buildHadithOgImagePath,
 } from '@/lib/hadith/hadith-routing';
-import { buildHadithCollectionKeywords } from '@/lib/seo-keywords';
 import {
   buildBookJsonLd,
   buildBreadcrumbJsonLd,
@@ -73,8 +73,7 @@ export async function generateMetadata({
     title,
     description,
     path,
-    ogType: 'article',
-    keywords: buildHadithCollectionKeywords(book.bookName, book.writerName),
+    ogType: 'website',
     imageUrl: buildHadithOgImagePath({ variant: 'collection', bookName: book.bookName }),
     index: chapters.length > 0,
   });
@@ -136,7 +135,7 @@ export default async function CollectionPage({
   const bookJsonLd = buildBookJsonLd({
     name: book.bookName,
     description: `Hadith collection compiled by ${book.writerName}.`,
-    path: collectionPath,
+    url: collectionPath,
     author: book.writerName,
     inLanguage: ['ar', 'en', 'ur'],
   });
@@ -151,11 +150,11 @@ export default async function CollectionPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(bookJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(bookJsonLd) }}
       />
 
       <div className="space-y-8 animate-fade-up">

@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 
@@ -14,7 +15,6 @@ import {
   getAllSurahAudioSources,
 } from '@/lib/surah-download';
 import {
-  buildDownloadPageKeywords,
   getDownloadPageDescription,
   getDownloadPageTitle,
 } from '@/lib/surah-download-seo';
@@ -53,7 +53,6 @@ export async function generateMetadata({ params }: SurahDownloadPageProps): Prom
     path: canonicalPath,
     ogType: 'website',
     imageUrl: `/og?kind=surah&surah=${surah.id}`,
-    keywords: buildDownloadPageKeywords(surah),
   });
 }
 
@@ -79,9 +78,9 @@ export default async function SurahDownloadPage({ params }: SurahDownloadPagePro
 
   return (
     <div className="pb-12 pt-5 sm:pb-16 sm:pt-8" data-slot="page-shell">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.webPage) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.webPage) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.itemList) }} />
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <BreadcrumbNav

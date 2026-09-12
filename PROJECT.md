@@ -119,13 +119,13 @@ Do not delete these files as generic build output:
 Refresh them with:
 
 ```bash
-npm run seo:generate
-npm run seo:generate-tafsir
+npm run data:refresh-surahs
+npm run data:refresh-tafsir
 npm run generate:surah-pdfs
 ```
 
 The PDF command downloads source Quran data and fonts and can take time.
-`npm run build:seo` runs all three generators before the production build.
+`npm run build:seo` runs SEO checks and the production build against reviewed source snapshots. Data and PDF refreshes are separate operations. See [SEO.md](SEO.md).
 
 Normal disposable output—`.next`, `coverage`, `*.tsbuildinfo`, local environment
 files, and package-manager caches—is excluded by `.gitignore`.

@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import Link from 'next/link';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import CityGrid from '@/components/islamic-tools/city-grid';
@@ -140,9 +141,9 @@ export default async function PrayerTimesPage() {
         </div>
       </section>
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webApp) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faq) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(webApp) }} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -17,7 +18,6 @@ import {
   buildHadithCollectionPath,
   buildHadithOgImagePath,
 } from '@/lib/hadith/hadith-routing';
-import { buildHadithCollectionKeywords } from '@/lib/seo-keywords';
 import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 
 export const revalidate = 3600;
@@ -70,7 +70,7 @@ export async function generateMetadata({
     ? chapters.find((entry) => String(entry.chapterNumber) === chapter)
     : undefined;
 
-  const path = buildHadithBookPath(collection, { chapter, page: currentPage });
+  const path = buildHadithBookPath(collection);
   const title = chapterMeta
     ? `${bookData.bookName} – ${chapterMeta.chapterEnglish}${currentPage > 1 ? ` (Page ${currentPage})` : ''}`
     : `${bookData.bookName} – All Hadiths${currentPage > 1 ? ` (Page ${currentPage})` : ''}`;
@@ -82,10 +82,9 @@ export async function generateMetadata({
     title,
     description,
     path,
-    index: currentPage === 1,
+    index: currentPage === 1 && !chapter,
     follow: true,
-    ogType: 'article',
-    keywords: buildHadithCollectionKeywords(bookData.bookName, bookData.writerName),
+    ogType: 'website',
     imageUrl: buildHadithOgImagePath({ variant: 'collection', bookName: bookData.bookName }),
   });
 }
@@ -153,7 +152,7 @@ export default async function BookPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs) }}
       />
 
       <div className="space-y-6 animate-fade-up">

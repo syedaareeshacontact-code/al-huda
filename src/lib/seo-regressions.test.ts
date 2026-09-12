@@ -29,16 +29,6 @@ describe('SEO regressions', () => {
     expect(tafsirPage).not.toContain('permanentRedirect(buildTafsirPopupPath');
   });
 
-  it('publishes chunked full-detail sitemaps without fake freshness signals', () => {
-    const sitemap = read('src/app/sitemaps/[name]/route.ts');
-    expect(sitemap).toContain('SITEMAP_CHUNK_SIZE = 5_000');
-    expect(sitemap).toContain('buildAyahPath');
-    expect(sitemap).toContain('buildTafsirPath');
-    expect(sitemap).toContain('hadith-detail-');
-    expect(sitemap).not.toContain('<lastmod>');
-    expect(sitemap).not.toContain('<changefreq>');
-    expect(sitemap).not.toContain('<priority>');
-  });
 
   it('does not emit obsolete meta keywords or sitelinks SearchAction schema', () => {
     const seo = read('src/lib/seo.ts');

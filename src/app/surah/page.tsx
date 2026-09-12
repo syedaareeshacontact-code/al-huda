@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 
 import { Badge } from '@/components/ui/badge';
@@ -5,23 +6,16 @@ import BreadcrumbNav from '@/components/ui/breadcrumb-nav';
 import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { getAllSurahs } from '@/lib/quran-index';
 import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
-import { GENERATED_SURAH_KEYWORDS, MASTER_SEO_KEYWORDS } from '@/lib/seo-keywords';
 import SurahIndexClient from '@/components/quran/SurahIndexClient';
 import { SurhasListProvider } from '@/context/SurhasListProvider';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Surah Index – Read All 114 Surahs with Arabic Text & Urdu Translation',
+  title: 'Quran Surah Index',
   description:
-    'Browse all 114 surahs of the Quran with Arabic text, Urdu and English translation, ayah links, tafseer access, recitation audio, bookmarks, and likes. Find popular surahs like Yaseen, Rahman, Kahf, Mulk, Waqiah, and more.',
+    'Browse the 114 Surahs by name or number. Open a chapter to read its Arabic text, Urdu and English translations, and listen to recitation.',
   path: '/surah',
   ogType: 'website',
   imageUrl: '/og?kind=surah-index',
-  keywords: Array.from(
-    new Set([
-      ...GENERATED_SURAH_KEYWORDS.slice(0, 32),
-      ...MASTER_SEO_KEYWORDS.slice(0, 18),
-    ])
-  ),
 });
 
 export default function SurahIndexPage() {
@@ -36,7 +30,7 @@ export default function SurahIndexPage() {
     <div className="pb-20 pt-8 md:pt-12" data-slot="page-shell">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs) }}
       />
       <section className="mb-10">
         <BreadcrumbNav

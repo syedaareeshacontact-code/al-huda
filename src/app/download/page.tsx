@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Download, FileText, Headphones } from 'lucide-react';
@@ -7,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { getAllSurahs } from '@/lib/quran-index';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
 import {
-  DOWNLOAD_INDEX_KEYWORDS,
   getDownloadIndexDescription,
   getDownloadIndexTitle,
 } from '@/lib/surah-download-seo';
@@ -24,7 +24,6 @@ export async function generateMetadata(): Promise<Metadata> {
     path: '/download',
     ogType: 'website',
     imageUrl: '/og?kind=surah-index',
-    keywords: DOWNLOAD_INDEX_KEYWORDS,
   });
 }
 
@@ -38,9 +37,9 @@ export default function DownloadIndexPage() {
 
   return (
     <div className="pb-20 pt-8" data-slot="page-shell">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.webPage) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.webPage) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.itemList) }} />
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <BreadcrumbNav

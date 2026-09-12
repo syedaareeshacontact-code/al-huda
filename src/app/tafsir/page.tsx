@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 
 import { Badge } from '@/components/ui/badge';
@@ -6,25 +7,15 @@ import StickyScrollNav from '@/components/ui/StickyScrollNav';
 import { getAllSurahs } from '@/lib/quran-index';
 import { getTafsirAyahNumbersBySurah } from '@/lib/tafsir-index';
 import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
-import {
-  GENERATED_TAFSEER_KEYWORDS,
-  MASTER_SEO_KEYWORDS,
-} from '@/lib/seo-keywords';
 import TafsirIndexClient from '@/components/tafsir/TafsirIndexClient';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Tafseer Index – Complete Urdu Tafseer of All Surahs',
+  title: 'Urdu Tafseer Index',
   description:
-    'Browse complete Urdu tafseer (Islamic interpretation) for all Quranic surahs. Find detailed explanations, Islamic knowledge, and spiritual insights for each chapter with Arabic text and translations.',
+    'Find available Urdu tafseer by Surah and Ayah. Each commentary page includes the verse, translations and the source returned by the provider.',
   path: '/tafsir',
   ogType: 'website',
   imageUrl: '/og?kind=tafsir-index',
-  keywords: Array.from(
-    new Set([
-      ...GENERATED_TAFSEER_KEYWORDS.slice(0, 32),
-      ...MASTER_SEO_KEYWORDS.slice(0, 18),
-    ])
-  ),
 });
 
 export default function TafsirIndexPage() {
@@ -48,7 +39,7 @@ export default function TafsirIndexPage() {
     <div className="pb-20 pt-8 md:pt-12" data-slot="page-shell">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs) }}
       />
       <section className="mb-10 animate-fade-up">
         <BreadcrumbNav
@@ -75,7 +66,7 @@ export default function TafsirIndexPage() {
           </h1>
 
           <p className="text-base md:text-lg leading-relaxed text-[var(--color-muted-text)] max-w-2xl">
-            مکمل اردو تفسیر - Complete Urdu tafseer (Islamic interpretation) of all Quranic surahs with detailed explanations and spiritual insights.
+            Browse available Urdu tafseer by Surah. Each entry links to the commentary and its source.
           </p>
         </div>
 

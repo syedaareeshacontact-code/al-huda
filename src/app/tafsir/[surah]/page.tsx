@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -16,7 +17,6 @@ import {
   buildTafsirSurahPath,
 } from '@/lib/quran-routing';
 import { getAllTafsirSurahStaticParams } from '@/lib/quran-static-params';
-import { buildTafsirPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildTafsirSurahPageSchemas } from '@/lib/seo-schema';
 import {
@@ -72,13 +72,8 @@ export async function generateMetadata({ params }: TafsirSurahPageProps): Promis
     title: getTafsirSurahMetaTitle(surah),
     description: getTafsirSurahMetaDescription(surah, ayahNumbers.length),
     path: canonicalPath,
-    ogType: 'article',
+    ogType: 'website',
     imageUrl: `/og?kind=tafsir&surah=${surah.id}`,
-    keywords: buildTafsirPageKeywords({
-      surahId: surah.id,
-      surahName: surah.surahName,
-      ayahNumber: 1,
-    }),
   });
 }
 
@@ -112,10 +107,10 @@ export default async function TafsirSurahPage({ params }: TafsirSurahPageProps) 
 
   return (
     <div className="pb-16 pt-10" data-slot="page-shell">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.article) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.webPage) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.article) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.itemList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.webPage) }} />
 
       <BreadcrumbNav
         items={[

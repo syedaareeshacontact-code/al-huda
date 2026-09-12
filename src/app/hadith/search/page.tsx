@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { HadithApiError } from '@/lib/hadith/api-client';
 import { searchHadiths } from '@/lib/hadith/hadith.service';
 import { buildHadithSearchPath } from '@/lib/hadith/hadith-routing';
-import { HADITH_SEARCH_KEYWORDS } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +27,6 @@ export async function generateMetadata({
       : 'Search thousands of narrations by keyword across major Hadith collections, with grades shown where supplied.',
     path: q ? `${buildHadithSearchPath()}?q=${encodeURIComponent(q)}` : buildHadithSearchPath(),
     index: false,
-    keywords: HADITH_SEARCH_KEYWORDS,
   });
 }
 

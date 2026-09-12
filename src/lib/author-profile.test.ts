@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+vi.mock('server-only', () => ({}));
+import { getSearchCatalog } from './seo/search-catalog';
+import { PRIMARY_AUTHOR } from './author-profile';
 
 const ROOT = process.cwd();
 
@@ -36,9 +39,6 @@ describe('owner and author trust signals', () => {
   it('uses the author profile in article links, structured data, and sitemaps', () => {
     expect(read('src/components/articles/ArticleHeader.tsx')).toContain('PRIMARY_AUTHOR.href');
     expect(read('src/app/articles/[slug]/page.tsx')).toContain('PRIMARY_AUTHOR.href');
-    expect(read('src/app/articles-sitemap.xml/route.ts')).toContain('PRIMARY_AUTHOR.href');
-    expect(read('src/app/sitemaps/[name]/route.ts')).toContain(
-      '/authors/zain-qalandar-shah'
-    );
+    expect(getSearchCatalog().filter(record => record.path === PRIMARY_AUTHOR.href)).toHaveLength(1);
   });
 });

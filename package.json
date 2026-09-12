@@ -5,17 +5,21 @@
   "packageManager": "npm@10.8.2",
   "scripts": {
     "dev": "next dev",
-    "seo:generate": "node scripts/generate-surah-index.mjs",
-    "seo:generate-tafsir": "node scripts/generate-tafsir-availability.mjs",
+    "data:refresh-surahs": "node scripts/generate-surah-index.mjs",
+    "data:refresh-tafsir": "node scripts/generate-tafsir-availability.mjs",
+    "data:inspect-duas": "node scripts/refresh-dua-catalog.mjs",
+    "data:inspect-hadiths": "node scripts/build-hadith-catalog.mjs",
     "hadith:download": "node scripts/download-hadith-json.mjs",
     "generate:surah-pdfs": "node scripts/generate-surah-pdfs.mjs",
-    "build:seo": "npm run seo:generate && npm run seo:generate-tafsir && npm run generate:surah-pdfs && npm run build",
+    "build:seo": "npm run seo:check && npm run build",
+    "prebuild": "node scripts/build-hadith-catalog.mjs --check",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "security:check": "node scripts/check-tracked-secrets.mjs",
-    "seo:check": "npm run security:check && vitest run src/lib/seo-regressions.test.ts src/lib/aladhan-api.test.ts"
+    "seo:check": "npm run security:check && vitest run src/lib/seo src/lib/seo-regressions.test.ts src/lib/technical-quality.test.ts src/lib/quran-routing.test.ts src/lib/hadith-seo-content.test.ts",
+    "seo:smoke": "node scripts/check-search-output.mjs"
   },
   "dependencies": {
     "@google-analytics/data": "^6.1.0",

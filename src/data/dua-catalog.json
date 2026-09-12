@@ -1,0 +1,115 @@
+{
+  "source": "https://ummahapi.com/api",
+  "checkedAt": "2026-09-12T03:52:10.667Z",
+  "namesAvailable": true,
+  "categories": [
+    {
+      "id": "after_prayer",
+      "count": 8
+    },
+    {
+      "id": "business",
+      "count": 4
+    },
+    {
+      "id": "children",
+      "count": 4
+    },
+    {
+      "id": "dhikr",
+      "count": 6
+    },
+    {
+      "id": "distress",
+      "count": 7
+    },
+    {
+      "id": "evening",
+      "count": 5
+    },
+    {
+      "id": "food",
+      "count": 6
+    },
+    {
+      "id": "forgiveness",
+      "count": 5
+    },
+    {
+      "id": "gratitude",
+      "count": 3
+    },
+    {
+      "id": "grief",
+      "count": 4
+    },
+    {
+      "id": "guidance",
+      "count": 3
+    },
+    {
+      "id": "hajj",
+      "count": 4
+    },
+    {
+      "id": "home",
+      "count": 2
+    },
+    {
+      "id": "illness",
+      "count": 5
+    },
+    {
+      "id": "knowledge",
+      "count": 3
+    },
+    {
+      "id": "marriage",
+      "count": 4
+    },
+    {
+      "id": "masjid",
+      "count": 4
+    },
+    {
+      "id": "morning",
+      "count": 7
+    },
+    {
+      "id": "night_prayer",
+      "count": 4
+    },
+    {
+      "id": "parents",
+      "count": 3
+    },
+    {
+      "id": "prayer",
+      "count": 8
+    },
+    {
+      "id": "protection",
+      "count": 4
+    },
+    {
+      "id": "quran_recitation",
+      "count": 3
+    },
+    {
+      "id": "sleep",
+      "count": 6
+    },
+    {
+      "id": "travel",
+      "count": 6
+    },
+    {
+      "id": "weather",
+      "count": 3
+    },
+    {
+      "id": "wudu",
+      "count": 5
+    }
+  ]
+}

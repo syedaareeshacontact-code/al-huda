@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -33,15 +34,6 @@ const ARTICLES_METADATA = {
     '/images/articles/how-to-start-reading-the-quran/beginner-quran-reading-guide-cover.webp',
 } as const;
 
-const ARTICLES_KEYWORDS = [
-  'Quran articles',
-  'Surah guides',
-  'Islamic duas',
-  'learn Quran',
-  'Quran reading guide',
-  'Read al Quran articles',
-];
-
 export async function generateMetadata({ searchParams }: ArticlesPageProps): Promise<Metadata> {
   const resolvedSearchParams = await searchParams;
   const search = getStringParam(resolvedSearchParams.q).trim();
@@ -50,7 +42,6 @@ export async function generateMetadata({ searchParams }: ArticlesPageProps): Pro
 
   return buildPageMetadata({
     ...ARTICLES_METADATA,
-    keywords: ARTICLES_KEYWORDS,
     index: !hasFilteredView,
     follow: true,
   });
@@ -109,7 +100,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c'),
+          __html: serializeJsonLd(breadcrumbJsonLd),
         }}
       />
 

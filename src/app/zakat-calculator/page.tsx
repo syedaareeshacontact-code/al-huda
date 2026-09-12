@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import IslamicPageHeader from '@/components/islamic-tools/islamic-page-header';
 import ZakatCalculatorClient from '@/components/zakat/zakat-calculator-client';
 import {
@@ -27,8 +28,8 @@ export default function ZakatCalculatorPage() {
 
       <ZakatCalculatorClient />
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faq) }} />
     </div>
   );
 }

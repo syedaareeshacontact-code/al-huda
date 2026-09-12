@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, FolderOpen } from 'lucide-react';
@@ -42,13 +43,6 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
   return {
     ...metadata,
-    keywords: Array.from(
-      new Set([
-        category.name,
-        `${category.name} articles`,
-        ...articles.flatMap((article) => article.keywords),
-      ])
-    ).slice(0, 20),
   };
 }
 
@@ -75,7 +69,7 @@ export default async function ArticleCategoryPage({ params }: CategoryPageProps)
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c'),
+          __html: serializeJsonLd(breadcrumbJsonLd),
         }}
       />
 

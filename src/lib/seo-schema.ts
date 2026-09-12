@@ -1,9 +1,9 @@
 import {
-  buildArticleJsonLd,
   buildBreadcrumbJsonLd,
   buildFaqJsonLd,
   toAbsoluteUrl,
 } from '@/lib/seo';
+import { buildReferenceJsonLd } from '@/lib/seo/structured-data';
 import type { SurahIndexEntry } from '@/lib/quran-index';
 import {
   buildAyahPath,
@@ -19,7 +19,7 @@ const MAX_SCHEMA_LIST_ITEMS = 40;
 export function buildSurahPageSchemas(
   surah: SurahIndexEntry,
   intro: string,
-  ayahCount: number
+  _ayahCount: number
 ) {
   const path = buildSurahPath(surah.id, surah.surahName);
 
@@ -50,7 +50,7 @@ export function buildSurahPageSchemas(
     description: intro,
     url: toAbsoluteUrl(path),
     inLanguage: ['ar', 'ur', 'en'],
-    numberOfItems: ayahCount,
+    position: surah.id,
     isPartOf: {
       '@type': 'Book',
       name: 'The Holy Quran',
@@ -109,7 +109,7 @@ export function buildAyahPageSchemas(options: {
     { name: `Ayah ${ayahNumber}`, item: ayahPath },
   ]);
 
-  const article = buildArticleJsonLd({
+  const article = buildReferenceJsonLd({
     title: `Ayah ${surah.id}:${ayahNumber} — Surah ${surah.surahName}`,
     description: `${urduTranslation || englishTranslation}`.slice(0, 200),
     content: [arabicText, urduTranslation, englishTranslation].filter(Boolean).join('\n'),
@@ -146,8 +146,8 @@ export function buildTafsirSurahPageSchemas(options: {
     { name: `Surah ${surah.surahName} Tafseer`, item: tafsirSurahPath },
   ]);
 
-  const article = buildArticleJsonLd({
-    title: `Surah ${surah.surahName} — Complete Urdu Tafseer`,
+  const article = buildReferenceJsonLd({
+    title: `Surah ${surah.surahName} — Urdu Tafseer`,
     description: intro,
     url: tafsirSurahPath,
     inLanguage: ['ur', 'ar', 'en'],
@@ -201,7 +201,7 @@ export function buildTafsirPageSchemas(options: {
     { name: 'Urdu Tafseer', item: tafsirPath },
   ]);
 
-  const article = buildArticleJsonLd({
+  const article = buildReferenceJsonLd({
     title: `Tafseer of Ayah ${surah.id}:${ayahNumber} — Surah ${surah.surahName}`,
     description: tafsirText.slice(0, 200),
     content: tafsirText.slice(0, 500),

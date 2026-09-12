@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Suspense } from 'react';
@@ -13,7 +14,6 @@ import { getSurahDetailById, getSurahMetaById } from '@/lib/quran-server';
 import { buildSurahPath } from '@/lib/quran-routing';
 import { getAllSurahStaticParams } from '@/lib/quran-static-params';
 import { buildSurahDownloadPath } from '@/lib/surah-download';
-import { buildSurahPageKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 import { buildSurahPageSchemas } from '@/lib/seo-schema';
 import { SurhasListProvider } from '@/context/SurhasListProvider';
@@ -58,14 +58,8 @@ export async function generateMetadata({ params }: SurahPageProps): Promise<Meta
     title: getSurahMetaTitle(surah),
     description: getSurahMetaDescription(surah),
     path: canonicalPath,
-    ogType: 'article',
+    ogType: 'website',
     imageUrl: `/og?kind=surah&surah=${surah.id}`,
-    keywords: buildSurahPageKeywords({
-      surahId: surah.id,
-      surahName: surah.surahName,
-      surahNameArabic: surah.surahNameArabic,
-      surahNameTranslation: surah.surahNameTranslation,
-    }),
   });
 }
 
@@ -103,8 +97,8 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
       audio: {},
     };
   } catch {
-    initialSurahDetail = null;
-    initialSurahMeta = null;
+    // Fail the build/revalidation rather than cache an indexable empty reader.
+    throw new Error('Surah content is temporarily unavailable.');
   }
 
   const surahPath = buildSurahPath(surah.id, surah.surahName);
@@ -125,10 +119,10 @@ export default async function SurahDetailPage({ params }: SurahPageProps) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.webPage) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.book) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.itemList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.webPage) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.book) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.itemList) }} />
 
       <SurahPageHero
         surahId={surah.id}

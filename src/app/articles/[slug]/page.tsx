@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -17,6 +18,7 @@ import {
 import { PRIMARY_AUTHOR } from '@/lib/author-profile';
 import {
   buildBreadcrumbJsonLd,
+  buildPageMetadata,
   getSiteName,
   getSiteOrigin,
   toAbsoluteUrl,
@@ -45,65 +47,19 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     };
   }
 
-  const canonicalUrl = toAbsoluteUrl(article.href);
-  const imageUrl = toAbsoluteUrl(article.coverImage);
-
-  return {
+  return buildPageMetadata({
     title: article.title,
     description: article.description,
-    keywords: article.keywords,
-    authors: [{ name: article.author, url: PRIMARY_AUTHOR.href }],
-    creator: article.author,
-    publisher: getSiteName(),
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      type: 'article',
-      url: canonicalUrl,
-      siteName: getSiteName(),
-      locale: 'en_US',
-      title: article.title,
-      description: article.description,
-      publishedTime: article.publishedAt,
-      modifiedTime: article.updatedAt,
-      section: article.category,
-      tags: article.keywords,
-      authors: [article.author],
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: article.coverAlt,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: article.title,
-      description: article.description,
-      images: [imageUrl],
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-        'max-video-preview': -1,
-      },
-    },
-    other: {
-      'article:published_time': article.publishedAt,
-      'article:modified_time': article.updatedAt,
-      'article:section': article.category,
-      'content-reviewer': article.reviewer,
-      'content-last-reviewed': article.reviewedAt ?? 'pending',
-    },
-  };
+    path: article.href,
+    ogType: 'article',
+    imageUrl: article.coverImage,
+    imageAlt: article.coverAlt,
+    author: article.author,
+    authorUrl: PRIMARY_AUTHOR.href,
+    publishedDate: article.publishedAt,
+    modifiedDate: article.updatedAt,
+    section: article.category,
+  });
 }
 
 function buildArticleJsonLd(article: Article) {
@@ -147,7 +103,6 @@ function buildArticleJsonLd(article: Article) {
     },
     url: pageUrl,
     articleSection: article.category,
-    keywords: article.keywords.join(', '),
     inLanguage: ['en', 'ur', 'ar'],
     isAccessibleForFree: true,
   };
@@ -187,13 +142,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(articleJsonLd).replace(/</g, '\\u003c'),
+          __html: serializeJsonLd(articleJsonLd),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c'),
+          __html: serializeJsonLd(breadcrumbJsonLd),
         }}
       />
 

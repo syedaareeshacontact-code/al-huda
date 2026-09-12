@@ -26,7 +26,6 @@ import {
 } from '@/lib/hadith/hadith-routing';
 import { getSurahById } from '@/lib/quran-index';
 import { buildSurahPath } from '@/lib/quran-routing';
-import { buildHadithDetailKeywords } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 
 export const revalidate = false;
@@ -98,15 +97,7 @@ export async function generateMetadata({
     title,
     description,
     path,
-    ogType: 'article',
-    keywords: buildHadithDetailKeywords({
-      bookName: hadith.book.bookName,
-      writerName: hadith.book.writerName,
-      hadithNumber,
-      chapterEnglish: hadith.chapter.chapterEnglish,
-      grade: hadith.status,
-    }),
-    author: hadith.englishNarrator || hadith.book.writerName,
+    ogType: 'website',
     imageUrl: buildHadithOgImagePath({
       variant: 'detail',
       bookName: hadith.book.bookName,

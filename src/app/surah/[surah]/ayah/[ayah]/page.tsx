@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -51,21 +52,6 @@ function parseAyahNumber(value: string) {
   return parsed;
 }
 
-function buildLightweightAyahKeywords(surahId: number, surahName: string, ayahNumber: number) {
-  const normalizedSurahName = surahName.toLowerCase();
-
-  return [
-    `ayah ${surahId}:${ayahNumber}`,
-    `surah ${normalizedSurahName} ayah ${ayahNumber}`,
-    `quran ${surahId}:${ayahNumber}`,
-    `ayah ${surahId}:${ayahNumber} urdu translation`,
-    `ayah ${surahId}:${ayahNumber} english translation`,
-    `ayah ${surahId}:${ayahNumber} tafseer`,
-    `ayah ${surahId}:${ayahNumber} audio`,
-    `surah ${normalizedSurahName} verse ${ayahNumber}`,
-  ];
-}
-
 export async function generateMetadata({
   params,
 }: AyahPageProps): Promise<Metadata> {
@@ -86,12 +72,11 @@ export async function generateMetadata({
   const canonicalPath = buildAyahPath(surah.id, surah.surahName, ayahNumber);
 
   return buildPageMetadata({
-    title: `Quran ${surah.id}:${ayahNumber} — ${surah.surahName} in Arabic, Urdu & English`,
+    title: `Quran ${surah.id}:${ayahNumber} — Surah ${surah.surahName}`,
     description: `Read Ayah ${surah.id}:${ayahNumber} of Surah ${surah.surahName} with Arabic text, Urdu translation, English translation, audio, and tafseer link.`,
     path: canonicalPath,
-    ogType: 'article',
+    ogType: 'website',
     imageUrl: `/og?kind=ayah&surah=${surah.id}&ayah=${ayahNumber}`,
-    keywords: buildLightweightAyahKeywords(surah.id, surah.surahName, ayahNumber),
   });
 }
 
@@ -193,20 +178,20 @@ export default async function AyahDetailPage({
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs.breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs.breadcrumb) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs.article) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs.article) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs.webPage) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbs.webPage) }}
       />
       {audioJsonLd.length > 0 ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(audioJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(audioJsonLd) }}
         />
       ) : null}
 

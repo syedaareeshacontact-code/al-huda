@@ -42,7 +42,7 @@ function getTafsirPath(surahId: number, ayahNumber: number) {
 }
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Read Quran Online – Quran Pak, Urdu Translation, Audio Tilawat, Tafseer',
+  title: 'A Guide to Reading the Quran Online',
   description:
     'Read Quran online with Arabic text, Urdu and English translation, ayah tafseer, and audio tilawat. Access Surah Yaseen, Rahman, Kahf, Mulk, Waqiah, and Ayat ul Kursi quickly.',
   path: '/read-quran-online',

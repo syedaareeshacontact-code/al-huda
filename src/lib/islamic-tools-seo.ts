@@ -6,104 +6,22 @@ import {
 } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const PRAYER_TIMES_KEYWORDS = [
-  'namaz timing',
-  'namaz ka waqt',
-  'prayer times pakistan',
-  'islamic prayer times',
-  'fajr time today',
-  'maghrib time today',
-  'namaz timing lahore',
-  'namaz timing karachi',
-  'namaz timing islamabad',
-  'qibla direction',
-  'qibla compass',
-  'hijri date today',
-  'islamic calendar',
-  'hijri calendar 2026',
-  'sehri time',
-  'iftar time',
-  'namaz timetable',
-  'salah times',
-  'muslim prayer times',
-  'azan time',
-];
-
-export const DUAS_KEYWORDS = [
-  'islamic duas',
-  'daily duas',
-  'morning duas',
-  'evening duas',
-  'dua in arabic',
-  'dua with translation',
-  'morning azkar',
-  'evening azkar',
-  'adhkar',
-  'dhikr',
-  '99 names of allah',
-  'asma ul husna',
-  'names of allah',
-  'islamic supplications',
-  'dua before sleep',
-  'dua after prayer',
-  'masnoon duain',
-  'masnoon duain urdu',
-];
-
-export const ZAKAT_KEYWORDS = [
-  'zakat calculator',
-  'zakat calculator pakistan',
-  'calculate zakat online',
-  'zakat on gold',
-  'zakat on money',
-  'nisab amount',
-  'zakat 2.5 percent',
-  'how to calculate zakat',
-  'zakat calculator pkr',
-  'islamic zakat calculator',
-];
-
-export const MOSQUE_KEYWORDS = [
-  'mosque finder',
-  'masjid near me',
-  'find mosque near me',
-  'nearby masjid',
-  'mosque locator',
-  'islamic places near me',
-  'masjid finder pakistan',
-  'nearest mosque',
-  'mosque map',
-];
-
-export function buildPrayerTimesMetadata(city?: string, cityUrdu?: string): Metadata {
+export function buildPrayerTimesMetadata(city?: string, _cityUrdu?: string): Metadata {
   if (city) {
     const slug = city.toLowerCase().replace(/\s+/g, '-');
-    const urduTitle = cityUrdu ? `نماز کے اوقات ${cityUrdu}` : undefined;
     return buildPageMetadata({
-      title: urduTitle
-        ? `${urduTitle} — ${city} Namaz Timings Today | Prayer Times Pakistan`
-        : `${city} Namaz Timings Today — Prayer Times, Qibla & Hijri Date`,
-      description: `Calculated ${city} namaz timings for Fajr, Dhuhr, Asr, Maghrib & Isha. Qibla direction, Hijri calendar, and monthly prayer timetable for ${city}, Pakistan.${cityUrdu ? ` ${urduTitle} آج کے لیے.` : ''}`,
+      title: `Prayer Times in ${city}`,
+      description: `View calculated prayer times for ${city}, Pakistan, with the calculation method, Qibla direction and monthly timetable. Check local mosque schedules.`,
       path: `/prayer-times/${slug}`,
-      keywords: [
-        `namaz timing ${city.toLowerCase()}`,
-        `${city.toLowerCase()} prayer times`,
-        `fajr time ${city.toLowerCase()}`,
-        `maghrib time ${city.toLowerCase()}`,
-        `${city.toLowerCase()} namaz timetable`,
-        ...(cityUrdu ? [`نماز کے اوقات ${cityUrdu}`] : []),
-        ...PRAYER_TIMES_KEYWORDS.slice(0, 8),
-      ],
       imageUrl: '/og?kind=surah-index',
     });
   }
 
   return buildPageMetadata({
-    title: 'Prayer Times Pakistan — Namaz Timings, Qibla & Hijri Calendar',
+    title: 'Prayer Times in Pakistan',
     description:
       'Free calculated prayer times for major Pakistani cities, with Fajr, Dhuhr, Asr, Maghrib, Isha, Qibla direction, and Hijri calendar.',
     path: '/prayer-times',
-    keywords: PRAYER_TIMES_KEYWORDS,
     imageUrl: '/og?kind=surah-index',
   });
 }
@@ -115,98 +33,65 @@ export function buildDuasMetadata(
 ): Metadata {
   if (category && categoryName) {
     return buildPageMetadata({
-      title: `${categoryName} — Islamic Duas & Supplications with Arabic Text`,
+      title: `${categoryName} — Duas`,
       description: `Read ${categoryName.toLowerCase()} with Arabic text, transliteration, English translation, and source information where supplied by the data provider.`,
       path: `/duas/${category}`,
       index,
-      keywords: [
-        categoryName.toLowerCase(),
-        `${categoryName.toLowerCase()} dua`,
-        `${categoryName.toLowerCase()} arabic`,
-        ...DUAS_KEYWORDS.slice(0, 10),
-      ],
     });
   }
 
   return buildPageMetadata({
-    title: 'Islamic Duas & Azkar — 126 Supplications in Arabic & English',
+    title: 'Duas by Occasion',
     description:
-      'Browse 126 Islamic duas and azkar across 27 categories, with Arabic text, transliteration, English translation, and source references where supplied.',
+      'Find duas by occasion, with Arabic text, transliteration, English translation and available source references.',
     path: '/duas',
     index,
-    keywords: DUAS_KEYWORDS,
   });
 }
 
 export function buildAzkarMetadata(index = true): Metadata {
   return buildPageMetadata({
-    title: 'Morning & Evening Azkar — Daily Islamic Remembrance (Adhkar)',
+    title: 'Morning and Evening Azkar',
     description:
       'Daily morning and evening azkar (adhkar) with Arabic text, transliteration, translation, and source references where supplied.',
     path: '/azkar',
     index,
-    keywords: [
-      'morning azkar',
-      'evening azkar',
-      'adhkar',
-      'daily dhikr',
-      'morning remembrance',
-      'evening remembrance',
-      ...DUAS_KEYWORDS,
-    ],
   });
 }
 
 export function build99NamesMetadata(index = true): Metadata {
   return buildPageMetadata({
-    title: '99 Names of Allah (Asma ul Husna) — Arabic, Meaning & Benefits',
+    title: '99 Names of Allah — Arabic and Meanings',
     description:
-      'Learn all 99 Names of Allah (Asma ul Husna) with Arabic calligraphy, transliteration, English meaning, and detailed explanations.',
+      'Read the 99 Names of Allah with Arabic text, transliteration and English meanings.',
     path: '/99-names-of-allah',
     index,
-    keywords: [
-      '99 names of allah',
-      'asma ul husna',
-      'names of allah',
-      'allah names meaning',
-      'asmaul husna',
-      'beautiful names of allah',
-      ...DUAS_KEYWORDS.slice(10, 15),
-    ],
   });
 }
 
 export function buildZakatMetadata(): Metadata {
   return buildPageMetadata({
-    title: 'Zakat Calculator Pakistan — Calculate Your Zakat Online (PKR)',
+    title: 'Zakat Calculator',
     description:
-      'Free Islamic Zakat calculator for Pakistan. Calculate Zakat on gold, silver, cash, and assets. Based on current Nisab thresholds in PKR.',
+      'Estimate Zakat using your assets, liabilities and entered gold or silver prices. Review the calculation assumptions and consult a qualified adviser when needed.',
     path: '/zakat-calculator',
-    keywords: ZAKAT_KEYWORDS,
   });
 }
 
 export function buildMosqueFinderMetadata(city?: string): Metadata {
   if (city) {
     return buildPageMetadata({
-      title: `Mosques in ${city} — Find Nearby Masjid & Prayer Places`,
+      title: `Mosque Finder for ${city}`,
       description: `Find mosques and masjids near ${city}, Pakistan. Interactive map with directions, distances, and mosque details from OpenStreetMap.`,
       path: `/mosque-finder/${city.toLowerCase().replace(/\s+/g, '-')}`,
-      keywords: [
-        `mosque near ${city.toLowerCase()}`,
-        `masjid ${city.toLowerCase()}`,
-        `mosques in ${city.toLowerCase()}`,
-        ...MOSQUE_KEYWORDS.slice(0, 8),
-      ],
     });
   }
 
   return buildPageMetadata({
-    title: 'Mosque Finder — Find Nearby Masjid & Islamic Places',
+    title: 'Find a Nearby Mosque',
     description:
       'Find mosques and masjids near you in Pakistan. Free mosque locator with map, directions, and distance. Powered by OpenStreetMap community data.',
     path: '/mosque-finder',
-    keywords: MOSQUE_KEYWORDS,
   });
 }
 
@@ -227,10 +112,9 @@ export function buildPrayerTimesJsonLd(
       itemListElement: Object.entries(timings)
         .filter(([k]) => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].includes(k))
         .map(([name, time], index) => ({
-          '@type': 'PropertyValue',
+          '@type': 'ListItem',
           position: index + 1,
-          name: `${name} Prayer`,
-          value: `${date}T${time}:00+05:00`,
+          item: { '@type': 'PropertyValue', name: `${name} Prayer`, value: time },
         })),
     },
   };
@@ -268,7 +152,7 @@ export function getDuasFaqItems() {
     {
       question: 'How many duas are available?',
       answer:
-        'The directory contains 126 duas and supplications across 27 categories. Individual entries show source information where it is supplied by the data provider.',
+        'The directory shows the available categories and current entry counts. Individual entries include source information where supplied by the data provider.',
     },
     {
       question: 'What is the difference between dua and azkar?',
@@ -359,12 +243,3 @@ export function buildWebApplicationJsonLd(options: {
     },
   };
 }
-
-export const ISLAMIC_TOOLS_SITEMAP_PATHS = [
-  '/prayer-times',
-  '/duas',
-  '/azkar',
-  '/99-names-of-allah',
-  '/zakat-calculator',
-  '/mosque-finder',
-];

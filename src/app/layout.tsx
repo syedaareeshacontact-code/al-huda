@@ -1,4 +1,6 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata, Viewport } from 'next';
+import { getSiteOrigin, SITE_NAME, SITE_DESCRIPTION } from '@/lib/seo/site';
 import dynamic from 'next/dynamic';
 import {
 	Manrope,
@@ -31,13 +33,7 @@ const ActivityTrackerProvider = dynamic(
 	() => import('@/components/providers/activity-tracker-provider')
 );
 
-const defaultSiteUrl = 'https://www.readalquran.online';
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || defaultSiteUrl;
-const siteOrigin = new URL(siteUrl);
-const siteOriginString = siteOrigin.toString().replace(/\/$/, '');
-const siteName = 'Read al Quran';
-const siteDescription =
-	'Read al Quran is a Quran-first web app for recitation, Urdu translation, bookmarks, audio playback, and progress tracking.';
+const siteOrigin = new URL(getSiteOrigin());
 const ogImage = '/og?kind=surah-index';
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
@@ -77,18 +73,12 @@ const urduNastaliq = Noto_Nastaliq_Urdu({
 export const metadata: Metadata = {
 	metadataBase: siteOrigin,
 	title: {
-		default: 'Read al Quran | Read, Listen, and Learn',
+		default: 'Read al Quran',
 		template: '%s | Read al Quran',
 	},
-	description: siteDescription,
+	description: SITE_DESCRIPTION,
 	applicationName: 'Read al Quran',
 	category: 'education',
-	alternates: {
-		canonical: siteOriginString,
-		languages: {
-			'x-default': siteOriginString,
-		},
-	},
 	icons: {
 		icon: [
 			{ url: '/logos/favicon-48.png', type: 'image/png', sizes: '48x48' },
@@ -106,11 +96,10 @@ export const metadata: Metadata = {
 	},
 	openGraph: {
 		title: 'Read al Quran',
-		description: siteDescription,
+		description: SITE_DESCRIPTION,
 		url: '/',
-		siteName,
+		siteName: SITE_NAME,
 		type: 'website',
-		locale: 'en_US',
 		images: [
 			{
 				url: ogImage,
@@ -123,7 +112,7 @@ export const metadata: Metadata = {
 	twitter: {
 		card: 'summary_large_image',
 		title: 'Read al Quran',
-		description: siteDescription,
+		description: SITE_DESCRIPTION,
 		images: [ogImage],
 	},
 	robots: {
@@ -193,13 +182,13 @@ export default function RootLayout({
 				<script
 					type="application/ld+json"
 					dangerouslySetInnerHTML={{
-						__html: JSON.stringify(organizationJsonLd),
+						__html: serializeJsonLd(organizationJsonLd),
 					}}
 				/>
 				<script
 					type="application/ld+json"
 					dangerouslySetInnerHTML={{
-						__html: JSON.stringify(websiteJsonLd),
+						__html: serializeJsonLd(websiteJsonLd),
 					}}
 				/>
 

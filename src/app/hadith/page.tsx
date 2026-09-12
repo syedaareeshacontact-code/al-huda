@@ -5,17 +5,15 @@ import HadithSeoIntro from '@/components/hadith/HadithSeoIntro';
 import { HadithIndexSchema } from '@/components/hadith/HadithSchema';
 import { getAllCollectionsOrThrow } from '@/lib/hadith/collections.service';
 import { buildHadithIndexPath, buildHadithOgImagePath } from '@/lib/hadith/hadith-routing';
-import { GENERATED_HADITH_KEYWORDS, GLOBAL_HADITH_SEO_KEYWORDS } from '@/lib/seo-keywords';
 import { buildPageMetadata } from '@/lib/seo';
 
 export const revalidate = 86400;
 
 const HADITH_INDEX_METADATA = {
-  title: 'Hadith Collections – Sahih Bukhari, Muslim & Six Books Online',
+  title: 'Hadith Collections',
   description:
-    'Browse major Hadith collections including Sahih Bukhari, Sahih Muslim, Abu Dawud, Tirmidhi, Nasai, Ibn Majah, and Mishkat with Arabic, English and Urdu translations.',
+    'Browse Hadith collections by book and chapter. Read available Arabic text, Urdu and English translations, and the grades supplied by the source.',
   path: buildHadithIndexPath(),
-  keywords: [...GLOBAL_HADITH_SEO_KEYWORDS, ...GENERATED_HADITH_KEYWORDS],
   imageUrl: buildHadithOgImagePath({ variant: 'index' }),
 };
 

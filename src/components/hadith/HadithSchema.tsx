@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { HadithBook } from '@/lib/hadith/types/hadith.types';
 import {
   buildHadithCollectionPath,
@@ -58,7 +59,6 @@ export function HadithIndexSchema({ collections }: HadithIndexSchemaProps) {
           '@type': 'Person',
           name: col.writerName,
         },
-        numberOfItems: col.hadiths_count,
         inLanguage: ['ar', 'en', 'ur'],
       },
     })),
@@ -68,11 +68,11 @@ export function HadithIndexSchema({ collections }: HadithIndexSchemaProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionPageSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(itemListSchema) }}
       />
     </>
   );
@@ -95,13 +95,13 @@ interface HadithDetailSchemaProps {
 }
 
 /**
- * JSON-LD Schema for individual Hadith pages using "Article" schema
+ * JSON-LD Schema for individual Hadith pages using a sourced CreativeWork
  */
 export function HadithDetailSchema({
   hadithNumber,
   bookName,
   writerName,
-  chapterEnglish,
+  chapterEnglish: _chapterEnglish,
   content,
   path,
   imageUrl,
@@ -118,21 +118,17 @@ export function HadithDetailSchema({
 
   const articleSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
-    '@id': `${pageUrl}#article`,
+    '@type': 'CreativeWork',
+    '@id': `${pageUrl}#reference`,
     url: pageUrl,
-    headline: headline,
+    name: headline,
     description: resolvedDescription,
-    ...(normalizedContent && { articleBody: normalizedContent }),
+    ...(normalizedContent && { text: normalizedContent }),
     ...(datePublished && {
       datePublished,
       dateModified: datePublished,
     }),
     inLanguage: inLanguage,
-    author: {
-      '@type': 'Person',
-      name: writerName, // Imam name
-    },
     publisher: {
       '@type': 'Organization',
       name: siteName,
@@ -161,7 +157,7 @@ export function HadithDetailSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
     />
   );
 }
@@ -224,7 +220,7 @@ export function HadithBreadcrumbsSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
     />
   );
 }

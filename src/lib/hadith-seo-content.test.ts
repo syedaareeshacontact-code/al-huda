@@ -42,7 +42,7 @@ describe('getHadithMetaDescription', () => {
     const description = getHadithMetaDescription(createHadith(null));
 
     expect(description).toBe(
-      'Read Hadith 42 From Test Collection (Test Writer), chapter: Test Chapter. View the available Arabic text, English translation, and Urdu translation.'
+      'Test Collection, Hadith 42. Chapter: Test Chapter. Read the available Arabic text and translations.'
     );
   });
 });

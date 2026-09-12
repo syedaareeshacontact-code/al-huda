@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 
 import HomeRoot from '@/components/home';
@@ -6,9 +7,9 @@ import { PRIMARY_AUTHOR } from '@/lib/author-profile';
 import { buildPageMetadata, getSiteName, getSiteOrigin, toAbsoluteUrl } from '@/lib/seo';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Read Quran Online Free – Quran Pak with Urdu & English Translation, Audio, Tafseer',
+  title: 'Read the Quran with Translation',
   description:
-    'Read Quran online with Urdu and English translation, Tafseer, audio and bookmarks, then explore original Quran guides with visible sources and review status.',
+    'Read the Quran in Arabic with Urdu and English translations. Listen to recitation, find a verse, and continue from your saved reading position.',
   path: '/',
   imageUrl: '/og?kind=surah-index',
 });
@@ -33,7 +34,7 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(authorJsonLd).replace(/</g, '\\u003c'),
+          __html: serializeJsonLd(authorJsonLd),
         }}
       />
       <HomeRoot>

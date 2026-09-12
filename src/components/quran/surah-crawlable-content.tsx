@@ -72,7 +72,7 @@ export default function SurahCrawlableContent({ surah }: { surah: SurahIndexEntr
             className="gap-2 text-[var(--color-accent)]"
           >
             <FileText className="size-4" />
-            Complete Surah Tafseer Index
+            Available Urdu Tafseer
           </Link>
           <Link href="/editorial-policy" className="text-[var(--color-heading)]">
             Sources &amp; editorial policy

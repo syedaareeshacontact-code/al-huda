@@ -121,10 +121,10 @@ and trailing slash; for this project it is `http://readalquran.online/`.
 | `npm start` | Serve an existing production build |
 | `npm run security:check` | Check tracked files for common secret leakage |
 | `npm run seo:check` | Run the secret check and SEO regression tests |
-| `npm run seo:generate` | Refresh `src/data/surah-index.json` |
-| `npm run seo:generate-tafsir` | Refresh tafsir availability data |
+| `npm run data:refresh-surahs` | Refresh `src/data/surah-index.json` |
+| `npm run data:refresh-tafsir` | Refresh tafsir availability data |
 | `npm run generate:surah-pdfs` | Generate all protected Surah PDF assets |
-| `npm run build:seo` | Refresh SEO/PDF data and then build |
+| `npm run build:seo` | Validate search catalogs and SEO checks, then build |
 
 To run the Bun-based development container:
 

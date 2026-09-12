@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import Link from 'next/link';
 
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
@@ -21,7 +22,7 @@ export default function BreadcrumbNav({ items, includeSchema = true }: Breadcrum
       {includeSchema && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
         />
       )}
       <nav

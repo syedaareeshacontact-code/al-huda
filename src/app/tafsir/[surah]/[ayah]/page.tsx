@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Download, Headphones } from 'lucide-react';
@@ -54,21 +55,6 @@ function parseAyahNumber(value: string) {
   return parsed;
 }
 
-function buildLightweightTafsirKeywords(surahId: number, surahName: string, ayahNumber: number) {
-  const normalizedSurahName = surahName.toLowerCase();
-
-  return [
-    `tafseer ${surahId}:${ayahNumber}`,
-    `tafsir ${surahId}:${ayahNumber}`,
-    `urdu tafseer ${surahId}:${ayahNumber}`,
-    `surah ${normalizedSurahName} ayah ${ayahNumber} tafseer`,
-    `tafseer surah ${normalizedSurahName} ayah ${ayahNumber}`,
-    `ayah ${surahId}:${ayahNumber} tafseer urdu`,
-    `quran ${surahId}:${ayahNumber} explanation`,
-    `surah ${normalizedSurahName} verse ${ayahNumber}`,
-  ];
-}
-
 export async function generateMetadata({
   params,
 }: TafsirPageProps): Promise<Metadata> {
@@ -99,9 +85,8 @@ export async function generateMetadata({
     title,
     description,
     path: canonicalPath,
-    ogType: 'article',
+    ogType: 'website',
     imageUrl: `/og?kind=tafsir&surah=${surah.id}&ayah=${ayahNumber}`,
-    keywords: buildLightweightTafsirKeywords(surah.id, surah.surahName, ayahNumber),
   });
 }
 
@@ -187,16 +172,16 @@ export default async function TafsirDetailPage({
     <div className="pb-28 pt-10" data-slot="page-shell">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.breadcrumb) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.article) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas.article) }}
       />
       {audioJsonLd.length > 0 ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(audioJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(audioJsonLd) }}
         />
       ) : null}
 

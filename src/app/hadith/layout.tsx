@@ -9,7 +9,7 @@ import { getAllCollections } from '@/lib/hadith/collections.service';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Hadith',
+    template: '%s | Read al Quran',
     default: 'Hadith Collections',
   },
 };

@@ -86,6 +86,11 @@ export const getSurahMetaById = cache(async (surahId: number): Promise<SurahMeta
   const chapter = chapterData.chapter || {};
   const verses = versesData.verses || [];
   const textVerses = textData.verses || [];
+  const expectedCount = getSurahById(surahId)?.totalAyah;
+  if (!expectedCount || chapter.verses_count !== expectedCount || verses.length !== expectedCount ||
+      textVerses.length !== expectedCount || textVerses.some(verse => !verse.text_uthmani?.trim())) {
+    throw new Error('Incomplete Quran chapter response.');
+  }
   
   const english: string[] = [];
   const urdu: string[] = [];

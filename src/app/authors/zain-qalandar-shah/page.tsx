@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -96,7 +97,7 @@ export default function ZainQalandarShahAuthorPage() {
           key={entry.id}
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(entry.value).replace(/</g, '\\u003c'),
+            __html: serializeJsonLd(entry.value),
           }}
         />
       ))}
